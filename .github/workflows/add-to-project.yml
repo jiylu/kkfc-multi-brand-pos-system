@@ -1,0 +1,26 @@
+# Routes every new issue in this repo to the project board:
+# <TO_BE_FILLED> (e.g., https://github.com/orgs/<org>/projects/<project_number> or https://github.com/users/<user>/projects/<project_number>)
+#
+# The Status column is NOT set here (the action cannot do that). It is set by the
+# project's built-in workflow: project -> ... -> Workflows -> "Item added to project"
+# -> Status: Ready. Configure that once; it covers every repo feeding the board.
+#
+# Secret ADD_TO_PROJECT_PAT: classic PAT with the `project` scope only (outside
+# collaborators are not offered the org as a fine-grained resource owner).
+name: Add issue to project board
+
+on:
+  issues:
+    types: [opened, reopened, transferred]
+
+# The action authenticates with the PAT, so the default GITHUB_TOKEN needs nothing.
+permissions: {}
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v2
+        with:
+          project-url: <TO_BE_FILLED>
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
