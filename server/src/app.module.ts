@@ -1,25 +1,19 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
+import { PrismaModule } from './shared/prisma/prisma.module';
 import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '../.env'] }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres' as const,
-        host: config.get<string>('DB_HOST', 'localhost'),
-        port: config.get<number>('DB_PORT', 5432),
-        username: config.get<string>('DB_USER', 'pos'),
-        password: config.get<string>('DB_PASSWORD'),
-        database: config.get<string>('DB_NAME', 'pos'),
-        autoLoadEntities: true,
-        synchronize: false,
-      }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [
+        `.env.${process.env.NODE_ENV ?? 'development'}`,
+        '.env',
+        '../.env',
+      ],
     }),
+    PrismaModule,
     StorageModule,
   ],
   controllers: [],

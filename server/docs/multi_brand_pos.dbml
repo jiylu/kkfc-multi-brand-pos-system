@@ -1,0 +1,630 @@
+// Multi-brand POS operational schema
+// UUIDs are assigned by the application. All refs are inline.
+// modified_at requires application or trigger updates; its default only initializes it.
+// Stock ledger, lot caches and item balances must update atomically.
+// Validate modifier/menu pairing and cross-table business rules in the backend.
+
+Enum audit_outcomes {
+  SUCCESS
+  DENIED
+  FAILED
+}
+
+Enum modifier_component_actions {
+  ADD
+  REMOVE
+}
+
+Enum kitchen_ticket_statuses {
+  QUEUED
+  ACKNOWLEDGED
+  PREPARING
+  CHECKING
+  REWORKING
+  READY
+  HANDED_OVER
+  CANCELLED
+}
+
+Enum kitchen_event_types {
+  CREATED
+  ACKNOWLEDGED
+  PREPARATION_STARTED
+  SUBMITTED_FOR_QC
+  QC_FAILED
+  REWORK_STARTED
+  QC_PASSED
+  READY
+  HANDED_OVER
+  CANCELLED
+  ASSIGNMENT_CHANGED
+}
+
+Enum order_event_types {
+  CREATED
+  CONFIRMED
+  ITEM_ADDED
+  ITEM_UPDATED
+  ITEM_REMOVED
+  MODIFIER_CHANGED
+  STATUS_CHANGED
+  CANCELLED
+}
+
+Enum order_channels {
+  DINE_IN
+  TAKEAWAY
+  GRABFOOD
+  FOODPANDA
+}
+
+Enum order_statuses {
+  DRAFT
+  CONFIRMED
+  PREPARING
+  REWORKING
+  CHECKING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+Enum user_roles {
+  OWNER
+  KITCHEN_HEAD
+  RECEIVING_STAFF
+  KITCHEN_PREPARER
+  STAFF
+}
+
+Enum stock_buckets {
+  USABLE
+  HELD
+  IN_PREPARATION
+}
+
+Enum reservation_statuses {
+  ACTIVE
+  CONSUMED
+  RELEASED
+}
+
+Enum recipe_types {
+  MENU_ASSEMBLY
+  PRODUCTION
+}
+
+Enum inventory_types {
+  RAW
+  PREPPED
+  PACKAGING
+}
+
+Enum receipt_statuses {
+  DRAFT
+  ACCEPTED
+  CANCELLED
+}
+
+Enum count_statuses {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+}
+
+Enum adjustment_statuses {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+Enum stock_movement_types {
+  RECEIPT
+  BUCKET_TRANSFER
+  ORDER_CONSUMPTION
+  PRODUCTION_ISSUE
+  PRODUCTION_OUTPUT
+  PRODUCTION_RETURN
+  WASTE
+  ADJUSTMENT
+  REVERSAL
+}
+
+Enum production_statuses {
+  DRAFT
+  APPROVED
+  IN_PROGRESS
+  AWAITING_QC
+  HELD
+  REWORKING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+Enum production_event_types {
+  APPROVED
+  STARTED
+  SUBMITTED_FOR_QC
+  QC_PASSED
+  QC_FAILED
+  HELD
+  REWORK_STARTED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+Table users {
+  user_id uuid [pk]
+  first_name varchar [not null]
+  last_name varchar [not null]
+  password_hash varchar [not null]
+  role user_roles [not null]
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+}
+
+Table user_brand_assignments {
+  user_id uuid [not null, ref: > users.user_id]
+  brand_id uuid [not null, ref: > brands.brand_id]
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+  indexes {
+    (user_id, brand_id) [pk]
+  }
+}
+
+Table brands {
+  brand_id uuid [pk]
+  name varchar [not null]
+  logo_url varchar
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+  is_active boolean [not null, default: true]
+}
+
+Table orders {
+  order_id uuid [pk]
+  brand_id uuid [not null, ref: > brands.brand_id]
+  created_by_id uuid [not null, ref: > users.user_id]
+  order_channel order_channels [not null]
+  merchant_store_reference varchar [note: 'Stable platform store ID or configured store code; null for internal orders']
+  external_order_reference varchar [note: 'Platform order ID; null for internal orders']
+  table_reference varchar
+  status order_statuses [not null, default: 'DRAFT']
+  notes text
+  cancelled_by_id uuid [ref: > users.user_id]
+  cancellation_reason text
+  cancelled_at timestamp
+  confirmed_at timestamp
+  completed_at timestamp
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+  indexes {
+    (order_channel, merchant_store_reference, external_order_reference) [unique]
+    (brand_id, created_at)
+  }
+}
+
+Table order_items {
+  order_item_id uuid [pk]
+  order_id uuid [not null, ref: > orders.order_id]
+  menu_item_id uuid [not null, ref: > menu_items.menu_item_id]
+  item_name varchar [not null]
+  quantity integer [not null]
+  unit_price decimal(12,2) [not null]
+  notes text
+}
+
+Table order_item_modifiers {
+  order_item_modifier_id uuid [pk]
+  order_item_id uuid [not null, ref: > order_items.order_item_id]
+  modifier_id uuid [not null, ref: > modifiers.modifier_id]
+  modifier_name varchar [not null]
+  additional_price decimal(12,2) [not null, default: 0]
+  indexes {
+    (order_item_id, modifier_id) [unique]
+  }
+}
+
+Table menu_items {
+  menu_item_id uuid [pk]
+  brand_id uuid [not null, ref: > brands.brand_id]
+  recipe_id uuid [ref: > recipes.recipe_id]
+  code varchar [unique, not null]
+  name varchar [not null]
+  description text
+  serving_description varchar
+  base_price decimal(12,2) [not null]
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+}
+
+Table modifiers {
+  modifier_id uuid [pk]
+  code varchar [not null, unique]
+  name varchar [not null]
+  description text
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+}
+
+Table menu_item_modifiers {
+  menu_item_id uuid [not null, ref: > menu_items.menu_item_id]
+  modifier_id uuid [not null, ref: > modifiers.modifier_id]
+  additional_price decimal(12,2) [not null, default: 0]
+  indexes {
+    (menu_item_id, modifier_id) [pk]
+  }
+}
+
+Table modifier_components {
+  modifier_component_id uuid [pk]
+  menu_item_id uuid [not null, ref: > menu_items.menu_item_id]
+  modifier_id uuid [not null, ref: > modifiers.modifier_id]
+  inventory_item_id uuid [not null, ref: > inventory_items.inventory_item_id]
+  action modifier_component_actions [not null]
+  quantity decimal(14,3) [not null, note: 'Positive quantity per menu serving, in the inventory item base unit']
+  indexes {
+    (menu_item_id, modifier_id, inventory_item_id, action) [unique]
+  }
+}
+
+Table inventory_items {
+  inventory_item_id uuid [pk]
+  code varchar [not null, unique]
+  name varchar [not null]
+  type inventory_types [not null]
+  base_unit varchar [not null, note: 'g, ml, pc']
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+}
+
+Table stock_balances {
+  inventory_item_id uuid [pk, ref: - inventory_items.inventory_item_id]
+  quantity_on_hand decimal(14,3) [not null, default: 0]
+  quantity_held decimal(14,3) [not null, default: 0]
+  quantity_in_preparation decimal(14,3) [not null, default: 0]
+  quantity_reserved decimal(14,3) [not null, default: 0]
+  modified_at timestamp [not null, default: `now()`]
+  Note: 'Cached item totals across lots. On-hand includes usable, held and in-preparation quantities. Reserved stock is a subset of usable stock.'
+}
+
+Table goods_receipts {
+  goods_receipt_id uuid [pk]
+  receipt_number varchar [not null, unique]
+  supplier_name varchar [not null]
+  supplier_document_reference varchar
+  status receipt_statuses [not null, default: 'DRAFT']
+  received_at timestamp [not null]
+  created_by_id uuid [not null, ref: > users.user_id]
+  accepted_by_id uuid [ref: > users.user_id]
+  accepted_at timestamp
+  notes text
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+}
+
+Table goods_receipt_items {
+  goods_receipt_item_id uuid [pk]
+  goods_receipt_id uuid [not null, ref: > goods_receipts.goods_receipt_id]
+  inventory_item_id uuid [not null, ref: > inventory_items.inventory_item_id]
+  supplier_batch_reference varchar
+  use_by_at timestamp
+  delivered_quantity decimal(14,3) [not null]
+  accepted_quantity decimal(14,3) [not null, default: 0]
+  rejected_quantity decimal(14,3) [not null, default: 0]
+  rejection_reason text
+  notes text
+  Note: 'Use separate lines for different supplier batches or expiry dates, even for the same inventory item.'
+}
+
+Table stock_lots {
+  stock_lot_id uuid [pk]
+  inventory_item_id uuid [not null, ref: > inventory_items.inventory_item_id]
+  lot_code varchar [not null, unique]
+  goods_receipt_item_id uuid [ref: > goods_receipt_items.goods_receipt_item_id]
+  prepared_at timestamp
+  use_by_at timestamp
+  quantity_usable decimal(14,3) [not null, default: 0]
+  quantity_held decimal(14,3) [not null, default: 0]
+  quantity_in_preparation decimal(14,3) [not null, default: 0]
+  quantity_reserved decimal(14,3) [not null, default: 0]
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+  indexes {
+    (inventory_item_id, use_by_at)
+  }
+  Note: 'Batch-level quantity caches. Reserved quantity is included within usable quantity. Expired lots are excluded from availability.'
+}
+
+Table stock_reservations {
+  stock_reservation_id uuid [pk]
+  stock_lot_id uuid [not null, ref: > stock_lots.stock_lot_id]
+  order_item_id uuid [not null, ref: > order_items.order_item_id]
+  quantity decimal(14,3) [not null]
+  status reservation_statuses [not null, default: 'ACTIVE']
+  reservation_key varchar [not null, unique]
+  created_by_id uuid [not null, ref: > users.user_id]
+  created_at timestamp [not null, default: `now()`]
+  consumed_at timestamp
+  released_at timestamp
+  indexes {
+    (order_item_id, status)
+    (stock_lot_id, status)
+  }
+  Note: 'One allocation per row. Reserving reduces availability without reducing physical stock.'
+}
+
+Table stock_counts {
+  stock_count_id uuid [pk]
+  status count_statuses [not null, default: 'DRAFT']
+  cutoff_at timestamp [not null]
+  created_by_id uuid [not null, ref: > users.user_id]
+  reviewed_by_id uuid [ref: > users.user_id]
+  submitted_at timestamp
+  reviewed_at timestamp
+  notes text
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+}
+
+Table stock_count_items {
+  stock_count_item_id uuid [pk]
+  stock_count_id uuid [not null, ref: > stock_counts.stock_count_id]
+  stock_lot_id uuid [not null, ref: > stock_lots.stock_lot_id]
+  bucket stock_buckets [not null]
+  expected_quantity decimal(14,3) [not null]
+  counted_quantity decimal(14,3) [not null]
+  counted_by_id uuid [not null, ref: > users.user_id]
+  counted_at timestamp [not null]
+  notes text
+  indexes {
+    (stock_count_id, stock_lot_id, bucket) [unique]
+  }
+  Note: 'Count by lot and stock bucket. Expected quantity is captured at the cutoff; counting does not post stock.'
+}
+
+Table stock_adjustments {
+  stock_adjustment_id uuid [pk]
+  stock_count_id uuid [ref: > stock_counts.stock_count_id]
+  status adjustment_statuses [not null, default: 'DRAFT']
+  reason_code varchar [not null]
+  reason text [not null]
+  requested_by_id uuid [not null, ref: > users.user_id]
+  reviewed_by_id uuid [ref: > users.user_id]
+  reviewed_at timestamp
+  review_notes text
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+}
+
+Table stock_adjustment_items {
+  stock_adjustment_item_id uuid [pk]
+  stock_adjustment_id uuid [not null, ref: > stock_adjustments.stock_adjustment_id]
+  stock_lot_id uuid [not null, ref: > stock_lots.stock_lot_id]
+  bucket stock_buckets [not null]
+  quantity_change decimal(14,3) [not null]
+  notes text
+  indexes {
+    (stock_adjustment_id, stock_lot_id, bucket) [unique]
+  }
+}
+
+Table stock_movements {
+  stock_movement_id uuid [pk]
+  stock_lot_id uuid [not null, ref: > stock_lots.stock_lot_id]
+  type stock_movement_types [not null]
+  bucket stock_buckets [not null]
+  quantity_change decimal(14,3) [not null, note: 'Signed quantity in the inventory item base unit']
+  goods_receipt_item_id uuid [ref: > goods_receipt_items.goods_receipt_item_id]
+  stock_adjustment_item_id uuid [ref: > stock_adjustment_items.stock_adjustment_item_id]
+  order_item_id uuid [ref: > order_items.order_item_id]
+  stock_reservation_id uuid [ref: > stock_reservations.stock_reservation_id]
+  transfer_key varchar [note: 'Groups paired movements between stock buckets']
+  posting_key varchar [not null, unique]
+  reverses_movement_id uuid [ref: > stock_movements.stock_movement_id]
+  created_by_id uuid [not null, ref: > users.user_id]
+  reason text
+  occurred_at timestamp [not null]
+  created_at timestamp [not null, default: `now()`]
+  production_batch_input_id uuid [ref: > production_batch_inputs.production_batch_input_id]
+  production_batch_output_id uuid [ref: > production_batch_outputs.production_batch_output_id]
+  production_batch_return_id uuid [ref: > production_batch_returns.production_batch_return_id]
+  production_batch_loss_id uuid [ref: > production_batch_losses.production_batch_loss_id]
+  indexes {
+    (stock_lot_id, bucket, occurred_at)
+    transfer_key
+  }
+  Note: 'Immutable ledger. Inventory item is identified through the stock lot.'
+}
+
+Table recipes {
+  recipe_id uuid [pk]
+  code varchar [not null]
+  name varchar [not null]
+  type recipe_types [not null]
+  output_inventory_item_id uuid [ref: > inventory_items.inventory_item_id]
+  expected_output_quantity decimal(14,3)
+  serving_description varchar
+  instructions text
+  notes text
+  version integer [not null, default: 1]
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+  indexes {
+    (code, version) [unique]
+  }
+  Note: 'MENU_ASSEMBLY: components per serving. PRODUCTION: components per standard batch, with an output inventory item and expected yield.'
+}
+
+Table recipe_components {
+  recipe_component_id uuid [pk]
+  recipe_id uuid [not null, ref: > recipes.recipe_id]
+  inventory_item_id uuid [not null, ref: > inventory_items.inventory_item_id]
+  quantity decimal(14,3) [not null]
+  notes text
+  indexes {
+    (recipe_id, inventory_item_id) [unique]
+  }
+  Note: 'Quantity uses the ingredient inventory item base unit. Ingredients may be raw or prepared items.'
+}
+
+Table production_batches {
+  production_batch_id uuid [pk]
+  batch_number varchar [not null, unique]
+  recipe_id uuid [not null, ref: > recipes.recipe_id]
+  target_output_quantity decimal(14,3) [not null]
+  status production_statuses [not null, default: 'DRAFT']
+  created_by_id uuid [not null, ref: > users.user_id]
+  preparer_id uuid [ref: > users.user_id]
+  checker_id uuid [ref: > users.user_id]
+  approved_by_id uuid [ref: > users.user_id]
+  approved_at timestamp
+  scheduled_at timestamp
+  started_at timestamp
+  completed_at timestamp
+  notes text
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+  Note: 'Recipe must be PRODUCTION. Target quantity uses the recipe output item base unit.'
+}
+
+Table production_batch_inputs {
+  production_batch_input_id uuid [pk]
+  production_batch_id uuid [not null, ref: > production_batches.production_batch_id]
+  stock_lot_id uuid [not null, ref: > stock_lots.stock_lot_id]
+  issued_quantity decimal(14,3) [not null]
+  issued_by_id uuid [not null, ref: > users.user_id]
+  issued_at timestamp [not null]
+  notes text
+  Note: 'One actual issue per row. The source lot identifies the input item and unit.'
+}
+
+Table production_batch_outputs {
+  production_batch_output_id uuid [pk]
+  production_batch_id uuid [not null, ref: > production_batches.production_batch_id]
+  stock_lot_id uuid [not null, unique, ref: - stock_lots.stock_lot_id]
+  produced_quantity decimal(14,3) [not null]
+  accepted_quantity decimal(14,3) [not null, default: 0]
+  recorded_by_id uuid [not null, ref: > users.user_id]
+  recorded_at timestamp [not null]
+  accepted_by_id uuid [ref: > users.user_id]
+  accepted_at timestamp
+  notes text
+  Note: 'Output initially enters HELD stock. Accepted quantities transfer to USABLE. Prepared time and use-by are stored on the output lot.'
+}
+
+Table production_batch_returns {
+  production_batch_return_id uuid [pk]
+  production_batch_input_id uuid [not null, ref: > production_batch_inputs.production_batch_input_id]
+  quantity decimal(14,3) [not null]
+  reason text [not null]
+  returned_by_id uuid [not null, ref: > users.user_id]
+  returned_at timestamp [not null]
+  Note: 'Recoverable unused input returns to its source lot. Transformed leftovers require a separate output item.'
+}
+
+Table production_batch_losses {
+  production_batch_loss_id uuid [pk]
+  production_batch_id uuid [not null, ref: > production_batches.production_batch_id]
+  production_batch_input_id uuid [ref: > production_batch_inputs.production_batch_input_id]
+  production_batch_output_id uuid [ref: > production_batch_outputs.production_batch_output_id]
+  quantity decimal(14,3) [not null]
+  reason_code varchar [not null]
+  reason text [not null]
+  recorded_by_id uuid [not null, ref: > users.user_id]
+  recorded_at timestamp [not null]
+  Note: 'Reference exactly one input or output belonging to this batch. Quantity uses that item base unit.'
+}
+
+Table production_batch_events {
+  production_batch_event_id uuid [pk]
+  production_batch_id uuid [not null, ref: > production_batches.production_batch_id]
+  event_type production_event_types [not null]
+  from_status production_statuses
+  to_status production_statuses [not null]
+  performed_by_id uuid [not null, ref: > users.user_id]
+  reason text
+  created_at timestamp [not null, default: `now()`]
+  Note: 'Append-only status and QC history.'
+}
+
+Table kitchen_tickets {
+  kitchen_ticket_id uuid [pk]
+  order_id uuid [not null, unique, ref: - orders.order_id]
+  ticket_number varchar [not null, unique]
+  status kitchen_ticket_statuses [not null, default: 'QUEUED']
+  preparer_id uuid [ref: > users.user_id]
+  checker_id uuid [ref: > users.user_id]
+  created_by_id uuid [not null, ref: > users.user_id]
+  acknowledged_at timestamp
+  preparation_started_at timestamp
+  ready_at timestamp
+  handed_over_at timestamp
+  cancelled_at timestamp
+  notes text
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+  indexes {
+    (status, created_at)
+  }
+  Note: 'Created when an order is confirmed. Ticket contents come from order_items and order_item_modifiers.'
+}
+
+Table kitchen_ticket_events {
+  kitchen_ticket_event_id uuid [pk]
+  kitchen_ticket_id uuid [not null, ref: > kitchen_tickets.kitchen_ticket_id]
+  event_type kitchen_event_types [not null]
+  from_status kitchen_ticket_statuses
+  to_status kitchen_ticket_statuses [not null]
+  performed_by_id uuid [not null, ref: > users.user_id]
+  reason text
+  details jsonb
+  created_at timestamp [not null, default: `now()`]
+  indexes {
+    (kitchen_ticket_id, created_at)
+  }
+  Note: 'Append-only kitchen history. QC failures record the issue; repeated checks and rework create additional events.'
+}
+
+Table order_events {
+  order_event_id uuid [pk]
+  order_id uuid [not null, ref: > orders.order_id]
+  event_type order_event_types [not null]
+  performed_by_id uuid [not null, ref: > users.user_id]
+  reason text
+  before_data jsonb
+  after_data jsonb
+  created_at timestamp [not null, default: `now()`]
+  indexes {
+    (order_id, created_at)
+  }
+  Note: 'Append-only order history. Before/after snapshots preserve item, modifier and quantity changes, including removed lines.'
+}
+
+Table audit_logs {
+  audit_log_id uuid [pk]
+  actor_id uuid [ref: > users.user_id]
+  action varchar [not null, note: 'RECIPE_UPDATED, BRAND_ASSIGNMENT_ADDED, etc.']
+  entity_type varchar [not null, note: 'recipes, users, stock_adjustments, etc.']
+  entity_id uuid
+  outcome audit_outcomes [not null]
+  reason text
+  before_data jsonb
+  after_data jsonb
+  request_id varchar
+  created_at timestamp [not null, default: `now()`]
+  indexes {
+    (entity_type, entity_id, created_at)
+    (actor_id, created_at)
+  }
+  Note: 'Append-only audit history. Actor may be null for system or unauthenticated actions. Exclude passwords, tokens and restricted recipe instructions from snapshots.'
+}

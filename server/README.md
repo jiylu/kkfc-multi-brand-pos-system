@@ -31,6 +31,50 @@
 $ npm install
 ```
 
+## Prisma
+
+The database layer follows the `cssweng/backend` setup: Prisma 7.8,
+PostgreSQL through `PrismaPg`, and a global `PrismaModule` in
+`src/shared/prisma`. Inject `PrismaService` into feature services to query
+the database.
+
+Copy `.env.example` to `.env` and replace the example database credentials,
+or keep using the existing `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`,
+and `DB_NAME` variables. `DATABASE_URL` takes precedence. Both the CLI and
+server load `.env` and then `../.env`; the server also prioritizes
+`.env.development` by default or `.env.production` when `NODE_ENV=production`.
+Use host `db` for the API container and `localhost` when running locally.
+
+```bash
+npm run prisma:generate
+npm run prisma:validate
+npm run prisma:studio
+```
+
+The schema in `prisma/schema.prisma` implements the 33 tables and 18 enums
+in `docs/multi_brand_pos.dbml`. See [the simplified ER diagram](docs/schema-diagram.md)
+for the main relationships and implementation conventions. Regenerate the
+client after schema changes; build and development start scripts do this
+automatically. No database changes are made by generation or building.
+
+For the same environment-specific workflow as the reference project, put
+`DATABASE_URL` in `.env.development` or `.env.production` and use:
+
+```bash
+# Prototype schema changes against the development database
+npm run db:push:dev
+
+# Create and apply a development migration
+npm run db:migrate:dev -- --name init
+
+# Apply committed migrations in production (requires dev dependencies)
+npm run db:migrate:deploy
+```
+
+`db:push:prod` is also available to match the reference project; use
+committed migrations for production schema changes. Database push and
+migration commands change the configured database and are run separately.
+
 ## Compile and run the project
 
 ```bash
