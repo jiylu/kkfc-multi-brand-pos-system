@@ -20,4 +20,6 @@ COPY --from=build /app/dist ./dist
 
 EXPOSE 3000
 
+USER node
+
 CMD ["node", "dist/main"]
