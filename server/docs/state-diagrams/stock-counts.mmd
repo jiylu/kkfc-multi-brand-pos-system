@@ -1,0 +1,13 @@
+stateDiagram-v2
+    direction LR
+    state "DRAFT" as draft
+    state "SUBMITTED" as submitted
+    state "REVIEWED" as reviewed
+    state "CANCELLED" as cancelled
+    [*] --> draft
+    draft --> submitted: submit and unfreeze lots
+    submitted --> reviewed: review observation
+    draft --> cancelled: abandon and unfreeze lots
+    submitted --> cancelled: withdraw before review
+    reviewed --> [*]
+    cancelled --> [*]

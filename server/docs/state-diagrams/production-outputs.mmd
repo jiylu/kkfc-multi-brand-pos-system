@@ -1,0 +1,14 @@
+stateDiagram-v2
+    direction LR
+    state "HELD" as held
+    state "USABLE" as usable
+    state "DISPOSED" as disposed
+    state "CONSUMED" as consumed
+    [*] --> held: measure output
+    held --> held: QC failure or rework
+    held --> usable: successful QC acceptance
+    held --> disposed: reject and dispose
+    usable --> consumed: use prepared ingredient
+    usable --> disposed: verified spoilage
+    disposed --> [*]
+    consumed --> [*]

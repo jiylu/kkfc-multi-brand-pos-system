@@ -1,0 +1,10 @@
+stateDiagram-v2
+    direction LR
+    state "DRAFT" as draft
+    state "ACCEPTED" as accepted
+    state "CANCELLED" as cancelled
+    [*] --> draft
+    draft --> accepted: accept quantities once
+    draft --> cancelled: cancel without posting
+    accepted --> [*]
+    cancelled --> [*]

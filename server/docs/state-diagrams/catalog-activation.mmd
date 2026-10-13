@@ -1,0 +1,7 @@
+stateDiagram-v2
+    direction LR
+    state "ACTIVE" as active
+    state "INACTIVE" as inactive
+    [*] --> active
+    active --> inactive: authorized deactivation
+    inactive --> active: authorized reactivation

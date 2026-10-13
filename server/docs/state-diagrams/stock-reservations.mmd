@@ -1,0 +1,11 @@
+stateDiagram-v2
+    direction LR
+    state "ACTIVE" as active
+    state "CONSUMED" as consumed
+    state "RELEASED" as released
+    [*] --> active
+    active --> consumed: consume remaining allocation
+    active --> released: release remaining allocation
+    active --> active: release part
+    consumed --> [*]
+    released --> [*]

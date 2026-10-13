@@ -1,0 +1,19 @@
+stateDiagram-v2
+    direction LR
+    state "USABLE" as usable
+    state "HELD" as held
+    state "IN_PREPARATION" as inPreparation
+    state "CONSUMED" as consumed
+    state "WASTE" as waste
+    [*] --> usable: accepted receipt
+    [*] --> held: measured output
+    held --> usable: QC acceptance
+    usable --> inPreparation: actual production issue
+    inPreparation --> usable: recover unused input
+    inPreparation --> consumed: normal transformation
+    usable --> consumed: start menu preparation
+    usable --> waste: verified spoilage
+    held --> waste: rejected output disposal
+    inPreparation --> waste: verified input loss
+    consumed --> [*]
+    waste --> [*]

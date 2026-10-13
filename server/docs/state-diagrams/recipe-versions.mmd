@@ -1,0 +1,8 @@
+stateDiagram-v2
+    direction LR
+    state "EDITABLE" as editable
+    state "LOCKED" as locked
+    [*] --> editable: create version
+    editable --> editable: edit unused recipe
+    editable --> locked: confirmed or approved reference
+    locked --> locked: keep history immutable

@@ -1,0 +1,36 @@
+stateDiagram-v2
+    direction LR
+    state "DRAFT" as draft
+    state "CONFIRMED" as confirmed
+    state "CANCELLED" as cancelled
+    state "ACKNOWLEDGED" as acknowledged
+    state "PREPARING" as preparing
+    state "CHECKING" as checking
+    state "REWORKING" as reworking
+    state "READY" as ready
+    state "COMPLETED" as completed
+    [*] --> draft
+    draft --> confirmed: confirm and reserve
+    draft --> cancelled: cancel draft
+    confirmed --> acknowledged: acknowledge
+    acknowledged --> preparing: start preparation
+    preparing --> checking: submit for QC
+    checking --> reworking: QC failure
+    reworking --> checking: submit recheck
+    checking --> ready: QC pass
+    ready --> completed: serve or hand over
+    confirmed --> cancelled: cancel remaining items
+    acknowledged --> cancelled: cancel remaining items
+    preparing --> cancelled: cancel remaining items
+    checking --> cancelled: cancel remaining items
+    reworking --> cancelled: cancel remaining items
+    ready --> cancelled: cancel remaining items
+    acknowledged --> confirmed: confirm new amendment
+    preparing --> confirmed: confirm new amendment
+    checking --> confirmed: confirm new amendment
+    reworking --> confirmed: confirm new amendment
+    ready --> confirmed: confirm new amendment
+    preparing --> preparing: start another line
+    confirmed --> confirmed: amend unstarted selection
+    completed --> [*]
+    cancelled --> [*]

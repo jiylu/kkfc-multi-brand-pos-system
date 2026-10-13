@@ -1,0 +1,11 @@
+stateDiagram-v2
+    direction LR
+    state "ISSUED" as issued
+    state "PARTIALLY_SETTLED" as partiallySettled
+    state "SETTLED" as settled
+    [*] --> issued: record actual issue
+    issued --> partiallySettled: consume return or lose part
+    issued --> settled: settle full quantity
+    partiallySettled --> partiallySettled: settle another part
+    partiallySettled --> settled: settle remainder
+    settled --> [*]
