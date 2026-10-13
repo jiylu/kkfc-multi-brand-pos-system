@@ -2,7 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
@@ -26,7 +30,11 @@ export class StorageService {
     const key = `uploads/${randomUUID()}${extension}`;
     const uploadUrl = await getSignedUrl(
       this.client,
-      new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType }),
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        ContentType: contentType,
+      }),
       { expiresIn: 300 },
     );
 
