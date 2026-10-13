@@ -1,0 +1,12 @@
+stateDiagram-v2
+    direction LR
+    state "DRAFT" as draft
+    state "PENDING" as pending
+    state "APPROVED" as approved
+    state "REJECTED" as rejected
+    [*] --> draft
+    draft --> pending: submit correction
+    pending --> approved: approve and post once
+    pending --> rejected: reject without posting
+    rejected --> draft: revise same correction
+    approved --> [*]

@@ -1,0 +1,29 @@
+stateDiagram-v2
+    direction LR
+    state "DRAFT" as draft
+    state "APPROVED" as approved
+    state "CANCELLED" as cancelled
+    state "IN_PROGRESS" as inProgress
+    state "AWAITING_QC" as awaitingQc
+    state "HELD" as held
+    state "REWORKING" as reworking
+    state "ACCEPTED" as accepted
+    state "REJECTED" as rejected
+    [*] --> draft
+    draft --> approved: approve plan
+    draft --> cancelled: cancel draft
+    approved --> inProgress: start actual issue
+    approved --> cancelled: cancel unstarted
+    inProgress --> awaitingQc: submit measured output
+    awaitingQc --> held: QC failure or hold
+    held --> reworking: authorize rework
+    reworking --> awaitingQc: submit recheck
+    awaitingQc --> accepted: accept and settle
+    held --> rejected: dispose and settle
+    awaitingQc --> rejected: reject and settle
+    inProgress --> cancelled: return or dispose and settle
+    held --> cancelled: cancel and settle
+    reworking --> cancelled: cancel and settle
+    accepted --> [*]
+    rejected --> [*]
+    cancelled --> [*]

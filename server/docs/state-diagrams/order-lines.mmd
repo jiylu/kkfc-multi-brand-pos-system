@@ -1,0 +1,15 @@
+stateDiagram-v2
+    direction LR
+    state "UNSTARTED" as unstarted
+    state "PREPARED" as prepared
+    state "FULLY_CANCELLED" as fullyCancelled
+    state "CLOSED" as closed
+    [*] --> unstarted
+    unstarted --> unstarted: cancel some servings
+    unstarted --> prepared: consume remaining servings
+    unstarted --> fullyCancelled: release all allocations
+    prepared --> prepared: cancel some servings
+    prepared --> fullyCancelled: classify waste or recovery
+    prepared --> closed: parent handed over
+    fullyCancelled --> [*]
+    closed --> [*]
