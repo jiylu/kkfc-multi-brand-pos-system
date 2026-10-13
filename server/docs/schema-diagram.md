@@ -2,6 +2,7 @@
 
 Source: [multi_brand_pos.dbml](multi_brand_pos.dbml).
 Implementation: [schema.prisma](../prisma/schema.prisma).
+Field limits: [schema-limits.md](schema-limits.md).
 
 This simplified diagram shows the main entities. Relationships labeled
 `via` summarize paths through omitted junction or detail tables; they do
@@ -48,9 +49,12 @@ nullability, defaults, unique constraints, indexes, and foreign keys
 follow the source. Foreign keys explicitly use PostgreSQL's default
 `NO ACTION` behavior for updates and deletes.
 
-UUIDs remain application-assigned. `modified_at` has an initialization
-default, without Prisma's `@updatedAt`; the application or a database
-trigger must update it explicitly.
+Independent UUID primary keys use Prisma's `@default(uuid())`, so IDs
+can be omitted when creating records through Prisma. The shared primary
+key `StockBalance.inventory_item_id` and composite junction keys reuse
+the referenced IDs. `modified_at` has an initialization default, without
+Prisma's `@updatedAt`; the application or a database trigger must update
+it explicitly.
 
 Rules expressed as DBML notes still require backend validation: menu/
 modifier pairing, production recipe types and yields, matching items

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { StorageModule } from './storage/storage.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { StorageModule } from './storage/storage.module';
     }),
     PrismaModule,
     StorageModule,
+    UsersModule,
   ],
   controllers: [],
   providers: [],
