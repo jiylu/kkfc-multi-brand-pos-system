@@ -94,11 +94,11 @@ enum OrderStatus {
 }
 
 enum UserRole {
-  OWNER
-  KITCHEN_HEAD
-  RECEIVING_STAFF
+  ORDER_STAFF
   KITCHEN_PREPARER
-  STAFF
+  RECEIVING_STAFF
+  KITCHEN_HEAD
+  OWNER
 
   @@map("user_roles")
 }
