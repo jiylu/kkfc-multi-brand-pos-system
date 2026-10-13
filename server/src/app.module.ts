@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './shared/prisma/prisma.module';
-import { StorageModule } from './storage/storage.module';
+import { StorageModule } from './shared/storage/storage.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({

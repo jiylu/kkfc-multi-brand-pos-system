@@ -51,6 +51,7 @@ export class UsersRepository {
       where: {
         user_id: userId,
       },
+      omit: { password_hash: true },
     });
   }
 
@@ -79,8 +80,9 @@ export class UsersRepository {
   }
 
   async delete(userId: string) {
-    return this.prisma.user.delete({
+    return this.prisma.user.update({
       where: { user_id: userId },
+      data: { is_active: false },
       omit: { password_hash: true },
     });
   }
