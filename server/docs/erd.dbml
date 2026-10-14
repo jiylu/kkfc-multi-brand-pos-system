@@ -41,11 +41,11 @@ Enum order_statuses {
 }
 
 Enum user_roles {
-  OWNER
-  KITCHEN_HEAD
-  RECEIVING_STAFF
+  ORDER_STAFF
   KITCHEN_PREPARER
-  STAFF
+  INVENTORY_STAFF
+  KITCHEN_HEAD
+  OWNER
 }
 
 Enum recipe_types {
@@ -100,6 +100,19 @@ Enum production_statuses {
   REJECTED
   CANCELLED
 }
+
+Enum payment_methods {
+  CASH
+  E_WALLET          
+  CARD              
+}
+
+Enum payment_statuses {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
 
 // ==========================================
 // 1. USERS, RBAC & BRANDS
@@ -256,6 +269,9 @@ Table orders {
   external_order_reference varchar(255) [note: 'Platform order ID; null for internal orders']
   table_reference varchar(50)
   status order_statuses [not null, default: 'DRAFT']
+  payment_method payment_methods [note: 'Null while DRAFT; set upon confirmation or payment']
+  payment_status payment_statuses [not null, default: 'UNPAID']
+  payment_reference varchar(255) [note: 'Optional e-wallet/card reference number']
   notes varchar(2000)
   cancelled_by_id uuid [ref: > users.user_id]
   cancellation_reason varchar(1000)
