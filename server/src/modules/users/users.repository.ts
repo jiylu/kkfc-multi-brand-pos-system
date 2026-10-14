@@ -50,8 +50,19 @@ export class UsersRepository {
     return this.prisma.user.findUnique({
       where: {
         user_id: userId,
+        is_active: true,
       },
       omit: { password_hash: true },
+      include: {
+        user_brand_assignments_user: { select: { brand_id: true } },
+      },
+    });
+  }
+
+  async findByUsername(username: string) {
+    return this.prisma.user.findUnique({
+      where: { username, is_active: true },
+      select: { user_id: true, password_hash: true },
     });
   }
 

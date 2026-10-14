@@ -37,9 +37,10 @@ export class UsersService {
       const skip = (page - 1) * limit;
 
       if (skip > 2_147_483_647) {
-        throw new BadRequestException(
-          'Requested page exceeds the supported range.',
-        );
+        throw new BadRequestException({
+          code: 'PAGINATION_UNSUPPORTED_RANGE',
+          message: 'Requested page exceeds the supported range.',
+        });
       }
 
       const { users, total } = await this.usersRepository.findAll(skip, limit);

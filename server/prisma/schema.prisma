@@ -152,6 +152,7 @@ enum PaymentStatus {
 
 model User {
   user_id       String   @id @default(uuid()) @db.Uuid
+  username      String   @unique @db.VarChar(64)
   first_name    String   @db.VarChar(100)
   last_name     String   @db.VarChar(100)
   password_hash String   @db.VarChar(255)
@@ -161,6 +162,7 @@ model User {
   modified_at   DateTime @default(now()) @db.Timestamp(6)
 
   user_brand_assignments_user       UserBrandAssignment[]  @relation("UserBrandAssignmentUser")
+  user_sessions_user                UserSession[]          @relation("UserSessionUser")
   orders_created_by                 Order[]                @relation("OrderCreatedBy")
   orders_cancelled_by               Order[]                @relation("OrderCancelledBy")
   goods_receipts_created_by         GoodsReceipt[]         @relation("GoodsReceiptCreatedBy")
@@ -182,6 +184,22 @@ model User {
   audit_logs_actor                  AuditLog[]             @relation("AuditLogActor")
 
   @@map("users")
+}
+
+/// Stores revocable sessions. The backend enforces expiration and records activity.
+model UserSession {
+  session_id   String   @id @default(uuid()) @db.Uuid
+  user_id      String   @db.Uuid
+  /// SHA-256 hex digest; never store the raw bearer token
+  token_hash   String   @unique @db.VarChar(64)
+  created_at   DateTime @default(now()) @db.Timestamp(6)
+  expires_at   DateTime @db.Timestamp(6)
+  last_seen_at DateTime @default(now()) @db.Timestamp(6)
+
+  user User @relation("UserSessionUser", fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([user_id])
+  @@map("user_sessions")
 }
 
 model UserBrandAssignment {
