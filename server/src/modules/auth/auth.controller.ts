@@ -6,9 +6,10 @@ import {
   HttpStatus,
   Post,
   Req,
-  SetMetadata,
+  UseGuards,
 } from '@nestjs/common';
 import type { AuthenticatedRequest } from './auth.guard';
+import { Authenticated } from './auth.guard';
 import { AuthService } from './auth.service';
 import { LoginDTO } from './dto/login.dto';
 
@@ -18,23 +19,25 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @SetMetadata('isPublic', true)
   async login(@Body() dto: LoginDTO) {
     return this.authService.login(dto);
   }
 
   @Get('me')
+  @UseGuards(Authenticated)
   me(@Req() request: AuthenticatedRequest) {
     return request.session.user;
   }
 
   @Post('logout')
+  @UseGuards(Authenticated)
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(@Req() request: AuthenticatedRequest) {
     await this.authService.deleteSession(request.session.session_id);
   }
 
   @Post('logout-all')
+  @UseGuards(Authenticated)
   @HttpCode(HttpStatus.NO_CONTENT)
   async logoutAll(@Req() request: AuthenticatedRequest) {
     await this.authService.deleteUserSessions(request.session.user_id);
