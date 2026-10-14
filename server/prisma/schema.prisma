@@ -265,6 +265,7 @@ model OrderItem {
   order_item_modifiers_order_item OrderItemModifier[] @relation("OrderItemModifierOrderItem")
   stock_movements_order_item      StockMovement[]     @relation("StockMovementOrderItem")
 
+  @@index([order_id])
   @@map("order_items")
 }
 
@@ -285,7 +286,8 @@ model OrderItemModifier {
 model MenuItem {
   menu_item_id        String   @id @default(uuid()) @db.Uuid
   brand_id            String   @db.Uuid
-  recipe_id           String?  @db.Uuid
+  recipe_id           String   @db.Uuid
+  logo_url            String   @db.VarChar(2048)
   code                String   @unique @db.VarChar(64)
   name                String   @db.VarChar(150)
   description         String?  @db.VarChar(2000)
@@ -296,11 +298,12 @@ model MenuItem {
   modified_at         DateTime @default(now()) @db.Timestamp(6)
 
   brand                         Brand              @relation("MenuItemBrand", fields: [brand_id], references: [brand_id], onDelete: NoAction, onUpdate: NoAction)
-  recipe                        Recipe?            @relation("MenuItemRecipe", fields: [recipe_id], references: [recipe_id], onDelete: NoAction, onUpdate: NoAction)
+  recipe                        Recipe             @relation("MenuItemRecipe", fields: [recipe_id], references: [recipe_id], onDelete: NoAction, onUpdate: NoAction)
   order_items_menu_item         OrderItem[]        @relation("OrderItemMenuItem")
   menu_item_modifiers_menu_item MenuItemModifier[] @relation("MenuItemModifierMenuItem")
   menu_item_channels_menu_item  MenuItemChannel[]  @relation("MenuItemChannelMenuItem")
 
+  @@index([brand_id, is_active])
   @@map("menu_items")
 }
 
@@ -418,6 +421,7 @@ model GoodsReceiptItem {
   inventory_item                     InventoryItem   @relation("GoodsReceiptItemInventoryItem", fields: [inventory_item_id], references: [inventory_item_id], onDelete: NoAction, onUpdate: NoAction)
   stock_movements_goods_receipt_item StockMovement[] @relation("StockMovementGoodsReceiptItem")
 
+  @@index([goods_receipt_id])
   @@map("goods_receipt_items")
 }
 
@@ -617,6 +621,7 @@ model ProductionBatchInput {
   inventory_item   InventoryItem   @relation("ProductionBatchInputInventoryItem", fields: [inventory_item_id], references: [inventory_item_id], onDelete: NoAction, onUpdate: NoAction)
   issued_by        User            @relation("ProductionBatchInputIssuedBy", fields: [issued_by_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@index([production_batch_id])
   @@map("production_batch_inputs")
 }
 

@@ -200,6 +200,7 @@ Table menu_items {
   menu_item_id uuid [pk]
   brand_id uuid [not null, ref: > brands.brand_id]
   recipe_id uuid [ref: > recipes.recipe_id]
+  menu_item_url varchar(2048)
   code varchar(64) [unique, not null]
   name varchar(150) [not null]
   description varchar(2000)
@@ -208,6 +209,9 @@ Table menu_items {
   is_active boolean [not null, default: true]
   created_at timestamp [not null, default: `now()`]
   modified_at timestamp [not null, default: `now()`]
+  indexes {
+    (brand_id, is_active)
+  }
 }
 
 // Configures channel-specific pricing and availability controls (Dine-In, Takeaway, GrabFood, foodpanda) for each menu item.
@@ -297,6 +301,9 @@ Table order_items {
   quantity integer [not null]
   unit_price decimal(12,2) [not null]
   notes varchar(2000)
+  indexes {
+    (order_id)
+  }
 }
 
 // Records the specific modifiers and snapshotted add-on prices selected for an individual order line item.
@@ -386,6 +393,9 @@ Table goods_receipt_items {
   rejected_quantity decimal(14,3) [not null, default: 0]
   rejection_reason varchar(1000)
   notes varchar(2000)
+  indexes {
+    (goods_receipt_id)
+  }
 }
 
 // Manages physical inventory count sessions anchored to a consistent cutoff timestamp.
@@ -483,6 +493,9 @@ Table production_batch_inputs {
   issued_by_id uuid [not null, ref: > users.user_id]
   issued_at timestamp [not null]
   notes varchar(2000)
+  indexes {
+    (production_batch_id)
+  }
 }
 
 // ==========================================
