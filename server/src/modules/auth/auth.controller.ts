@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Post,
@@ -18,15 +19,17 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
+  @Header('Cache-Control', 'no-store')
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDTO) {
     return this.authService.login(dto);
   }
 
   @Get('me')
+  @Header('Cache-Control', 'no-store')
   @UseGuards(Authenticated)
   me(@Req() request: AuthenticatedRequest) {
-    return request.session.user;
+    return this.authService.getUserProfile(request.session.user);
   }
 
   @Post('logout')

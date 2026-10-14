@@ -5,6 +5,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import * as argon2 from 'argon2';
 import { AuthModule } from '../auth.module';
 import { AuthRepository } from '../auth.repository';
+import { AuthService } from '../auth.service';
 import { CreateSessionDTO } from '../dto/create-session.dto';
 import { UsersRepository } from '../../users/users.repository';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
@@ -140,10 +141,11 @@ describe('Auth HTTP endpoints', () => {
       body: JSON.stringify({ username, password: 'correct-password' }),
     });
     expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
     return (await response.json()) as {
       token: string;
       expires_at: string;
-      user: typeof owner;
+      user: ReturnType<AuthService['getUserProfile']>;
     };
   }
 
@@ -153,10 +155,14 @@ describe('Auth HTTP endpoints', () => {
     expect(
       Math.abs(new Date(body.expires_at).getTime() - Date.now() - 86400000),
     ).toBeLessThan(5000);
-    expect(body.user.role).toBe(UserRole.OWNER);
-    expect(body.user.user_brand_assignments_user).toEqual(
-      owner.user_brand_assignments_user,
-    );
+    expect(body.user).toEqual({
+      user_id: owner.user_id,
+      username: 'owner',
+      first_name: 'Test',
+      last_name: 'Owner',
+      role: UserRole.OWNER,
+      brand_ids: [owner.user_brand_assignments_user[0].brand_id],
+    });
     expect(body.user).not.toHaveProperty('password_hash');
     expect(body).not.toHaveProperty('token_hash');
     expect([...sessions.values()][0].token_hash).toBe(
@@ -208,17 +214,25 @@ describe('Auth HTTP endpoints', () => {
   );
 
   it('returns the authenticated user and accepts old activity timestamps', async () => {
-    const { token } = await login();
+    const { token, user } = await login();
     [...sessions.values()][0].last_seen_at = new Date(0);
     const response = await fetch(`${url}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({
-      user_id: owner.user_id,
-      role: UserRole.OWNER,
-      user_brand_assignments_user: owner.user_brand_assignments_user,
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(await response.json()).toEqual(user);
+  });
+
+  it('returns an empty brand list when no brands are assigned', async () => {
+    users.set(owner.user_id, { ...owner, user_brand_assignments_user: [] });
+    const { token, user } = await login();
+    expect(user.brand_ids).toEqual([]);
+    const response = await fetch(`${url}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(user);
   });
 
   it('logout invalidates only the current session', async () => {

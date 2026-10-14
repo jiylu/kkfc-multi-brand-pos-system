@@ -22,6 +22,21 @@ export class AuthService {
     private readonly usersRepository: UsersRepository,
   ) {}
 
+  getUserProfile(
+    user: NonNullable<Awaited<ReturnType<UsersRepository['findOne']>>>,
+  ) {
+    return {
+      user_id: user.user_id,
+      username: user.username,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      role: user.role,
+      brand_ids: user.user_brand_assignments_user.map(
+        (assignment) => assignment.brand_id,
+      ),
+    };
+  }
+
   async login(dto: LoginDTO) {
     const credentials = await this.usersRepository.findByUsername(dto.username);
     if (
@@ -50,7 +65,11 @@ export class AuthService {
       });
     }
 
-    return { token, expires_at: session.expires_at, user };
+    return {
+      token,
+      expires_at: session.expires_at,
+      user: this.getUserProfile(user),
+    };
   }
 
   async createSession(dto: CreateSessionDTO) {
