@@ -16,12 +16,14 @@ export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
   async createUser(dto: CreateUserDTO) {
-    this.logger.log('Creating user');
+    this.logger.log(
+      `Creating ${dto.role} user ${dto.first_name} ${dto.password} `,
+    );
 
     const user = await this.usersRepository.create(dto);
 
     this.logger.log(`
-      Created new user with role: ${user.role} and user_id: ${user.user_id}
+      Created new user with role: ${user.role} with user_id: ${user.user_id}
     `);
 
     return user;

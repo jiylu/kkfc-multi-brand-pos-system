@@ -62,11 +62,11 @@ export class BrandsRepository {
     });
   }
 
-  async findOneBrandAssignment(assignmentId: string) {
+  async findOneBrandAssignment(assignmentId: string, activeOnly = true) {
     return this.prisma.userBrandAssignment.findUnique({
       where: {
         assignment_id: assignmentId,
-        is_active: true,
+        is_active: activeOnly ? true : undefined,
       },
     });
   }
