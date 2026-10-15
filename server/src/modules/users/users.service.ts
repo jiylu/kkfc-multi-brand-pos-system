@@ -1,11 +1,9 @@
 import {
   BadRequestException,
-  HttpException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { UsersRepository } from './users.repository';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
@@ -20,125 +18,89 @@ export class UsersService {
   async createUser(dto: CreateUserDTO) {
     this.logger.log('Creating user');
 
-    try {
-      const user = await this.usersRepository.create(dto);
-      this.logger.log(`Created user ${user.user_id}`);
-      return user;
-    } catch (error) {
-      this.logFailure('Create user', error);
-      throw error;
-    }
+    const user = await this.usersRepository.create(dto);
+
+    this.logger.log(`
+      Created new user with role: ${user.role} and user_id: ${user.user_id}
+    `);
+
+    return user;
   }
 
   async findAllUsers({ page, limit }: PaginationDTO) {
     this.logger.log(`Listing users: page=${page}, limit=${limit}`);
 
-    try {
-      const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-      if (skip > 2_147_483_647) {
-        throw new BadRequestException({
-          code: 'PAGINATION_UNSUPPORTED_RANGE',
-          message: 'Requested page exceeds the supported range.',
-        });
-      }
+    if (skip > 2_147_483_647) {
+      this.logger.warn(`Unsupported pagination range: ${skip}`);
 
-      const { users, total } = await this.usersRepository.findAll(skip, limit);
-      this.logger.log(
-        `Listed users: page=${page}, returned=${users.length}, total=${total}`,
-      );
-
-      return {
-        data: users,
-        meta: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
-      };
-    } catch (error) {
-      this.logFailure('List users', error);
-      throw error;
+      throw new BadRequestException({
+        code: 'PAGINATION_UNSUPPORTED_RANGE',
+        message: 'Requested page exceeds the supported range.',
+      });
     }
+
+    const { users, total } = await this.usersRepository.findAll(skip, limit);
+    this.logger.log(
+      `Listed users: page=${page}, returned=${users.length}, total=${total}`,
+    );
+
+    return {
+      data: users,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findOneUser(userId: string) {
     this.logger.log(`Finding user ${userId}`);
 
-    try {
-      const user = await this.usersRepository.findOne(userId);
+    const user = await this.usersRepository.findOne(userId);
 
-      if (user) {
-        this.logger.log(`Found user ${userId}`);
-      } else {
-        this.logger.warn(`User ${userId} not found`);
-      }
+    this.assertUserExists(user);
 
-      return user;
-    } catch (error) {
-      this.logFailure(`Find user ${userId}`, error);
-      throw error;
-    }
+    this.logger.log(`User ${user.user_id} with role ${user.role} found.`);
+
+    return user;
   }
 
   async updateUser(userId: string, dto: UpdateUserDTO) {
     this.logger.log(`Updating user ${userId}`);
 
-    try {
-      const user = await this.findOneUser(userId);
+    const user = await this.findOneUser(userId);
 
-      if (!user) {
-        throw new NotFoundException({
-          code: 'USER_NOT_FOUND',
-          message: 'User not found.',
-        });
-      }
+    this.assertUserExists(user);
 
-      const updated = await this.usersRepository.update(user.user_id, dto);
-      this.logger.log(`Updated user ${userId}`);
-      return updated;
-    } catch (error) {
-      this.logFailure(`Update user ${userId}`, error);
-      throw error;
-    }
+    const updated = await this.usersRepository.update(user.user_id, dto);
+    this.logger.log(`Updated user ${userId}`);
+    return updated;
   }
 
   async deleteUser(userId: string) {
     this.logger.log(`Deactivating user ${userId}`);
 
-    try {
-      const user = await this.findOneUser(userId);
+    const user = await this.findOneUser(userId);
 
-      if (!user) {
-        throw new NotFoundException({
-          code: 'USER_NOT_FOUND',
-          message: 'User not found.',
-        });
-      }
+    this.assertUserExists(user);
 
-      const deleted = await this.usersRepository.delete(user.user_id);
-      this.logger.log(`Deactivated user ${userId}`);
-      return deleted;
-    } catch (error) {
-      this.logFailure(`Deactivate user ${userId}`, error);
-      throw error;
-    }
+    const deleted = await this.usersRepository.delete(user.user_id);
+    this.logger.log(`Deactivated user ${userId}`);
+    return deleted;
   }
 
-  private logFailure(operation: string, error: unknown): void {
-    if (error instanceof HttpException && error.getStatus() < 500) {
-      this.logger.warn(`${operation} failed (HTTP ${error.getStatus()})`);
-      return;
+  private assertUserExists<T>(
+    user: T | null | undefined,
+  ): asserts user is NonNullable<T> {
+    if (user == null) {
+      throw new NotFoundException({
+        code: 'USER_NOT_FOUND',
+        message: 'User not found.',
+      });
     }
-
-    const errorType =
-      error instanceof Prisma.PrismaClientKnownRequestError
-        ? `${error.name}, code=${error.code}`
-        : error instanceof Error
-          ? error.name
-          : 'UnknownError';
-
-    this.logger.error(`${operation} failed (${errorType})`);
   }
 }
