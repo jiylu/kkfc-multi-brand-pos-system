@@ -13,7 +13,7 @@ export function assertExists<T>(
         .replace(/\s+/g, '_')
         .toUpperCase();
 
-      logger?.warn(`${entity} with id ${} not found`);
+      logger?.warn(`${entity} with id ${id} not found`);
       throw new NotFoundException({
         code: `${code}_NOT_FOUND`,
         message: `${entity} not found.`,
