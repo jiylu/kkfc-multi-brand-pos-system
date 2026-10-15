@@ -13,7 +13,7 @@ import { UserRole } from '@prisma/client';
 import { UsersService } from './users.service';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
-import { PaginationDTO } from '../../shared/dto/pagination.dto';
+import { FindUsersDTO } from './dto/find-users.dto';
 import { Authenticated } from '../auth/auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
@@ -40,7 +40,7 @@ export class UsersController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
-  async findAll(@Query() query: PaginationDTO) {
+  async findAll(@Query() query: FindUsersDTO) {
     return this.usersService.findAllUsers(query);
   }
 

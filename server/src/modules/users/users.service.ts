@@ -9,7 +9,7 @@ import { Prisma } from '@prisma/client';
 import { UsersRepository } from './users.repository';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
-import { PaginationDTO } from '../../shared/dto/pagination.dto';
+import { FindUsersDTO } from './dto/find-users.dto';
 
 @Injectable()
 export class UsersService {
@@ -30,8 +30,10 @@ export class UsersService {
     }
   }
 
-  async findAllUsers({ page, limit }: PaginationDTO) {
-    this.logger.log(`Listing users: page=${page}, limit=${limit}`);
+  async findAllUsers({ page, limit, activeOnly }: FindUsersDTO) {
+    this.logger.log(
+      `Listing users: page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
+    );
 
     try {
       const skip = (page - 1) * limit;
@@ -43,7 +45,11 @@ export class UsersService {
         });
       }
 
-      const { users, total } = await this.usersRepository.findAll(skip, limit);
+      const { users, total } = await this.usersRepository.findAll(
+        skip,
+        limit,
+        activeOnly,
+      );
       this.logger.log(
         `Listed users: page=${page}, returned=${users.length}, total=${total}`,
       );

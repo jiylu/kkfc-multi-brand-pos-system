@@ -57,6 +57,7 @@ export class AuthService {
       expires_at,
     });
     const user = await this.usersRepository.findOne(credentials.user_id);
+
     if (!user) {
       await this.deleteSession(session.session_id);
       throw new UnauthorizedException({

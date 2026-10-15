@@ -24,8 +24,10 @@ export class UsersRepository {
     });
   }
 
-  async findAll(skip: number, take: number) {
-    const where: Prisma.UserWhereInput = { is_active: true };
+  async findAll(skip: number, take: number, activeOnly = true) {
+    const where: Prisma.UserWhereInput = {
+      is_active: activeOnly ? true : undefined,
+    };
 
     const [users, total] = await this.prisma.$transaction(
       [
@@ -67,25 +69,17 @@ export class UsersRepository {
   }
 
   async update(userId: string, dto: UpdateUserDTO) {
-    const data: Prisma.UserUpdateInput = {
-      modified_at: new Date(),
-    };
-
-    if (dto.first_name !== undefined) {
-      data.first_name = dto.first_name;
-    }
-
-    if (dto.last_name !== undefined) {
-      data.last_name = dto.last_name;
-    }
-
-    if (dto.password !== undefined) {
-      data.password_hash = await argon2.hash(dto.password);
-    }
-
     return this.prisma.user.update({
       where: { user_id: userId },
-      data,
+      data: {
+        first_name: dto.first_name,
+        last_name: dto.last_name,
+        password_hash:
+          dto.password !== undefined
+            ? await argon2.hash(dto.password)
+            : undefined,
+        modified_at: new Date(),
+      },
       omit: { password_hash: true },
     });
   }

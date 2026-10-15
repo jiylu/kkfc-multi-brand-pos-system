@@ -159,12 +159,14 @@ Table brands {
 // Maps staff members to the specific brands they are authorized to manage or encode orders for.
 // Supports operational accountability and brand-scoped permissions within the shared kitchen (FR-001, FR-029).
 Table user_brand_assignments {
+  assignment_id uuid [pk]
   user_id uuid [not null, ref: > users.user_id]
   brand_id uuid [not null, ref: > brands.brand_id]
   created_at timestamp [not null, default: `now()`]
   modified_at timestamp [not null, default: `now()`]
+  is_active boolean [not null, default: true]
   indexes {
-    (user_id, brand_id) [pk]
+    (user_id, brand_id) [unique]
   }
 }
 
