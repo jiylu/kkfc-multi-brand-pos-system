@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER } from '@nestjs/core';
+import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { StorageModule } from './shared/storage/storage.module';
 import { UsersModule } from './modules/users/users.module';
@@ -23,6 +25,6 @@ import { BrandsModule } from './modules/brands/brands.module';
     BrandsModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
 })
 export class AppModule {}
