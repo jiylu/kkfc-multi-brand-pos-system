@@ -3,7 +3,7 @@ import { BrandsRepository } from './brands.repository';
 import { UsersRepository } from '../users/users.repository';
 import { CreateBrandDTO } from './dto/create-brand.dto';
 import { assertExists } from '../../shared/assertions/assert-exists';
-import { Brand, User } from '@prisma/client';
+import { Brand, Prisma, User } from '@prisma/client';
 
 @Injectable()
 export class BrandsService {
@@ -50,14 +50,28 @@ export class BrandsService {
 
     this.logger.debug(`Assigning ${user.user_id} to brand ${brand.brand_id}`);
 
-    const brandAssignment = this.brandsRepository.assignUser(
-      user.user_id,
-      brand.brand_id,
-    );
+    try {
+      const brandAssignment = await this.brandsRepository.assignUser(
+        user.user_id,
+        brand.brand_id,
+      );
 
-    this.logger.log(`Assigned ${user.user_id} to brand ${brand.brand_id}`);
+      this.logger.log(`Assigned ${user.user_id} to brand ${brand.brand_id}`);
 
-    return brandAssignment;
+      return brandAssignment;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException({
+          code: 'USER_ALREADY_ASSIGNED',
+          message: 'User already assigned to this brand.',
+        });
+      }
+
+      throw error;
+    }
   }
 
   private async handleExistingBrandAssignment(
@@ -94,13 +108,27 @@ export class BrandsService {
 
     this.logger.debug(`Reactivating assignment to ${brand.brand_id}`);
 
-    const reactivatedBrandAssignment =
-      this.brandsRepository.reactivateBrandAssignment(assignmentId);
+    try {
+      const reactivatedBrandAssignment =
+        await this.brandsRepository.reactivateBrandAssignment(assignmentId);
 
-    this.logger.log(
-      `Reactivated assignment ${assignmentId} for user ${user.user_id} for brand ${brand.brand_id}`,
-    );
+      this.logger.log(
+        `Reactivated assignment ${assignmentId} for user ${user.user_id} for brand ${brand.brand_id}`,
+      );
 
-    return reactivatedBrandAssignment;
+      return reactivatedBrandAssignment;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new ConflictException({
+          code: 'BRAND_ASSIGNMENT_CHANGED',
+          message: 'Assignment is already active or no longer exists.',
+        });
+      }
+
+      throw error;
+    }
   }
 }

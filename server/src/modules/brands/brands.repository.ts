@@ -146,8 +146,12 @@ export class BrandsRepository {
     return tx.userBrandAssignment.update({
       where: {
         assignment_id: assignmentId,
+        is_active: false,
       },
-      data: { is_active: true },
+      data: {
+        is_active: true,
+        modified_at: new Date(),
+      },
     });
   }
 
@@ -157,7 +161,10 @@ export class BrandsRepository {
   ) {
     return tx.brand.update({
       where: { brand_id: brandId },
-      data: { is_active: false },
+      data: {
+        is_active: false,
+        modified_at: new Date(),
+      },
     });
   }
 
@@ -167,7 +174,10 @@ export class BrandsRepository {
   ) {
     return tx.userBrandAssignment.update({
       where: { assignment_id: assignmentId },
-      data: { is_active: false },
+      data: {
+        is_active: false,
+        modified_at: new Date(),
+      },
     });
   }
 }
