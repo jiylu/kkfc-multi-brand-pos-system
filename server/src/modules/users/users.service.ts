@@ -1,9 +1,11 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { UsersRepository } from './users.repository';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
@@ -16,17 +18,29 @@ export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
   async createUser(dto: CreateUserDTO) {
-    this.logger.log(
-      `Creating ${dto.role} user ${dto.first_name} ${dto.password} `,
-    );
+    this.logger.log(`Creating ${dto.role} user ${dto.first_name}`);
 
-    const user = await this.usersRepository.create(dto);
+    try {
+      const user = await this.usersRepository.create(dto);
 
-    this.logger.log(`
-      Created new user with role: ${user.role} with user_id: ${user.user_id}
-    `);
+      this.logger.log(`
+        Created new user with role: ${user.role} with user_id: ${user.user_id}
+      `);
 
-    return user;
+      return user;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException({
+          code: 'USERNAME_ALREADY_EXISTS',
+          message: 'Username already exists.',
+        });
+      }
+
+      throw error;
+    }
   }
 
   async findAllUsers({ page, limit, activeOnly }: FindUsersDTO) {
@@ -85,9 +99,23 @@ export class UsersService {
 
     this.assertUserExists(user);
 
-    const updated = await this.usersRepository.update(user.user_id, dto);
-    this.logger.log(`Updated user ${userId}`);
-    return updated;
+    try {
+      const updated = await this.usersRepository.update(user.user_id, dto);
+      this.logger.log(`Updated user ${userId}`);
+      return updated;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException({
+          code: 'USER_NOT_FOUND',
+          message: 'User not found.',
+        });
+      }
+
+      throw error;
+    }
   }
 
   async deleteUser(userId: string) {

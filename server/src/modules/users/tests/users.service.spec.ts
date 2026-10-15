@@ -1,9 +1,10 @@
 import { Logger } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { CreateUserDTO } from '../dto/create-user.dto';
 import { FindUsersDTO } from '../dto/find-users.dto';
 import { UsersRepository } from '../users.repository';
 import { UsersService } from '../users.service';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
 
 describe('UsersService', () => {
   const user = {
@@ -31,9 +32,10 @@ describe('UsersService', () => {
     >
   >;
   let service: UsersService;
+  let log: jest.SpyInstance;
 
   beforeEach(() => {
-    jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
     jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     repository = {
       create: jest.fn().mockResolvedValue(user),
@@ -51,6 +53,42 @@ describe('UsersService', () => {
     await expect(service.createUser(createDTO)).resolves.toEqual(user);
     expect(repository.create).toHaveBeenCalledWith(createDTO);
   });
+
+  it('returns a conflict when the username is already taken', async () => {
+    repository.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: '7.8.0',
+      }),
+    );
+
+    await expect(service.createUser(createDTO)).rejects.toMatchObject({
+      status: 409,
+      response: {
+        code: 'USERNAME_ALREADY_EXISTS',
+        message: 'Username already exists.',
+      },
+    });
+    expect(log).not.toHaveBeenCalledWith(
+      expect.stringContaining('Created new user'),
+    );
+  });
+
+  it.each(['P1001', 'P2003'])(
+    'propagates unrelated create failures: %s',
+    async (code) => {
+      const error = new Prisma.PrismaClientKnownRequestError(
+        'Database request failed',
+        {
+          code,
+          clientVersion: '7.8.0',
+        },
+      );
+      repository.create.mockRejectedValue(error);
+
+      await expect(service.createUser(createDTO)).rejects.toBe(error);
+    },
+  );
 
   it.each([true, false])(
     'returns pagination metadata and forwards activeOnly=%s',
@@ -127,6 +165,71 @@ describe('UsersService', () => {
     });
     expect(repository.findOne).toHaveBeenCalledWith(user.user_id);
     expect(repository.update).toHaveBeenCalledWith(user.user_id, dto);
+  });
+
+  it('rejects an update if the user is deactivated after the lookup', async () => {
+    const stored = { ...user };
+    const update = jest.fn(
+      ({
+        where,
+        data,
+      }: {
+        where: { user_id: string; is_active?: boolean };
+        data: { first_name?: string };
+      }) => {
+        if (
+          where.user_id !== stored.user_id ||
+          (where.is_active !== undefined &&
+            where.is_active !== stored.is_active)
+        ) {
+          return Promise.reject(
+            new Prisma.PrismaClientKnownRequestError('No matching user', {
+              code: 'P2025',
+              clientVersion: '7.8.0',
+            }),
+          );
+        }
+        if (data.first_name !== undefined) stored.first_name = data.first_name;
+        return Promise.resolve({ ...stored });
+      },
+    );
+    const repository = new UsersRepository({
+      user: {
+        findUnique: jest.fn(() => {
+          const snapshot = { ...stored };
+          stored.is_active = false;
+          return Promise.resolve(snapshot);
+        }),
+        update,
+      },
+    } as unknown as PrismaService);
+    const service = new UsersService(repository);
+
+    await expect(
+      service.updateUser(user.user_id, { first_name: 'Updated' }),
+    ).rejects.toMatchObject({
+      status: 404,
+      response: { code: 'USER_NOT_FOUND', message: 'User not found.' },
+    });
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(stored.first_name).toBe(user.first_name);
+    expect(stored.is_active).toBe(false);
+    expect(log).not.toHaveBeenCalledWith(`Updated user ${user.user_id}`);
+  });
+
+  it('propagates unrelated Prisma update failures', async () => {
+    const error = new Prisma.PrismaClientKnownRequestError(
+      'Database unavailable',
+      {
+        code: 'P1001',
+        clientVersion: '7.8.0',
+      },
+    );
+    repository.update.mockRejectedValue(error);
+
+    await expect(
+      service.updateUser(user.user_id, { first_name: 'Updated' }),
+    ).rejects.toBe(error);
   });
 
   it('deactivates an existing user', async () => {
