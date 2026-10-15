@@ -55,9 +55,17 @@ describe('Auth HTTP endpoints', () => {
       );
     const listingRepository = new UsersRepository({
       user: {
-        findMany: ({ where, skip, take }) =>
-          Promise.resolve(matchingUsers(where).slice(skip, skip + take)),
-        count: ({ where }) => Promise.resolve(matchingUsers(where).length),
+        findMany: ({
+          where,
+          skip,
+          take,
+        }: {
+          where: { is_active?: boolean };
+          skip: number;
+          take: number;
+        }) => Promise.resolve(matchingUsers(where).slice(skip, skip + take)),
+        count: ({ where }: { where: { is_active?: boolean } }) =>
+          Promise.resolve(matchingUsers(where).length),
       },
       $transaction: (queries: Promise<unknown>[]) => Promise.all(queries),
     } as unknown as PrismaService);
@@ -80,7 +88,10 @@ describe('Auth HTTP endpoints', () => {
           const user = users.get(userId);
           return Promise.resolve(user?.is_active ? user : null);
         }),
-        findAll: jest.fn(listingRepository.findAll.bind(listingRepository)),
+        findAll: jest.fn(
+          (skip: number, take: number, activeOnly: boolean = true) =>
+            listingRepository.findAll(skip, take, activeOnly),
+        ),
       })
       .overrideProvider(AuthRepository)
       .useValue({

@@ -43,7 +43,12 @@ export class UsersService {
       });
     }
 
-    const { users, total } = await this.usersRepository.findAll(skip, limit);
+    const { users, total } = await this.usersRepository.findAll(
+      skip,
+      limit,
+      activeOnly,
+    );
+
     this.logger.log(
       `Listed users: page=${page}, returned=${users.length}, total=${total}`,
     );
