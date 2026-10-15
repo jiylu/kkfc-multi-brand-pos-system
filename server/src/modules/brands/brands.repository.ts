@@ -8,14 +8,21 @@ import { UpdateBrandDTO } from './dto/update-brand.dto';
 export class BrandsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createBrand(dto: CreateBrandDTO) {
-    return this.prisma.brand.create({
+  async createBrand(
+    dto: CreateBrandDTO,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.brand.create({
       data: dto,
     });
   }
 
-  async assignUser(userId: string, brandId: string) {
-    return this.prisma.userBrandAssignment.create({
+  async assignUser(
+    userId: string,
+    brandId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.userBrandAssignment.create({
       data: {
         user_id: userId,
         brand_id: brandId,
@@ -23,37 +30,49 @@ export class BrandsRepository {
     });
   }
 
-  async findOneBrand(brandId: string) {
-    return this.prisma.brand.findUnique({
+  async findOneBrand(
+    brandId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.brand.findUnique({
       where: { brand_id: brandId },
     });
   }
 
-  async findAllBrands(skip: number, take: number, activeOnly = true) {
+  async findAllBrands(
+    skip: number,
+    take: number,
+    activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
     const where: Prisma.BrandWhereInput = {
       is_active: activeOnly ? true : undefined,
     };
 
-    const [brands, total] = await this.prisma.$transaction(
-      [
-        this.prisma.brand.findMany({
-          where,
-          skip,
-          take,
-          orderBy: [{ created_at: 'desc' }, { brand_id: 'asc' }],
-        }),
-        this.prisma.brand.count({ where }),
-      ],
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
-      },
-    );
+    const brandsQuery = tx.brand.findMany({
+      where,
+      skip,
+      take,
+      orderBy: [{ created_at: 'desc' }, { brand_id: 'asc' }],
+    });
+    const totalQuery = tx.brand.count({ where });
+
+    const [brands, total] =
+      '$transaction' in tx
+        ? await tx.$transaction([brandsQuery, totalQuery], {
+            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+          })
+        : await Promise.all([brandsQuery, totalQuery]);
 
     return { brands, total };
   }
 
-  async findAssignmentIdByBrandAssignment(userId: string, brandId: string) {
-    return this.prisma.userBrandAssignment.findFirst({
+  async findAssignmentIdByBrandAssignment(
+    userId: string,
+    brandId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<{ assignment_id: string } | null> {
+    return tx.userBrandAssignment.findFirst({
       where: {
         user_id: userId,
         brand_id: brandId,
@@ -62,8 +81,12 @@ export class BrandsRepository {
     });
   }
 
-  async findOneBrandAssignment(assignmentId: string, activeOnly = true) {
-    return this.prisma.userBrandAssignment.findUnique({
+  async findOneBrandAssignment(
+    assignmentId: string,
+    activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.userBrandAssignment.findUnique({
       where: {
         assignment_id: assignmentId,
         is_active: activeOnly ? true : undefined,
@@ -76,32 +99,37 @@ export class BrandsRepository {
     skip: number,
     take: number,
     activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     const where: Prisma.UserBrandAssignmentWhereInput = {
       user_id: userId,
       is_active: activeOnly ? true : undefined,
     };
 
-    const [brandAssignments, total] = await this.prisma.$transaction(
-      [
-        this.prisma.userBrandAssignment.findMany({
-          where,
-          skip,
-          take,
-          orderBy: { created_at: 'desc' },
-        }),
-        this.prisma.userBrandAssignment.count({ where }),
-      ],
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
-      },
-    );
+    const assignmentsQuery = tx.userBrandAssignment.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { created_at: 'desc' },
+    });
+    const totalQuery = tx.userBrandAssignment.count({ where });
+
+    const [brandAssignments, total] =
+      '$transaction' in tx
+        ? await tx.$transaction([assignmentsQuery, totalQuery], {
+            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+          })
+        : await Promise.all([assignmentsQuery, totalQuery]);
 
     return { brandAssignments, total };
   }
 
-  async updateBrand(brandId: string, dto: UpdateBrandDTO) {
-    return this.prisma.brand.update({
+  async updateBrand(
+    brandId: string,
+    dto: UpdateBrandDTO,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.brand.update({
       where: { brand_id: brandId },
       data: {
         name: dto.name,
@@ -111,8 +139,11 @@ export class BrandsRepository {
     });
   }
 
-  async reactivateBrandAssignment(assignmentId: string) {
-    return this.prisma.userBrandAssignment.update({
+  async reactivateBrandAssignment(
+    assignmentId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.userBrandAssignment.update({
       where: {
         assignment_id: assignmentId,
       },
@@ -120,15 +151,21 @@ export class BrandsRepository {
     });
   }
 
-  async deleteBrand(brandId: string) {
-    return this.prisma.brand.update({
+  async deleteBrand(
+    brandId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.brand.update({
       where: { brand_id: brandId },
       data: { is_active: false },
     });
   }
 
-  async deactivateAssignment(assignmentId: string) {
-    return this.prisma.userBrandAssignment.update({
+  async deactivateAssignment(
+    assignmentId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.userBrandAssignment.update({
       where: { assignment_id: assignmentId },
       data: { is_active: false },
     });

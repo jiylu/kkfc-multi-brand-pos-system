@@ -9,11 +9,14 @@ import * as argon2 from 'argon2';
 export class UsersRepository {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateUserDTO) {
+  async create(
+    dto: CreateUserDTO,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
     const { password, ...userData } = dto;
     const passwordHash = await argon2.hash(password);
 
-    return this.prisma.user.create({
+    return tx.user.create({
       data: {
         ...userData,
         password_hash: passwordHash,
@@ -24,32 +27,40 @@ export class UsersRepository {
     });
   }
 
-  async findAll(skip: number, take: number, activeOnly = true) {
+  async findAll(
+    skip: number,
+    take: number,
+    activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
     const where: Prisma.UserWhereInput = {
       is_active: activeOnly ? true : undefined,
     };
 
-    const [users, total] = await this.prisma.$transaction(
-      [
-        this.prisma.user.findMany({
-          where,
-          skip,
-          take,
-          orderBy: [{ created_at: 'desc' }, { user_id: 'asc' }],
-          omit: { password_hash: true },
-        }),
-        this.prisma.user.count({ where }),
-      ],
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
-      },
-    );
+    const usersQuery = tx.user.findMany({
+      where,
+      skip,
+      take,
+      orderBy: [{ created_at: 'desc' }, { user_id: 'asc' }],
+      omit: { password_hash: true },
+    });
+    const totalQuery = tx.user.count({ where });
+
+    const [users, total] =
+      '$transaction' in tx
+        ? await tx.$transaction([usersQuery, totalQuery], {
+            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+          })
+        : await Promise.all([usersQuery, totalQuery]);
 
     return { users, total };
   }
 
-  async findOne(userId: string) {
-    return this.prisma.user.findUnique({
+  async findOne(
+    userId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.user.findUnique({
       where: {
         user_id: userId,
         is_active: true,
@@ -61,15 +72,22 @@ export class UsersRepository {
     });
   }
 
-  async findByUsername(username: string) {
-    return this.prisma.user.findUnique({
+  async findByUsername(
+    username: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.user.findUnique({
       where: { username, is_active: true },
       select: { user_id: true, password_hash: true },
     });
   }
 
-  async update(userId: string, dto: UpdateUserDTO) {
-    return this.prisma.user.update({
+  async update(
+    userId: string,
+    dto: UpdateUserDTO,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.user.update({
       where: { user_id: userId },
       data: {
         first_name: dto.first_name,
@@ -84,8 +102,11 @@ export class UsersRepository {
     });
   }
 
-  async delete(userId: string) {
-    return this.prisma.user.update({
+  async delete(
+    userId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.user.update({
       where: { user_id: userId },
       data: { is_active: false },
       omit: { password_hash: true },
