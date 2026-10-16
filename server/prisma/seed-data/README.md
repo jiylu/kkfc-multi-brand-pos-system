@@ -46,14 +46,14 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 | Inactive item, not orderable (#19) | `{"menu_item_code":"GC-MANGO-BINGSU"}` |
 | Item with no modifiers (#19) | `{"menu_item_codes":["AI-HALO-HALO","KK-UBE-CHEESE-PANDESAL-3-PC"]}` |
 | Removal modifiers shown as NO in the kitchen | `{"modifier_codes":["MOD-NO-ONIONS","MOD-NO-MAYO"]}` |
-| Demo step 1 and 2 (#GF-1001, duplicate) | `{"brand_code":"GC","order_channel":"GRABFOOD","merchant_store_reference":"GC-GRAB-JARO","external_order_reference":"GF-1001","lines":[{"menu_item_code":"GC-KOREAN-FRIED-CHICKEN-6-PC","quantity":1,"modifier_codes":["MOD-EXTRA-SIDE-SAUCE"]}],"payment_method":"PLATFORM_SETTLED (needs #86)","payment_status":"PAID"}` |
+| Demo step 1 and 2 (#GF-1001, duplicate) | `{"brand_code":"GC","order_channel":"GRABFOOD","merchant_store_reference":"GC-GRAB-JARO","external_order_reference":"GF-1001","lines":[{"menu_item_code":"GC-KOREAN-FRIED-CHICKEN-6-PC","quantity":1,"modifier_codes":["MOD-EXTRA-SIDE-SAUCE"]}],"payment_method":"PLATFORM_SETTLED","payment_status":"PAID"}` |
 | Demo step 3 QC fail | `{"reason":"Missing side sauce","menu_item_code":"GC-KOREAN-FRIED-CHICKEN-6-PC","note":"The recipe includes yangnyeom side sauce"}` |
 | Demo step 4 recipe access | `{"recipe_code":"RCP-AI-PAA-INASAL","note":"STAFF gets 403 on instructions; OWNER sees them"}` |
 
 ## For the seed script (#31)
 
 - Rows refer to each other by `code`; the seed creates UUIDs and resolves codes.
-- `brands.code` needs #84; PLATFORM_SETTLED in the demo order needs #86.
+- `brands.code` needs #84.
 - `logo_url` uses `images.example.invalid` on purpose: it never loads, so the app shows its missing-photo fallback.
 - `quantity_on_hand` stays 0 (no stock movements in Sprint 1).
 - Packaging items are listed for Sprint 2 receiving; recipes don't consume them yet.

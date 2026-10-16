@@ -2006,7 +2006,7 @@
           ]
         }
       ],
-      "payment_method": "PLATFORM_SETTLED (needs #86)",
+      "payment_method": "PLATFORM_SETTLED",
       "payment_status": "PAID"
     },
     "Demo step 3 QC fail": {
