@@ -6,6 +6,6 @@ export class FindUsersDTO extends PaginationDTO {
   @Transform(({ value }: { value: unknown }) =>
     value === 'true' ? true : value === 'false' ? false : value,
   )
-  @IsBoolean()
+  @IsBoolean({ message: 'activeOnly must be true or false.' })
   activeOnly: boolean = true;
 }

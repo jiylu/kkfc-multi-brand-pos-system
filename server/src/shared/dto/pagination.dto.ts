@@ -3,14 +3,14 @@ import { IsInt, Max, Min } from 'class-validator';
 
 export class PaginationDTO {
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(2_147_483_647)
+  @IsInt({ message: 'Page must be an integer.' })
+  @Min(1, { message: 'Page must be at least 1.' })
+  @Max(2_147_483_647, { message: 'Page must be at most 2_147_483_647.' })
   page: number = 1;
 
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
+  @IsInt({ message: 'Limit must be an integer.' })
+  @Min(1, { message: 'Limit must be at least 1.' })
+  @Max(100, { message: 'Limit must be at most 100.' })
   limit: number = 10;
 }

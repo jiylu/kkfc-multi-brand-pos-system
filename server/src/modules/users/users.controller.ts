@@ -6,6 +6,7 @@ import {
   Get,
   Param,
   ParseBoolPipe,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -35,7 +36,10 @@ export class UsersController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
-  async update(@Param('id') id: string, @Body() dto: UpdateUserDTO) {
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserDTO,
+  ) {
     return this.usersService.updateUser(id, dto);
   }
 
@@ -50,7 +54,7 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
   async findOne(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Query('activeOnly', new DefaultValuePipe(true), ParseBoolPipe)
     activeOnly: boolean,
   ) {
@@ -60,7 +64,7 @@ export class UsersController {
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.deleteUser(id);
   }
 }
