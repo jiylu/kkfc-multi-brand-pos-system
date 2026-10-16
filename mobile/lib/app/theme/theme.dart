@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'color_schemes.dart';
 import 'semantic_colors.dart';
 import 'status_colors.dart';
+import 'typography.dart';
 import 'tokens.dart';
 
 ThemeData _buildTheme(ColorScheme scheme, KkfcSemanticColors semantic, KkfcStatusColors status) {
@@ -14,6 +15,7 @@ ThemeData _buildTheme(ColorScheme scheme, KkfcSemanticColors semantic, KkfcStatu
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
+    textTheme: kkfcTextTheme,
     scaffoldBackgroundColor: semantic.bgCanvas,
     extensions: [semantic, status],
     inputDecorationTheme: InputDecorationTheme(
