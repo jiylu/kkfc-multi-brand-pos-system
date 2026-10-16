@@ -32,10 +32,14 @@ export class BrandsRepository {
 
   async findOneBrand(
     brandId: string,
+    activeOnly = true,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.brand.findUnique({
-      where: { brand_id: brandId },
+      where: {
+        brand_id: brandId,
+        is_active: activeOnly ? true : undefined,
+      },
     });
   }
 
@@ -67,17 +71,18 @@ export class BrandsRepository {
     return { brands, total };
   }
 
-  async findAssignmentIdByBrandAssignment(
+  async findAssignmentByUserAndBrand(
     userId: string,
     brandId: string,
+    activeOnly = true,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ): Promise<{ assignment_id: string } | null> {
+  ) {
     return tx.userBrandAssignment.findFirst({
       where: {
         user_id: userId,
         brand_id: brandId,
+        is_active: activeOnly ? true : undefined,
       },
-      select: { assignment_id: true },
     });
   }
 
@@ -130,7 +135,10 @@ export class BrandsRepository {
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.brand.update({
-      where: { brand_id: brandId },
+      where: {
+        brand_id: brandId,
+        is_active: true,
+      },
       data: {
         name: dto.name,
         logo_url: dto.logo_url,
@@ -160,7 +168,10 @@ export class BrandsRepository {
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.brand.update({
-      where: { brand_id: brandId },
+      where: {
+        brand_id: brandId,
+        is_active: true,
+      },
       data: {
         is_active: false,
         modified_at: new Date(),

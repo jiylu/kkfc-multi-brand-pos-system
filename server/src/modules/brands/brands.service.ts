@@ -1,9 +1,17 @@
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { BrandsRepository } from './brands.repository';
 import { UsersRepository } from '../users/users.repository';
 import { CreateBrandDTO } from './dto/create-brand.dto';
+import { UpdateBrandDTO } from './dto/update-brand.dto';
 import { assertExists } from '../../shared/assertions/assert-exists';
-import { Brand, Prisma, User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { FindBrandsDTO } from './dto/find-brands.dto';
+import { assertValidPagination } from '../../shared/assertions/assert-valid-pagination';
 
 @Injectable()
 export class BrandsService {
@@ -35,17 +43,21 @@ export class BrandsService {
     assertExists(brand, 'Brand', brandId, this.logger);
 
     const existingBrandAssignment =
-      await this.brandsRepository.findAssignmentIdByBrandAssignment(
+      await this.brandsRepository.findAssignmentByUserAndBrand(
         user.user_id,
         brand.brand_id,
+        false,
       );
 
     if (existingBrandAssignment) {
-      return await this.handleExistingBrandAssignment(
-        user,
-        brand,
-        existingBrandAssignment.assignment_id,
+      this.logger.warn(
+        `User ${user.user_id} has an assignment to brand ${brand.brand_id}`,
       );
+
+      throw new ConflictException({
+        code: 'EXISTING_ASSIGNMENT_FOUND',
+        message: 'User already has an existing assignment to this brand.',
+      });
     }
 
     this.logger.debug(`Assigning ${user.user_id} to brand ${brand.brand_id}`);
@@ -74,46 +86,205 @@ export class BrandsService {
     }
   }
 
-  private async handleExistingBrandAssignment(
-    user: Omit<User, 'password_hash'>,
-    brand: Brand,
-    assignmentId: string,
+  async findOneBrand(brandId: string) {
+    this.logger.debug(`Finding brand with brandId ${brandId}`);
+
+    const brand = await this.brandsRepository.findOneBrand(brandId);
+
+    assertExists(brand, 'Brand', brandId, this.logger);
+
+    this.logger.log(`Brand with brandId ${brand.brand_id} found`);
+    return brand;
+  }
+
+  async findOneBrandAssignmentById(assignmentId: string, activeOnly = true) {
+    this.logger.debug(`Finding brand assignment with id ${assignmentId}`);
+
+    const brandAssignment = await this.brandsRepository.findOneBrandAssignment(
+      assignmentId,
+      activeOnly,
+    );
+
+    assertExists(brandAssignment, 'BrandAssignment', assignmentId, this.logger);
+
+    this.logger.log(
+      `Found brand assignment with id ${brandAssignment.assignment_id}`,
+    );
+
+    return brandAssignment;
+  }
+
+  async findAssignmentByUserAndBrand(
+    userId: string,
+    brandId: string,
+    activeOnly = true,
   ) {
+    this.logger.debug(
+      `Finding brand assignment for user ${userId}, brandId: ${brandId}, activeOnly filter=${activeOnly}`,
+    );
+
+    const brandAssignment =
+      await this.brandsRepository.findAssignmentByUserAndBrand(
+        userId,
+        brandId,
+        activeOnly,
+      );
+
+    if (!brandAssignment) {
+      this.logger.warn(
+        `Brand assignment with ${userId}, ${brandId} not found.`,
+      );
+
+      throw new NotFoundException({
+        code: 'BRAND_ASSIGNMENT_NOT_FOUND',
+        message: 'Brand assignment not found.',
+      });
+    }
+
+    this.logger.log(
+      `Found brand assignment ${brandAssignment.assignment_id} for user ${userId}, brand ${brandId}, active: ${brandAssignment.is_active}`,
+    );
+
+    return brandAssignment;
+  }
+
+  async findAllBrandAssignmentsForUser(
+    userId: string,
+    { page, limit, activeOnly }: FindBrandsDTO,
+  ) {
+    this.logger.log(
+      `Listing brand assignments for user ${userId}: page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
+    );
+
+    const skip = (page - 1) * limit;
+
+    assertValidPagination(skip, this.logger);
+
+    const user = await this.usersRepository.findOne(userId, false);
+
+    assertExists(user, 'User', userId, this.logger);
+
+    const { brandAssignments, total } =
+      await this.brandsRepository.findAllBrandAssignmentsForUser(
+        user.user_id,
+        skip,
+        limit,
+        activeOnly,
+      );
+
+    this.logger.log(
+      `Listed brand assignments for user ${userId}: page=${page}, returned=${brandAssignments.length}, total=${total}`,
+    );
+
+    return {
+      data: brandAssignments,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findAllBrands({ page, limit, activeOnly }: FindBrandsDTO) {
+    this.logger.log(
+      `Listing brands: page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
+    );
+
+    const skip = (page - 1) * limit;
+
+    assertValidPagination(skip, this.logger);
+
+    const { brands, total } = await this.brandsRepository.findAllBrands(
+      skip,
+      limit,
+      activeOnly,
+    );
+
+    this.logger.log(
+      `Listed brands: page=${page}, returned=${brands.length}, total=${total}`,
+    );
+
+    return {
+      data: brands,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async updateBrand(brandId: string, dto: UpdateBrandDTO) {
+    this.logger.log(`Updating brand ${brandId}`);
+
+    const brand = await this.brandsRepository.findOneBrand(brandId);
+
+    assertExists(brand, 'Brand', brandId, this.logger);
+
+    try {
+      const updatedBrand = await this.brandsRepository.updateBrand(
+        brand.brand_id,
+        dto,
+      );
+
+      this.logger.log(`Updated brand ${updatedBrand.brand_id}`);
+
+      return updatedBrand;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        this.logger.warn(
+          `Brand ${brandId} is no longer active or no longer exists.`,
+        );
+
+        throw new NotFoundException({
+          code: 'BRAND_NOT_FOUND',
+          message: 'Brand not found.',
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  async reactivateBrandAssignment(assignmentId: string) {
+    this.logger.log(`Reactivating brand assignment ${assignmentId}`);
+
     const brandAssignment = await this.brandsRepository.findOneBrandAssignment(
       assignmentId,
       false,
     );
 
-    assertExists(
-      brandAssignment,
-      'UserBrandAssignment',
-      assignmentId,
-      this.logger,
+    assertExists(brandAssignment, 'BrandAssignment', assignmentId, this.logger);
+
+    const user = await this.usersRepository.findOne(brandAssignment.user_id);
+    const brand = await this.brandsRepository.findOneBrand(
+      brandAssignment.brand_id,
     );
 
-    this.logger.debug(
-      `Checking brand assignment conflict for user ${user.user_id} and brand ${brand.brand_id}`,
-    );
+    assertExists(user, 'User', brandAssignment.user_id, this.logger);
+    assertExists(brand, 'Brand', brandAssignment.brand_id, this.logger);
 
     if (brandAssignment.is_active) {
-      this.logger.warn(
-        `User ${user.user_id} is already assigned to brand ${brand.brand_id}`,
-      );
+      this.logger.warn(`Brand assignment ${assignmentId} is already active.`);
 
       throw new ConflictException({
-        code: 'USER_ALREADY_ASSIGNED',
-        message: 'User already assigned to this brand.',
+        code: 'BRAND_ASSIGNMENT_ALREADY_ACTIVE',
+        message: 'Brand assignment is already active.',
       });
     }
-
-    this.logger.debug(`Reactivating assignment to ${brand.brand_id}`);
 
     try {
       const reactivatedBrandAssignment =
         await this.brandsRepository.reactivateBrandAssignment(assignmentId);
 
       this.logger.log(
-        `Reactivated assignment ${assignmentId} for user ${user.user_id} for brand ${brand.brand_id}`,
+        `Reactivated brand assignment ${reactivatedBrandAssignment.assignment_id}`,
       );
 
       return reactivatedBrandAssignment;
@@ -122,9 +293,63 @@ export class BrandsService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2025'
       ) {
+        this.logger.warn(
+          `Brand assignment ${assignmentId} changed before reactivation.`,
+        );
+
         throw new ConflictException({
           code: 'BRAND_ASSIGNMENT_CHANGED',
           message: 'Assignment is already active or no longer exists.',
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  async deactivateBrandAssignment(assignmentId: string) {
+    this.logger.debug(`Deactivating brand assignment ${assignmentId}`);
+
+    const brandAssignment =
+      await this.brandsRepository.findOneBrandAssignment(assignmentId);
+
+    assertExists(brandAssignment, 'BrandAssignment', assignmentId, this.logger);
+
+    const deactivatedBrandAssignment =
+      await this.brandsRepository.deactivateAssignment(assignmentId);
+
+    this.logger.log(`Deactivated brand assignment ${assignmentId}`);
+
+    return deactivatedBrandAssignment;
+  }
+
+  async deleteBrand(brandId: string) {
+    this.logger.debug(`Deleting brand ${brandId}`);
+
+    const brand = await this.brandsRepository.findOneBrand(brandId);
+
+    assertExists(brand, 'Brand', brandId, this.logger);
+
+    try {
+      const deletedBrand = await this.brandsRepository.deleteBrand(
+        brand.brand_id,
+      );
+
+      this.logger.log(`Deleted brand ${deletedBrand.brand_id}`);
+
+      return deletedBrand;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        this.logger.warn(
+          `Brand ${brandId} is no longer active or no longer exists.`,
+        );
+
+        throw new NotFoundException({
+          code: 'BRAND_NOT_FOUND',
+          message: 'Brand not found.',
         });
       }
 

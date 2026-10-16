@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   Logger,
@@ -10,6 +9,7 @@ import { UsersRepository } from './users.repository';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import { FindUsersDTO } from './dto/find-users.dto';
+import { assertValidPagination } from '../../shared/assertions/assert-valid-pagination';
 
 @Injectable()
 export class UsersService {
@@ -50,14 +50,7 @@ export class UsersService {
 
     const skip = (page - 1) * limit;
 
-    if (skip > 2_147_483_647) {
-      this.logger.warn(`Unsupported pagination range: ${skip}`);
-
-      throw new BadRequestException({
-        code: 'PAGINATION_UNSUPPORTED_RANGE',
-        message: 'Requested page exceeds the supported range.',
-      });
-    }
+    assertValidPagination(skip, this.logger);
 
     const { users, total } = await this.usersRepository.findAll(
       skip,
@@ -80,10 +73,10 @@ export class UsersService {
     };
   }
 
-  async findOneUser(userId: string) {
+  async findOneUser(userId: string, activeOnly = true) {
     this.logger.log(`Finding user ${userId}`);
 
-    const user = await this.usersRepository.findOne(userId);
+    const user = await this.usersRepository.findOne(userId, activeOnly);
 
     this.assertUserExists(user);
 

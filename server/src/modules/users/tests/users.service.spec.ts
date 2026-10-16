@@ -153,7 +153,17 @@ describe('UsersService', () => {
 
   it('returns an existing user', async () => {
     await expect(service.findOneUser(user.user_id)).resolves.toEqual(user);
-    expect(repository.findOne).toHaveBeenCalledWith(user.user_id);
+    expect(repository.findOne).toHaveBeenCalledWith(user.user_id, true);
+  });
+
+  it('allows explicitly finding an inactive user', async () => {
+    const inactiveUser = { ...user, is_active: false };
+    repository.findOne.mockResolvedValue(inactiveUser);
+
+    await expect(service.findOneUser(user.user_id, false)).resolves.toEqual(
+      inactiveUser,
+    );
+    expect(repository.findOne).toHaveBeenCalledWith(user.user_id, false);
   });
 
   it('updates an existing user with the supplied fields', async () => {
@@ -163,7 +173,7 @@ describe('UsersService', () => {
       ...user,
       first_name: 'Updated',
     });
-    expect(repository.findOne).toHaveBeenCalledWith(user.user_id);
+    expect(repository.findOne).toHaveBeenCalledWith(user.user_id, true);
     expect(repository.update).toHaveBeenCalledWith(user.user_id, dto);
   });
 
@@ -237,7 +247,7 @@ describe('UsersService', () => {
       ...user,
       is_active: false,
     });
-    expect(repository.findOne).toHaveBeenCalledWith(user.user_id);
+    expect(repository.findOne).toHaveBeenCalledWith(user.user_id, true);
     expect(repository.delete).toHaveBeenCalledWith(user.user_id);
   });
 

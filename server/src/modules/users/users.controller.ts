@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   Param,
+  ParseBoolPipe,
   Patch,
   Post,
   Query,
@@ -47,8 +49,12 @@ export class UsersController {
   @Get(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
-  async findOne(@Param('id') id: string) {
-    return this.usersService.findOneUser(id);
+  async findOne(
+    @Param('id') id: string,
+    @Query('activeOnly', new DefaultValuePipe(true), ParseBoolPipe)
+    activeOnly: boolean,
+  ) {
+    return this.usersService.findOneUser(id, activeOnly);
   }
 
   @Delete(':id')

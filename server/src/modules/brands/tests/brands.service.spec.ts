@@ -38,7 +38,7 @@ describe('Brand assignments', () => {
     Pick<
       BrandsRepository,
       | 'findOneBrand'
-      | 'findAssignmentIdByBrandAssignment'
+      | 'findAssignmentByUserAndBrand'
       | 'assignUser'
       | 'findOneBrandAssignment'
       | 'reactivateBrandAssignment'
@@ -62,7 +62,7 @@ describe('Brand assignments', () => {
     users = { findOne: jest.fn().mockResolvedValue(user) };
     brands = {
       findOneBrand: jest.fn().mockResolvedValue(brand),
-      findAssignmentIdByBrandAssignment: jest.fn().mockResolvedValue(null),
+      findAssignmentByUserAndBrand: jest.fn().mockResolvedValue(null),
       assignUser: jest.fn().mockResolvedValue(assignment),
       findOneBrandAssignment: jest.fn().mockResolvedValue({
         ...assignment,
@@ -130,68 +130,120 @@ describe('Brand assignments', () => {
   });
 
   describe('existing assignment', () => {
-    beforeEach(() => {
-      brands.findAssignmentIdByBrandAssignment.mockResolvedValue({
-        assignment_id: assignment.assignment_id,
-      });
-    });
+    it.each([true, false])(
+      'rejects an existing assignment with is_active=%s without creating or reactivating',
+      async (is_active) => {
+        brands.findAssignmentByUserAndBrand.mockResolvedValue({
+          ...assignment,
+          is_active,
+        });
 
-    it('reactivates an inactive assignment instead of inserting a duplicate', async () => {
+        await expect(
+          service.assignUserToBrand(user.user_id, brand.brand_id),
+        ).rejects.toMatchObject({
+          status: 409,
+          response: {
+            code: 'EXISTING_ASSIGNMENT_FOUND',
+            message: 'User already has an existing assignment to this brand.',
+          },
+        });
+        expect(brands.findAssignmentByUserAndBrand).toHaveBeenCalledWith(
+          user.user_id,
+          brand.brand_id,
+          false,
+        );
+        expect(brands.assignUser).not.toHaveBeenCalled();
+        expect(brands.reactivateBrandAssignment).not.toHaveBeenCalled();
+      },
+    );
+
+    it('propagates lookup failures without writing', async () => {
+      const error = new Error('Database unavailable');
+      brands.findAssignmentByUserAndBrand.mockRejectedValue(error);
       await expect(
         service.assignUserToBrand(user.user_id, brand.brand_id),
-      ).resolves.toEqual(assignment);
-      expect(brands.reactivateBrandAssignment).toHaveBeenCalledWith(
-        assignment.assignment_id,
-      );
-      expect(brands.assignUser).not.toHaveBeenCalled();
-    });
-
-    it('rejects an already active assignment without writing', async () => {
-      brands.findOneBrandAssignment.mockResolvedValue(assignment);
-
-      await expect(
-        service.assignUserToBrand(user.user_id, brand.brand_id),
-      ).rejects.toMatchObject({
-        status: 409,
-        response: { code: 'USER_ALREADY_ASSIGNED' },
-      });
+      ).rejects.toBe(error);
       expect(brands.assignUser).not.toHaveBeenCalled();
       expect(brands.reactivateBrandAssignment).not.toHaveBeenCalled();
     });
+  });
 
-    it('rejects an assignment deleted before its second lookup', async () => {
-      brands.findOneBrandAssignment.mockResolvedValue(null);
+  describe('direct reactivation', () => {
+    it.each(['User', 'Brand'] as const)(
+      'rejects reactivation when the related %s is missing or inactive',
+      async (entity) => {
+        if (entity === 'User') users.findOne.mockResolvedValue(null);
+        else brands.findOneBrand.mockResolvedValue(null);
 
+        await expect(
+          service.reactivateBrandAssignment(assignment.assignment_id),
+        ).rejects.toMatchObject({
+          status: 404,
+          response: { code: `${entity.toUpperCase()}_NOT_FOUND` },
+        });
+        expect(users.findOne).toHaveBeenCalledWith(assignment.user_id);
+        expect(brands.findOneBrand).toHaveBeenCalledWith(assignment.brand_id);
+        expect(brands.reactivateBrandAssignment).not.toHaveBeenCalled();
+      },
+    );
+
+    it('reactivates and logs the assignment ID', async () => {
       await expect(
-        service.assignUserToBrand(user.user_id, brand.brand_id),
+        service.reactivateBrandAssignment(assignment.assignment_id),
+      ).resolves.toEqual(assignment);
+      expect(brands.findOneBrandAssignment).toHaveBeenCalledWith(
+        assignment.assignment_id,
+        false,
+      );
+      expect(log).toHaveBeenCalledWith(
+        `Reactivated brand assignment ${assignment.assignment_id}`,
+      );
+    });
+
+    it('rejects a missing assignment before updating', async () => {
+      brands.findOneBrandAssignment.mockResolvedValue(null);
+      await expect(
+        service.reactivateBrandAssignment(assignment.assignment_id),
       ).rejects.toMatchObject({
         status: 404,
-        response: { code: 'USER_BRAND_ASSIGNMENT_NOT_FOUND' },
+        response: { code: 'BRAND_ASSIGNMENT_NOT_FOUND' },
       });
       expect(brands.reactivateBrandAssignment).not.toHaveBeenCalled();
     });
 
-    it('returns a conflict when the assignment changes before reactivation', async () => {
-      brands.reactivateBrandAssignment.mockRejectedValue(prismaError('P2025'));
-
+    it('rejects an already active assignment before updating', async () => {
+      brands.findOneBrandAssignment.mockResolvedValue(assignment);
       await expect(
-        service.assignUserToBrand(user.user_id, brand.brand_id),
+        service.reactivateBrandAssignment(assignment.assignment_id),
+      ).rejects.toMatchObject({
+        status: 409,
+        response: { code: 'BRAND_ASSIGNMENT_ALREADY_ACTIVE' },
+      });
+      expect(brands.reactivateBrandAssignment).not.toHaveBeenCalled();
+    });
+
+    it('returns a conflict when another request changes the assignment', async () => {
+      brands.reactivateBrandAssignment.mockRejectedValue(prismaError('P2025'));
+      await expect(
+        service.reactivateBrandAssignment(assignment.assignment_id),
       ).rejects.toMatchObject({
         status: 409,
         response: { code: 'BRAND_ASSIGNMENT_CHANGED' },
       });
       expect(log).not.toHaveBeenCalledWith(
-        `Reactivated assignment ${assignment.assignment_id} for user ${user.user_id} for brand ${brand.brand_id}`,
+        `Reactivated brand assignment ${assignment.assignment_id}`,
       );
     });
 
-    it('propagates unrelated reactivation errors', async () => {
-      const error = new Error('Database unavailable');
+    it('propagates unrelated failures without logging success', async () => {
+      const error = prismaError('P1001');
       brands.reactivateBrandAssignment.mockRejectedValue(error);
-
       await expect(
-        service.assignUserToBrand(user.user_id, brand.brand_id),
+        service.reactivateBrandAssignment(assignment.assignment_id),
       ).rejects.toBe(error);
+      expect(log).not.toHaveBeenCalledWith(
+        `Reactivated brand assignment ${assignment.assignment_id}`,
+      );
     });
   });
 

@@ -73,8 +73,8 @@ describe('Repository transaction clients', () => {
     ['Auth.delete', (tx) => auth.delete('session-id', tx)],
     ['Auth.deleteMany', (tx) => auth.deleteMany('user-id', tx)],
     ['Users.create', (tx) => users.create(userDTO, tx)],
-    ['Users.findOne', (tx) => users.findOne('user-id', tx)],
-    ['Users.findByUsername', (tx) => users.findByUsername('owner', tx)],
+    ['Users.findOne', (tx) => users.findOne('user-id', true, tx)],
+    ['Users.findByUsername', (tx) => users.findByUsername('owner', true, tx)],
     [
       'Users.update',
       (tx) =>
@@ -87,11 +87,11 @@ describe('Repository transaction clients', () => {
     ['Users.delete', (tx) => users.delete('user-id', tx)],
     ['Brands.createBrand', (tx) => brands.createBrand({ name: 'Brand' }, tx)],
     ['Brands.assignUser', (tx) => brands.assignUser('user-id', 'brand-id', tx)],
-    ['Brands.findOneBrand', (tx) => brands.findOneBrand('brand-id', tx)],
+    ['Brands.findOneBrand', (tx) => brands.findOneBrand('brand-id', true, tx)],
     [
-      'Brands.findAssignmentIdByBrandAssignment',
+      'Brands.findAssignmentByUserAndBrand',
       (tx) =>
-        brands.findAssignmentIdByBrandAssignment('user-id', 'brand-id', tx),
+        brands.findAssignmentByUserAndBrand('user-id', 'brand-id', false, tx),
     ],
     [
       'Brands.findOneBrandAssignment',
