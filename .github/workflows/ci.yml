@@ -161,8 +161,8 @@ jobs:
           PORT: 3000
           DATABASE_URL: postgresql://pos_test_user:pos_test_password@localhost:5432/pos_test
         run: |
-          node dist/main &
-          npx wait-on http://localhost:3000/api/auth/me --timeout 30000
+          node dist/main > server.log 2>&1 &
+          npx wait-on tcp:127.0.0.1:3000 --timeout 60000 || (cat server.log && exit 1)
 
       - name: Execute Robot Framework E2E tests
         run: robot --outputdir robot/results --xunit xunit.xml robot/tests/
