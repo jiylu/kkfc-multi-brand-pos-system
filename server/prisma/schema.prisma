@@ -138,6 +138,7 @@ enum PaymentMethod {
   CASH
   E_WALLET
   CARD
+  PLATFORM_SETTLED
 
   @@map("payment_methods")
 }

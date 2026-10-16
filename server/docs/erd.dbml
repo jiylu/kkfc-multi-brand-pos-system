@@ -105,6 +105,7 @@ Enum payment_methods {
   CASH
   E_WALLET          
   CARD              
+  PLATFORM_SETTLED
 }
 
 Enum payment_statuses {
