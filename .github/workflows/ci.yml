@@ -174,3 +174,19 @@ jobs:
           name: robot-test-results
           path: robot/results/
           if-no-files-found: warn
+
+  ci:
+    name: CI
+    needs: [unit-tests, integration-tests, e2e-robot-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Verify QA Automation Pipeline Completion
+        run: |
+          if [ "${{ needs.unit-tests.result }}" != "success" ] || \
+             [ "${{ needs.integration-tests.result }}" != "success" ] || \
+             [ "${{ needs.e2e-robot-tests.result }}" != "success" ]; then
+            echo "QA Pipeline Failed: One or more test stages did not succeed."
+            exit 1
+          fi
+          echo "QA Pipeline Success: All unit, integration, and E2E test stages passed."
