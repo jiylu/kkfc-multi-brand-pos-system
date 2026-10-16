@@ -48,11 +48,23 @@ describe('Auth HTTP endpoints', () => {
 
   beforeAll(async () => {
     passwordHash = await argon2.hash('correct-password');
-    const matchingUsers = (where: { is_active?: boolean }) =>
-      [...users.values()].filter(
-        (user) =>
-          where.is_active === undefined || user.is_active === where.is_active,
-      );
+    const matchingUsers = (where: {
+      is_active?: boolean;
+      OR: { user_id?: string }[];
+    }) =>
+      [...users.values()].filter((user) => {
+        const caller = users.get(where.OR[0].user_id!);
+        return (
+          (where.is_active === undefined ||
+            user.is_active === where.is_active) &&
+          (user.user_id === caller?.user_id ||
+            user.user_brand_assignments_user.some((assignment) =>
+              caller?.user_brand_assignments_user.some(
+                (own) => own.brand_id === assignment.brand_id,
+              ),
+            ))
+        );
+      });
     const listingRepository = new UsersRepository({
       user: {
         findMany: ({
@@ -60,12 +72,15 @@ describe('Auth HTTP endpoints', () => {
           skip,
           take,
         }: {
-          where: { is_active?: boolean };
+          where: { is_active?: boolean; OR: { user_id?: string }[] };
           skip: number;
           take: number;
         }) => Promise.resolve(matchingUsers(where).slice(skip, skip + take)),
-        count: ({ where }: { where: { is_active?: boolean } }) =>
-          Promise.resolve(matchingUsers(where).length),
+        count: ({
+          where,
+        }: {
+          where: { is_active?: boolean; OR: { user_id?: string }[] };
+        }) => Promise.resolve(matchingUsers(where).length),
       },
       $transaction: (queries: Promise<unknown>[]) => Promise.all(queries),
     } as unknown as PrismaService);
@@ -89,8 +104,12 @@ describe('Auth HTTP endpoints', () => {
           return Promise.resolve(user?.is_active ? user : null);
         }),
         findAll: jest.fn(
-          (skip: number, take: number, activeOnly: boolean = true) =>
-            listingRepository.findAll(skip, take, activeOnly),
+          (
+            callerId: string,
+            skip: number,
+            take: number,
+            activeOnly: boolean = true,
+          ) => listingRepository.findAll(callerId, skip, take, activeOnly),
         ),
       })
       .overrideProvider(AuthRepository)
@@ -172,6 +191,65 @@ describe('Auth HTTP endpoints', () => {
       user: ReturnType<AuthService['getUserProfile']>;
     };
   }
+
+  it('hides unrelated users from listings and individual lookups', async () => {
+    const unrelated = {
+      ...staff,
+      user_id: randomUUID(),
+      username: 'unrelated',
+      user_brand_assignments_user: [{ brand_id: randomUUID() }],
+    };
+    users.set(unrelated.user_id, unrelated);
+    const { token } = await login();
+    const headers = { Authorization: `Bearer ${token}` };
+    for (const suffix of ['', '?activeOnly=false']) {
+      const response = await fetch(`${url}/api/users${suffix}`, { headers });
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        data: { user_id: string }[];
+        meta: { total: number };
+      };
+      expect(body.data.map((user) => user.user_id).sort()).toEqual(
+        [owner.user_id, staff.user_id].sort(),
+      );
+      expect(body.meta.total).toBe(2);
+    }
+    const lookup = await fetch(`${url}/api/users/${unrelated.user_id}`, {
+      headers,
+    });
+    expect(lookup.status).toBe(403);
+  });
+
+  it('blocks edits to another owner, password resets, and global staff deactivation', async () => {
+    const otherOwner = {
+      ...owner,
+      user_id: randomUUID(),
+      username: 'other-owner',
+    };
+    users.set(otherOwner.user_id, otherOwner);
+    const { token } = await login();
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+    const ownerUpdate = await fetch(`${url}/api/users/${otherOwner.user_id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ first_name: 'Changed' }),
+    });
+    expect(ownerUpdate.status).toBe(403);
+    const passwordReset = await fetch(`${url}/api/users/${staff.user_id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ password: 'new-password' }),
+    });
+    expect(passwordReset.status).toBe(403);
+    const deletion = await fetch(`${url}/api/users/${staff.user_id}`, {
+      method: 'DELETE',
+      headers,
+    });
+    expect(deletion.status).toBe(403);
+  });
 
   it('issues a random token, persists its hash, and returns a safe profile', async () => {
     const body = await login();

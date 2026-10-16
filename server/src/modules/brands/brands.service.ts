@@ -21,10 +21,10 @@ export class BrandsService {
     private readonly usersRepository: UsersRepository,
   ) {}
 
-  async createBrand(dto: CreateBrandDTO) {
+  async createBrand(dto: CreateBrandDTO, ownerId: string) {
     this.logger.log(`Creating new brand ${dto.name}`);
 
-    const brand = await this.brandsRepository.createBrand(dto);
+    const brand = await this.brandsRepository.createBrand(dto, ownerId);
 
     this.logger.log(
       `Created new brand ${brand.name} with brand_id ${brand.brand_id}`,
@@ -33,13 +33,13 @@ export class BrandsService {
     return brand;
   }
 
-  async assignUserToBrand(userId: string, brandId: string) {
-    this.logger.log(`Assigning user ${userId} to brand ${brandId}`);
+  async assignUserToBrand(username: string, brandId: string) {
+    this.logger.log(`Assigning user ${username} to brand ${brandId}`);
 
-    const user = await this.usersRepository.findOne(userId);
+    const user = await this.usersRepository.safeFindByUsername(username);
     const brand = await this.brandsRepository.findOneBrand(brandId);
 
-    assertExists(user, 'User', userId, this.logger);
+    assertExists(user, 'User', username, this.logger);
     assertExists(brand, 'Brand', brandId, this.logger);
 
     const existingBrandAssignment =
@@ -63,7 +63,7 @@ export class BrandsService {
     this.logger.debug(`Assigning ${user.user_id} to brand ${brand.brand_id}`);
 
     const brandAssignment = await this.brandsRepository.assignUser(
-      user.user_id,
+      { user_id: user.user_id },
       brand.brand_id,
     );
 
@@ -208,7 +208,10 @@ export class BrandsService {
     };
   }
 
-  async findAllBrands({ page, limit, activeOnly }: FindBrandsDTO) {
+  async findAllBrands(
+    userId: string,
+    { page, limit, activeOnly }: FindBrandsDTO,
+  ) {
     this.logger.log(
       `Listing brands: page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
     );
@@ -218,6 +221,7 @@ export class BrandsService {
     assertValidPagination(skip, this.logger);
 
     const { brands, total } = await this.brandsRepository.findAllBrands(
+      userId,
       skip,
       limit,
       activeOnly,
@@ -317,6 +321,20 @@ export class BrandsService {
       await this.brandsRepository.findOneBrandAssignment(assignmentId);
 
     assertExists(brandAssignment, 'BrandAssignment', assignmentId, this.logger);
+
+    const brandOwners = await this.brandsRepository.findAllOwnersForBrand(
+      brandAssignment.brand_id,
+    );
+
+    if (
+      brandOwners.length === 1 &&
+      brandOwners[0].user_id === brandAssignment.user_id
+    ) {
+      throw new ConflictException({
+        code: 'LAST_BRAND_OWNER',
+        message: 'Assign another owner before removing the last brand owner.',
+      });
+    }
 
     const deactivatedBrandAssignment =
       await this.brandsRepository.deactivateAssignment(assignmentId);

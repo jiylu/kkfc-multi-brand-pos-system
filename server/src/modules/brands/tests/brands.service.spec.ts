@@ -38,6 +38,7 @@ describe('BrandsService', () => {
   let brands: jest.Mocked<
     Pick<
       BrandsRepository,
+      | 'findAllBrands'
       | 'findOneBrand'
       | 'findAssignmentByUserAndBrand'
       | 'assignUser'
@@ -49,7 +50,9 @@ describe('BrandsService', () => {
       | 'findAllAssignedUsersForBrand'
     >
   >;
-  let users: jest.Mocked<Pick<UsersRepository, 'findOne'>>;
+  let users: jest.Mocked<
+    Pick<UsersRepository, 'findOne' | 'safeFindByUsername'>
+  >;
   let service: BrandsService;
   let log: jest.SpyInstance;
   let warn: jest.SpyInstance;
@@ -65,8 +68,14 @@ describe('BrandsService', () => {
     log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
     warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     jest.spyOn(Logger.prototype, 'debug').mockImplementation();
-    users = { findOne: jest.fn().mockResolvedValue(user) };
+    users = {
+      findOne: jest.fn().mockResolvedValue(user),
+      safeFindByUsername: jest.fn().mockResolvedValue(user),
+    };
     brands = {
+      findAllBrands: jest
+        .fn()
+        .mockResolvedValue({ brands: [brand], total: 21 }),
       findOneBrand: jest.fn().mockResolvedValue(brand),
       findAssignmentByUserAndBrand: jest.fn().mockResolvedValue(null),
       assignUser: jest.fn().mockResolvedValue(assignment),
@@ -95,23 +104,24 @@ describe('BrandsService', () => {
   describe('assignUserToBrand', () => {
     it('creates a new assignment', async () => {
       await expect(
-        service.assignUserToBrand(user.user_id, brand.brand_id),
+        service.assignUserToBrand(user.username, brand.brand_id),
       ).resolves.toEqual(assignment);
       expect(brands.assignUser).toHaveBeenCalledWith(
-        user.user_id,
+        { user_id: user.user_id },
         brand.brand_id,
       );
+      expect(users.safeFindByUsername).toHaveBeenCalledWith(user.username);
       expect(brands.reactivateBrandAssignment).not.toHaveBeenCalled();
     });
 
     it.each(['User', 'Brand'] as const)(
       'rejects a missing %s before writing',
       async (entity) => {
-        if (entity === 'User') users.findOne.mockResolvedValue(null);
+        if (entity === 'User') users.safeFindByUsername.mockResolvedValue(null);
         else brands.findOneBrand.mockResolvedValue(null);
 
         await expect(
-          service.assignUserToBrand(user.user_id, brand.brand_id),
+          service.assignUserToBrand(user.username, brand.brand_id),
         ).rejects.toMatchObject({
           status: 404,
           response: { code: `${entity.toUpperCase()}_NOT_FOUND` },
@@ -126,7 +136,7 @@ describe('BrandsService', () => {
       brands.assignUser.mockRejectedValue(error);
 
       await expect(
-        service.assignUserToBrand(user.user_id, brand.brand_id),
+        service.assignUserToBrand(user.username, brand.brand_id),
       ).rejects.toBe(error);
       expect(log).not.toHaveBeenCalledWith(
         `Assigned ${user.user_id} to brand ${brand.brand_id}`,
@@ -138,7 +148,7 @@ describe('BrandsService', () => {
       brands.assignUser.mockRejectedValue(error);
 
       await expect(
-        service.assignUserToBrand(user.user_id, brand.brand_id),
+        service.assignUserToBrand(user.username, brand.brand_id),
       ).rejects.toBe(error);
     });
 
@@ -152,7 +162,7 @@ describe('BrandsService', () => {
           });
 
           await expect(
-            service.assignUserToBrand(user.user_id, brand.brand_id),
+            service.assignUserToBrand(user.username, brand.brand_id),
           ).rejects.toMatchObject({
             status: 409,
             response: {
@@ -174,7 +184,7 @@ describe('BrandsService', () => {
         const error = new Error('Database unavailable');
         brands.findAssignmentByUserAndBrand.mockRejectedValue(error);
         await expect(
-          service.assignUserToBrand(user.user_id, brand.brand_id),
+          service.assignUserToBrand(user.username, brand.brand_id),
         ).rejects.toBe(error);
         expect(brands.assignUser).not.toHaveBeenCalled();
         expect(brands.reactivateBrandAssignment).not.toHaveBeenCalled();
@@ -335,6 +345,30 @@ describe('BrandsService', () => {
       await expect(service.deleteBrand('brand-id')).rejects.toBe(error);
       expect(log).not.toHaveBeenCalledWith('Deleted brand brand-id');
     });
+  });
+
+  describe('findAllBrands', () => {
+    it.each([true, false])(
+      'scopes pagination to the requesting owner with activeOnly=%s',
+      async (activeOnly) => {
+        await expect(
+          service.findAllBrands(user.user_id, {
+            page: 2,
+            limit: 10,
+            activeOnly,
+          }),
+        ).resolves.toEqual({
+          data: [brand],
+          meta: { page: 2, limit: 10, total: 21, totalPages: 3 },
+        });
+        expect(brands.findAllBrands).toHaveBeenCalledWith(
+          user.user_id,
+          10,
+          10,
+          activeOnly,
+        );
+      },
+    );
   });
 
   describe('findAllBrandAssignmentsForUser', () => {

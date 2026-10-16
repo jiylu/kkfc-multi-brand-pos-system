@@ -28,6 +28,7 @@ export class UsersRepository {
   }
 
   async findAll(
+    callerId: string,
     skip: number,
     take: number,
     activeOnly = true,
@@ -35,6 +36,22 @@ export class UsersRepository {
   ) {
     const where: Prisma.UserWhereInput = {
       is_active: activeOnly ? true : undefined,
+      OR: [
+        { user_id: callerId },
+        {
+          user_brand_assignments_user: {
+            some: {
+              is_active: true,
+              brand: {
+                is_active: true,
+                user_brand_assignments_brand: {
+                  some: { user_id: callerId, is_active: true },
+                },
+              },
+            },
+          },
+        },
+      ],
     };
 
     const usersQuery = tx.user.findMany({
@@ -68,7 +85,13 @@ export class UsersRepository {
       },
       omit: { password_hash: true },
       include: {
-        user_brand_assignments_user: { select: { brand_id: true } },
+        user_brand_assignments_user: {
+          where: {
+            is_active: true,
+            brand: { is_active: true },
+          },
+          select: { brand_id: true },
+        },
       },
     });
   }
@@ -81,6 +104,20 @@ export class UsersRepository {
     return tx.user.findUnique({
       where: { username, is_active: activeOnly ? true : undefined },
       select: { user_id: true, password_hash: true },
+    });
+  }
+
+  async safeFindByUsername(
+    username: string,
+    activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.user.findUnique({
+      where: {
+        username: username,
+        is_active: activeOnly ? true : undefined,
+      },
+      omit: { password_hash: true },
     });
   }
 
