@@ -69,7 +69,6 @@ export class AuthService {
 
   async createSession(dto: CreateSessionDTO) {
     const user = await this.usersRepository.findOne(dto.user_id);
-
     assertExists(user, 'User', dto.user_id, this.logger);
 
     if (

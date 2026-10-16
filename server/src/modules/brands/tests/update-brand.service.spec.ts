@@ -57,7 +57,7 @@ describe('BrandsService.updateBrand', () => {
     expect(log).not.toHaveBeenCalledWith('Updated brand brand-id');
   });
   it.each(['update', 'delete'] as const)(
-    'returns BRAND_NOT_FOUND when a brand disappears before %s',
+    'propagates P2025 to the global filter when a brand disappears before %s',
     async (operation) => {
       const error = new Prisma.PrismaClientKnownRequestError(
         'No matching brand',
@@ -73,10 +73,7 @@ describe('BrandsService.updateBrand', () => {
         operation === 'update'
           ? service.updateBrand('brand-id', {})
           : service.deleteBrand('brand-id');
-      await expect(request).rejects.toMatchObject({
-        status: 404,
-        response: { code: 'BRAND_NOT_FOUND', message: 'Brand not found.' },
-      });
+      await expect(request).rejects.toBe(error);
       expect(log).not.toHaveBeenCalledWith(
         `${operation === 'update' ? 'Updated' : 'Deleted'} brand brand-id`,
       );

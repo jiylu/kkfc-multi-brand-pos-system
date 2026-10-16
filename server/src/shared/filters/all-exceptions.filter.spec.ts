@@ -1,14 +1,18 @@
 import {
   BadRequestException,
+  ConflictException,
   Controller,
   Get,
   INestApplication,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
+import { Prisma } from '@prisma/client';
 import { AllExceptionsFilter } from './all-exceptions.filter';
+import { PrismaExceptionFilter } from './prisma-exception.filter';
 
 describe('AllExceptionsFilter', () => {
   let app: INestApplication;
@@ -28,7 +32,10 @@ describe('AllExceptionsFilter', () => {
   beforeAll(async () => {
     const module = await Test.createTestingModule({
       controllers: [TestController],
-      providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
+      providers: [
+        { provide: APP_FILTER, useClass: AllExceptionsFilter },
+        { provide: APP_FILTER, useClass: PrismaExceptionFilter },
+      ],
     }).compile();
     app = module.createNestApplication();
     await app.listen(0, '127.0.0.1');
@@ -67,6 +74,93 @@ describe('AllExceptionsFilter', () => {
       message: ['username must be a string'],
     });
   });
+
+  it.each([
+    {
+      code: 'P2002',
+      status: 409,
+      body: {
+        code: 'DUPLICATE_RESOURCE',
+        message: 'A record with these unique values already exists.',
+      },
+      exceptionName: 'ConflictException',
+    },
+    {
+      code: 'P2025',
+      status: 404,
+      body: {
+        code: 'RESOURCE_NOT_FOUND',
+        message: 'The requested record was not found.',
+      },
+      exceptionName: 'NotFoundException',
+    },
+  ])(
+    'maps $code to HTTP $status without exposing database details',
+    async ({ code, status, body, exceptionName }) => {
+      failure = new Prisma.PrismaClientKnownRequestError(
+        'private database details',
+        {
+          code,
+          clientVersion: '7.8.0',
+          meta: { target: ['username'] },
+        },
+      );
+
+      const response = await fetch(url);
+
+      expect(response.status).toBe(status);
+      expect(await response.json()).toEqual(body);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(`${exceptionName} (HTTP ${status})`);
+      expect(error).not.toHaveBeenCalled();
+    },
+  );
+
+  it('preserves custom service not-found responses', async () => {
+    const body = { code: 'USER_NOT_FOUND', message: 'User not found.' };
+    failure = new NotFoundException(body);
+
+    const response = await fetch(url);
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual(body);
+  });
+
+  it('preserves custom service conflict responses', async () => {
+    const body = {
+      code: 'USERNAME_ALREADY_EXISTS',
+      message: 'Username already exists.',
+    };
+    failure = new ConflictException(body);
+
+    const response = await fetch(url);
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual(body);
+  });
+
+  it.each(['P1001', 'P2003'])(
+    'keeps unhandled Prisma error %s as a server error',
+    async (code) => {
+      failure = new Prisma.PrismaClientKnownRequestError(
+        'private database details',
+        {
+          code,
+          clientVersion: '7.8.0',
+        },
+      );
+
+      const response = await fetch(url);
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({
+        statusCode: 500,
+        message: 'Internal server error',
+      });
+      expect(error).toHaveBeenCalledTimes(1);
+      expect(warn).not.toHaveBeenCalled();
+    },
+  );
 
   it('logs HTTP server errors once', async () => {
     failure = new InternalServerErrorException();

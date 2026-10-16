@@ -28,7 +28,7 @@ describe('UsersService', () => {
   let repository: jest.Mocked<
     Pick<
       UsersRepository,
-      'create' | 'findAll' | 'findOne' | 'update' | 'delete'
+      'create' | 'findAll' | 'findOne' | 'findByUsername' | 'update' | 'delete'
     >
   >;
   let service: UsersService;
@@ -41,6 +41,7 @@ describe('UsersService', () => {
       create: jest.fn().mockResolvedValue(user),
       findAll: jest.fn().mockResolvedValue({ users: [user], total: 21 }),
       findOne: jest.fn().mockResolvedValue(user),
+      findByUsername: jest.fn().mockResolvedValue(null),
       update: jest.fn().mockResolvedValue({ ...user, first_name: 'Updated' }),
       delete: jest.fn().mockResolvedValue({ ...user, is_active: false }),
     };
@@ -55,12 +56,10 @@ describe('UsersService', () => {
   });
 
   it('returns a conflict when the username is already taken', async () => {
-    repository.create.mockRejectedValue(
-      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
-        code: 'P2002',
-        clientVersion: '7.8.0',
-      }),
-    );
+    repository.findByUsername.mockResolvedValue({
+      user_id: user.user_id,
+      password_hash: 'password-hash',
+    });
 
     await expect(service.createUser(createDTO)).rejects.toMatchObject({
       status: 409,
@@ -69,13 +68,18 @@ describe('UsersService', () => {
         message: 'Username already exists.',
       },
     });
+    expect(repository.findByUsername).toHaveBeenCalledWith(
+      user.username,
+      false,
+    );
+    expect(repository.create).not.toHaveBeenCalled();
     expect(log).not.toHaveBeenCalledWith(
       expect.stringContaining('Created new user'),
     );
   });
 
-  it.each(['P1001', 'P2003'])(
-    'propagates unrelated create failures: %s',
+  it.each(['P1001', 'P2002', 'P2003'])(
+    'propagates create failures to the global filter: %s',
     async (code) => {
       const error = new Prisma.PrismaClientKnownRequestError(
         'Database request failed',

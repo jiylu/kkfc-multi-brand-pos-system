@@ -9,6 +9,7 @@ import { UsersRepository } from './users.repository';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import { FindUsersDTO } from './dto/find-users.dto';
+import { assertExists } from '../../shared/assertions/assert-exists';
 import { assertValidPagination } from '../../shared/assertions/assert-valid-pagination';
 
 @Injectable()
@@ -20,27 +21,25 @@ export class UsersService {
   async createUser(dto: CreateUserDTO) {
     this.logger.log(`Creating ${dto.role} user ${dto.first_name}`);
 
-    try {
-      const user = await this.usersRepository.create(dto);
+    const existingUser = await this.usersRepository.findByUsername(
+      dto.username,
+      false,
+    );
 
-      this.logger.log(`
-        Created new user with role: ${user.role} with user_id: ${user.user_id}
-      `);
-
-      return user;
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException({
-          code: 'USERNAME_ALREADY_EXISTS',
-          message: 'Username already exists.',
-        });
-      }
-
-      throw error;
+    if (existingUser) {
+      throw new ConflictException({
+        code: 'USERNAME_ALREADY_EXISTS',
+        message: 'Username already exists.',
+      });
     }
+
+    const user = await this.usersRepository.create(dto);
+
+    this.logger.log(`
+      Created new user with role: ${user.role} with user_id: ${user.user_id}
+    `);
+
+    return user;
   }
 
   async findAllUsers({ page, limit, activeOnly }: FindUsersDTO) {
@@ -49,7 +48,6 @@ export class UsersService {
     );
 
     const skip = (page - 1) * limit;
-
     assertValidPagination(skip, this.logger);
 
     const { users, total } = await this.usersRepository.findAll(
@@ -78,7 +76,7 @@ export class UsersService {
 
     const user = await this.usersRepository.findOne(userId, activeOnly);
 
-    this.assertUserExists(user);
+    assertExists(user, 'User', userId, this.logger);
 
     this.logger.log(`User ${user.user_id} with role ${user.role} found.`);
 
@@ -90,7 +88,7 @@ export class UsersService {
 
     const user = await this.findOneUser(userId);
 
-    this.assertUserExists(user);
+    assertExists(user, 'User', userId, this.logger);
 
     try {
       const updated = await this.usersRepository.update(user.user_id, dto);
@@ -116,21 +114,10 @@ export class UsersService {
 
     const user = await this.findOneUser(userId);
 
-    this.assertUserExists(user);
+    assertExists(user, 'User', userId, this.logger);
 
     const deleted = await this.usersRepository.delete(user.user_id);
     this.logger.log(`Deactivated user ${userId}`);
     return deleted;
-  }
-
-  private assertUserExists<T>(
-    user: T | null | undefined,
-  ): asserts user is NonNullable<T> {
-    if (user == null) {
-      throw new NotFoundException({
-        code: 'USER_NOT_FOUND',
-        message: 'User not found.',
-      });
-    }
   }
 }

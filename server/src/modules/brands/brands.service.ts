@@ -4,12 +4,12 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { BrandsRepository } from './brands.repository';
 import { UsersRepository } from '../users/users.repository';
 import { CreateBrandDTO } from './dto/create-brand.dto';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
 import { assertExists } from '../../shared/assertions/assert-exists';
-import { Prisma } from '@prisma/client';
 import { FindBrandsDTO } from './dto/find-brands.dto';
 import { assertValidPagination } from '../../shared/assertions/assert-valid-pagination';
 
@@ -62,28 +62,14 @@ export class BrandsService {
 
     this.logger.debug(`Assigning ${user.user_id} to brand ${brand.brand_id}`);
 
-    try {
-      const brandAssignment = await this.brandsRepository.assignUser(
-        user.user_id,
-        brand.brand_id,
-      );
+    const brandAssignment = await this.brandsRepository.assignUser(
+      user.user_id,
+      brand.brand_id,
+    );
 
-      this.logger.log(`Assigned ${user.user_id} to brand ${brand.brand_id}`);
+    this.logger.log(`Assigned ${user.user_id} to brand ${brand.brand_id}`);
 
-      return brandAssignment;
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException({
-          code: 'USER_ALREADY_ASSIGNED',
-          message: 'User already assigned to this brand.',
-        });
-      }
-
-      throw error;
-    }
+    return brandAssignment;
   }
 
   async findOneBrand(brandId: string) {
@@ -157,11 +143,9 @@ export class BrandsService {
     );
 
     const skip = (page - 1) * limit;
-
     assertValidPagination(skip, this.logger);
 
     const user = await this.usersRepository.findOne(userId, false);
-
     assertExists(user, 'User', userId, this.logger);
 
     const { brandAssignments, total } =
@@ -224,32 +208,14 @@ export class BrandsService {
 
     assertExists(brand, 'Brand', brandId, this.logger);
 
-    try {
-      const updatedBrand = await this.brandsRepository.updateBrand(
-        brand.brand_id,
-        dto,
-      );
+    const updatedBrand = await this.brandsRepository.updateBrand(
+      brand.brand_id,
+      dto,
+    );
 
-      this.logger.log(`Updated brand ${updatedBrand.brand_id}`);
+    this.logger.log(`Updated brand ${updatedBrand.brand_id}`);
 
-      return updatedBrand;
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2025'
-      ) {
-        this.logger.warn(
-          `Brand ${brandId} is no longer active or no longer exists.`,
-        );
-
-        throw new NotFoundException({
-          code: 'BRAND_NOT_FOUND',
-          message: 'Brand not found.',
-        });
-      }
-
-      throw error;
-    }
+    return updatedBrand;
   }
 
   async reactivateBrandAssignment(assignmentId: string) {
@@ -327,33 +293,14 @@ export class BrandsService {
     this.logger.debug(`Deleting brand ${brandId}`);
 
     const brand = await this.brandsRepository.findOneBrand(brandId);
-
     assertExists(brand, 'Brand', brandId, this.logger);
 
-    try {
-      const deletedBrand = await this.brandsRepository.deleteBrand(
-        brand.brand_id,
-      );
+    const deletedBrand = await this.brandsRepository.deleteBrand(
+      brand.brand_id,
+    );
 
-      this.logger.log(`Deleted brand ${deletedBrand.brand_id}`);
+    this.logger.log(`Deleted brand ${deletedBrand.brand_id}`);
 
-      return deletedBrand;
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2025'
-      ) {
-        this.logger.warn(
-          `Brand ${brandId} is no longer active or no longer exists.`,
-        );
-
-        throw new NotFoundException({
-          code: 'BRAND_NOT_FOUND',
-          message: 'Brand not found.',
-        });
-      }
-
-      throw error;
-    }
+    return deletedBrand;
   }
 }

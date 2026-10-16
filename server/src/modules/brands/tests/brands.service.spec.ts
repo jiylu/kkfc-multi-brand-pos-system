@@ -106,15 +106,13 @@ describe('Brand assignments', () => {
     },
   );
 
-  it('returns a conflict when another request creates the assignment first', async () => {
-    brands.assignUser.mockRejectedValue(prismaError('P2002'));
+  it('propagates duplicate races to the global Prisma filter', async () => {
+    const error = prismaError('P2002');
+    brands.assignUser.mockRejectedValue(error);
 
     await expect(
       service.assignUserToBrand(user.user_id, brand.brand_id),
-    ).rejects.toMatchObject({
-      status: 409,
-      response: { code: 'USER_ALREADY_ASSIGNED' },
-    });
+    ).rejects.toBe(error);
     expect(log).not.toHaveBeenCalledWith(
       `Assigned ${user.user_id} to brand ${brand.brand_id}`,
     );

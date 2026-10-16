@@ -134,8 +134,92 @@ describe('Repository transaction clients', () => {
     },
   );
 
+  it.each([true, false])(
+    'lists assignments for the requested brand with activeOnly=%s inside the supplied transaction',
+    async (activeOnly) => {
+      await expect(
+        brands.findAllAssignedUsersForBrand(
+          'brand-id',
+          activeOnly,
+          transaction as unknown as Prisma.TransactionClient,
+        ),
+      ).resolves.toEqual([record]);
+      expect(transaction.userBrandAssignment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            brand_id: 'brand-id',
+            is_active: activeOnly ? true : undefined,
+          },
+        }),
+      );
+      expect(transaction.user.findMany).not.toHaveBeenCalled();
+      expect(standaloneTransaction).not.toHaveBeenCalled();
+    },
+  );
+
+  it('defaults to active assignments using the injected client', async () => {
+    brands = new BrandsRepository(transaction as unknown as PrismaService);
+
+    await expect(
+      brands.findAllAssignedUsersForBrand('brand-id'),
+    ).resolves.toEqual([record]);
+    expect(transaction.userBrandAssignment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          brand_id: 'brand-id',
+          is_active: true,
+        },
+      }),
+    );
+  });
+
+  it.each([true, false])(
+    'paginates assignments with matching row and count filters for activeOnly=%s',
+    async (activeOnly) => {
+      transaction.userBrandAssignment.findMany.mockResolvedValue([]);
+      transaction.userBrandAssignment.count.mockResolvedValue(21);
+
+      await expect(
+        brands.findAllAssignedUsersForBrandPaginated(
+          'brand-id',
+          30,
+          10,
+          activeOnly,
+          transaction as unknown as Prisma.TransactionClient,
+        ),
+      ).resolves.toEqual({ users: [], total: 21 });
+      const where = {
+        brand_id: 'brand-id',
+        is_active: activeOnly ? true : undefined,
+      };
+      expect(transaction.userBrandAssignment.findMany).toHaveBeenCalledWith({
+        where,
+        skip: 30,
+        take: 10,
+        orderBy: [{ created_at: 'desc' }, { user_id: 'asc' }],
+      });
+      expect(transaction.userBrandAssignment.count).toHaveBeenCalledWith({
+        where,
+      });
+      expect(transaction.user.findMany).not.toHaveBeenCalled();
+      expect(transaction.user.count).not.toHaveBeenCalled();
+    },
+  );
+
   const listings: [string, (tx?: Client) => Promise<unknown>, string][] = [
     ['Users.findAll', (tx) => users.findAll(0, 10, false, tx), 'users'],
+    [
+      'Brands.findAllAssignedUsersForBrandPaginated',
+      (tx) =>
+        brands.findAllAssignedUsersForBrandPaginated(
+          'brand-id',
+          0,
+          10,
+          undefined,
+          tx,
+        ),
+      'users',
+    ],
     [
       'Brands.findAllBrands',
       (tx) => brands.findAllBrands(0, 10, false, tx),
