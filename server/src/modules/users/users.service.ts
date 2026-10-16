@@ -1,10 +1,11 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { UsersRepository } from './users.repository';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateUserDTO } from './dto/update-user.dto';
@@ -42,7 +43,10 @@ export class UsersService {
     return user;
   }
 
-  async findAllUsers({ page, limit, activeOnly }: FindUsersDTO) {
+  async findAllUsers(
+    { page, limit, activeOnly }: FindUsersDTO,
+    callerId: string,
+  ) {
     this.logger.log(
       `Listing users: page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
     );
@@ -51,6 +55,7 @@ export class UsersService {
     assertValidPagination(skip, this.logger);
 
     const { users, total } = await this.usersRepository.findAll(
+      callerId,
       skip,
       limit,
       activeOnly,
@@ -71,24 +76,53 @@ export class UsersService {
     };
   }
 
-  async findOneUser(userId: string, activeOnly = true) {
+  async findOneUser(userId: string, callerId: string, activeOnly = true) {
     this.logger.log(`Finding user ${userId}`);
 
     const user = await this.usersRepository.findOne(userId, activeOnly);
 
     assertExists(user, 'User', userId, this.logger);
 
+    if (userId !== callerId) {
+      const caller = await this.usersRepository.findOne(callerId);
+      assertExists(caller, 'User', callerId, this.logger);
+      const brandIds = caller.user_brand_assignments_user.map(
+        (assignment) => assignment.brand_id,
+      );
+      const sharedAssignments = user.user_brand_assignments_user.filter(
+        (assignment) => brandIds.includes(assignment.brand_id),
+      );
+      if (sharedAssignments.length === 0) {
+        throw new ForbiddenException({
+          code: 'ACCESS_DENIED',
+          message: 'You cannot access users outside your brands.',
+        });
+      }
+      return { ...user, user_brand_assignments_user: sharedAssignments };
+    }
+
     this.logger.log(`User ${user.user_id} with role ${user.role} found.`);
 
     return user;
   }
 
-  async updateUser(userId: string, dto: UpdateUserDTO) {
+  async updateUser(userId: string, dto: UpdateUserDTO, callerId: string) {
     this.logger.log(`Updating user ${userId}`);
 
-    const user = await this.findOneUser(userId);
+    const user = await this.findOneUser(userId, callerId);
 
     assertExists(user, 'User', userId, this.logger);
+
+    if (
+      userId !== callerId &&
+      (user.role === UserRole.OWNER || dto.password !== undefined)
+    ) {
+      throw new ForbiddenException({
+        code: 'ACCESS_DENIED',
+        message:
+          "You cannot edit another owner or change another user's password.",
+      });
+    }
 
     try {
       const updated = await this.usersRepository.update(user.user_id, dto);
@@ -109,10 +143,17 @@ export class UsersService {
     }
   }
 
-  async deleteUser(userId: string) {
+  async deleteUser(userId: string, callerId: string) {
     this.logger.log(`Deactivating user ${userId}`);
 
-    const user = await this.findOneUser(userId);
+    if (userId !== callerId) {
+      throw new ForbiddenException({
+        code: 'ACCESS_DENIED',
+        message: 'You can only deactivate your own account.',
+      });
+    }
+
+    const user = await this.findOneUser(userId, callerId);
 
     assertExists(user, 'User', userId, this.logger);
 
