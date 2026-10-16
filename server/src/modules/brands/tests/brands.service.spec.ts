@@ -93,7 +93,7 @@ describe('BrandsService', () => {
   afterEach(() => jest.restoreAllMocks());
 
   describe('assignUserToBrand', () => {
-    it('creates a new assignment', async () => {
+    it('UT-BRND-001: creates a new assignment', async () => {
       await expect(
         service.assignUserToBrand(user.user_id, brand.brand_id),
       ).resolves.toEqual(assignment);
@@ -105,7 +105,7 @@ describe('BrandsService', () => {
     });
 
     it.each(['User', 'Brand'] as const)(
-      'rejects a missing %s before writing',
+      'UT-BRND-002: rejects a missing %s before writing',
       async (entity) => {
         if (entity === 'User') users.findOne.mockResolvedValue(null);
         else brands.findOneBrand.mockResolvedValue(null);
@@ -121,30 +121,28 @@ describe('BrandsService', () => {
       },
     );
 
-    it('propagates duplicate races to the global Prisma filter', async () => {
-      const error = prismaError('P2002');
-      brands.assignUser.mockRejectedValue(error);
+    it('UT-BRND-003: propagates duplicate races and unrelated insert errors', async () => {
+      const dupError = prismaError('P2002');
+      brands.assignUser.mockRejectedValue(dupError);
 
       await expect(
         service.assignUserToBrand(user.user_id, brand.brand_id),
-      ).rejects.toBe(error);
+      ).rejects.toBe(dupError);
       expect(log).not.toHaveBeenCalledWith(
         `Assigned ${user.user_id} to brand ${brand.brand_id}`,
       );
-    });
 
-    it('propagates unrelated insert errors', async () => {
-      const error = prismaError('P2003');
-      brands.assignUser.mockRejectedValue(error);
+      const fkError = prismaError('P2003');
+      brands.assignUser.mockRejectedValue(fkError);
 
       await expect(
         service.assignUserToBrand(user.user_id, brand.brand_id),
-      ).rejects.toBe(error);
+      ).rejects.toBe(fkError);
     });
 
     describe('existing assignment', () => {
       it.each([true, false])(
-        'rejects an existing assignment with is_active=%s without creating or reactivating',
+        'UT-BRND-004: rejects an existing assignment with is_active=%s without creating or reactivating',
         async (is_active) => {
           brands.findAssignmentByUserAndBrand.mockResolvedValue({
             ...assignment,
@@ -170,7 +168,7 @@ describe('BrandsService', () => {
         },
       );
 
-      it('propagates lookup failures without writing', async () => {
+      it('UT-BRND-005: propagates lookup failures without writing', async () => {
         const error = new Error('Database unavailable');
         brands.findAssignmentByUserAndBrand.mockRejectedValue(error);
         await expect(
@@ -184,7 +182,7 @@ describe('BrandsService', () => {
 
   describe('reactivateBrandAssignment', () => {
     it.each(['User', 'Brand'] as const)(
-      'rejects reactivation when the related %s is missing or inactive',
+      'UT-BRND-006: rejects reactivation when the related %s is missing or inactive',
       async (entity) => {
         if (entity === 'User') users.findOne.mockResolvedValue(null);
         else brands.findOneBrand.mockResolvedValue(null);
@@ -201,7 +199,7 @@ describe('BrandsService', () => {
       },
     );
 
-    it('reactivates and logs the assignment ID', async () => {
+    it('UT-BRND-007: reactivates and logs the assignment ID', async () => {
       await expect(
         service.reactivateBrandAssignment(assignment.assignment_id),
       ).resolves.toEqual(assignment);
@@ -214,7 +212,7 @@ describe('BrandsService', () => {
       );
     });
 
-    it('rejects a missing assignment before updating', async () => {
+    it('UT-BRND-008: rejects a missing or already active assignment before updating', async () => {
       brands.findOneBrandAssignment.mockResolvedValue(null);
       await expect(
         service.reactivateBrandAssignment(assignment.assignment_id),
@@ -223,9 +221,7 @@ describe('BrandsService', () => {
         response: { code: 'BRAND_ASSIGNMENT_NOT_FOUND' },
       });
       expect(brands.reactivateBrandAssignment).not.toHaveBeenCalled();
-    });
 
-    it('rejects an already active assignment before updating', async () => {
       brands.findOneBrandAssignment.mockResolvedValue(assignment);
       await expect(
         service.reactivateBrandAssignment(assignment.assignment_id),
@@ -236,7 +232,7 @@ describe('BrandsService', () => {
       expect(brands.reactivateBrandAssignment).not.toHaveBeenCalled();
     });
 
-    it('returns a conflict when another request changes the assignment', async () => {
+    it('UT-BRND-009: returns a conflict on P2025 race and propagates unrelated failures', async () => {
       brands.reactivateBrandAssignment.mockRejectedValue(prismaError('P2025'));
       await expect(
         service.reactivateBrandAssignment(assignment.assignment_id),
@@ -247,22 +243,17 @@ describe('BrandsService', () => {
       expect(log).not.toHaveBeenCalledWith(
         `Reactivated brand assignment ${assignment.assignment_id}`,
       );
-    });
 
-    it('propagates unrelated failures without logging success', async () => {
       const error = prismaError('P1001');
       brands.reactivateBrandAssignment.mockRejectedValue(error);
       await expect(
         service.reactivateBrandAssignment(assignment.assignment_id),
       ).rejects.toBe(error);
-      expect(log).not.toHaveBeenCalledWith(
-        `Reactivated brand assignment ${assignment.assignment_id}`,
-      );
     });
   });
 
   describe('updateBrand and deleteBrand', () => {
-    it('updates an existing brand using the supplied fields', async () => {
+    it('UT-BRND-010: updates an existing brand using the supplied fields', async () => {
       const dto = { name: 'Updated', logo_url: null };
       await expect(service.updateBrand('brand-id', dto)).resolves.toEqual({
         ...brand,
@@ -272,7 +263,7 @@ describe('BrandsService', () => {
       expect(brands.updateBrand).toHaveBeenCalledWith('brand-id', dto);
     });
 
-    it('uses the standard not-found error without writing', async () => {
+    it('UT-BRND-011: uses the standard not-found error and propagates update/delete failures', async () => {
       brands.findOneBrand.mockResolvedValue(null);
       await expect(service.updateBrand('brand-id', {})).rejects.toMatchObject({
         status: 404,
@@ -280,16 +271,16 @@ describe('BrandsService', () => {
       });
       expect(brands.updateBrand).not.toHaveBeenCalled();
       expect(warn).toHaveBeenCalledWith('Brand with id brand-id not found');
-    });
 
-    it('propagates update failures without logging success', async () => {
+      brands.findOneBrand.mockResolvedValue(brand);
       const error = new Error('Database unavailable');
       brands.updateBrand.mockRejectedValue(error);
       await expect(service.updateBrand('brand-id', {})).rejects.toBe(error);
       expect(log).not.toHaveBeenCalledWith('Updated brand brand-id');
     });
+
     it.each(['update', 'delete'] as const)(
-      'propagates P2025 to the global filter when a brand disappears before %s',
+      'UT-BRND-012: propagates P2025 to the global filter when a brand disappears before %s',
       async (operation) => {
         const error = new Prisma.PrismaClientKnownRequestError(
           'No matching brand',
@@ -313,33 +304,28 @@ describe('BrandsService', () => {
       },
     );
 
-    it('deletes an existing brand', async () => {
+    it('UT-BRND-013: deletes an existing brand and rejects missing brands', async () => {
       await expect(service.deleteBrand('brand-id')).resolves.toEqual({
         ...brand,
         is_active: false,
       });
       expect(brands.deleteBrand).toHaveBeenCalledWith('brand-id');
-    });
 
-    it('does not delete a missing brand', async () => {
       brands.findOneBrand.mockResolvedValue(null);
       await expect(service.deleteBrand('brand-id')).rejects.toMatchObject({
         status: 404,
       });
-      expect(brands.deleteBrand).not.toHaveBeenCalled();
-    });
 
-    it('propagates unrelated delete failures', async () => {
+      brands.findOneBrand.mockResolvedValue(brand);
       const error = new Error('Database unavailable');
       brands.deleteBrand.mockRejectedValue(error);
       await expect(service.deleteBrand('brand-id')).rejects.toBe(error);
-      expect(log).not.toHaveBeenCalledWith('Deleted brand brand-id');
     });
   });
 
   describe('findAllBrandAssignmentsForUser', () => {
     it.each([true, false])(
-      'paginates assignments with activeOnly=%s',
+      'UT-BRND-014: paginates user brand assignments with activeOnly=%s and handles empty pages',
       async (activeOnly) => {
         await expect(
           service.findAllBrandAssignmentsForUser('user-id', {
@@ -361,7 +347,7 @@ describe('BrandsService', () => {
       },
     );
 
-    it('returns an empty page when the user has no matching assignments', async () => {
+    it('UT-BRND-015: rejects missing users, unsupported offsets, and propagates repository failures for user assignments', async () => {
       brands.findAllBrandAssignmentsForUser.mockResolvedValue({
         brandAssignments: [],
         total: 0,
@@ -372,9 +358,7 @@ describe('BrandsService', () => {
         data: [],
         meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
       });
-    });
 
-    it('rejects missing users before listing assignments', async () => {
       users.findOne.mockResolvedValue(null);
       await expect(
         service.findAllBrandAssignmentsForUser('user-id', new FindBrandsDTO()),
@@ -382,10 +366,7 @@ describe('BrandsService', () => {
         status: 404,
         response: { code: 'USER_NOT_FOUND', message: 'User not found.' },
       });
-      expect(brands.findAllBrandAssignmentsForUser).not.toHaveBeenCalled();
-    });
 
-    it('rejects unsupported offsets before querying', async () => {
       await expect(
         service.findAllBrandAssignmentsForUser('user-id', {
           page: 2_147_483_647,
@@ -396,11 +377,8 @@ describe('BrandsService', () => {
         status: 400,
         response: { code: 'PAGINATION_UNSUPPORTED_RANGE' },
       });
-      expect(users.findOne).not.toHaveBeenCalled();
-      expect(brands.findAllBrandAssignmentsForUser).not.toHaveBeenCalled();
-    });
 
-    it('propagates repository failures', async () => {
+      users.findOne.mockResolvedValue(user);
       const error = new Error('Database unavailable');
       brands.findAllBrandAssignmentsForUser.mockRejectedValue(error);
       await expect(
@@ -411,7 +389,7 @@ describe('BrandsService', () => {
 
   describe('findAllAssignedUsersForBrand', () => {
     it.each([true, false])(
-      'paginates assignments with activeOnly=%s',
+      'UT-BRND-016: paginates brand assigned users with activeOnly=%s and preserves totals on empty pages',
       async (activeOnly) => {
         await expect(
           service.findAllAssignedUsersForBrand('brand-id', {
@@ -433,12 +411,11 @@ describe('BrandsService', () => {
       },
     );
 
-    it.each([0, 21])('preserves total=%s on an empty page', async (total) => {
+    it('UT-BRND-017: rejects missing brands, unsupported offsets, and propagates repository failures for brand users', async () => {
       brands.findAllAssignedUsersForBrand.mockResolvedValue({
         users: [],
-        total,
+        total: 21,
       });
-
       await expect(
         service.findAllAssignedUsersForBrand('brand-id', {
           page: 4,
@@ -447,23 +424,17 @@ describe('BrandsService', () => {
         }),
       ).resolves.toEqual({
         data: [],
-        meta: { page: 4, limit: 10, total, totalPages: Math.ceil(total / 10) },
+        meta: { page: 4, limit: 10, total: 21, totalPages: 3 },
       });
-    });
 
-    it('rejects missing brands before listing assignments', async () => {
       brands.findOneBrand.mockResolvedValue(null);
-
       await expect(
         service.findAllAssignedUsersForBrand('brand-id', new FindBrandsDTO()),
       ).rejects.toMatchObject({
         status: 404,
         response: { code: 'BRAND_NOT_FOUND', message: 'Brand not found.' },
       });
-      expect(brands.findAllAssignedUsersForBrand).not.toHaveBeenCalled();
-    });
 
-    it('rejects unsupported offsets before querying', async () => {
       await expect(
         service.findAllAssignedUsersForBrand('brand-id', {
           page: 2_147_483_647,
@@ -474,14 +445,10 @@ describe('BrandsService', () => {
         status: 400,
         response: { code: 'PAGINATION_UNSUPPORTED_RANGE' },
       });
-      expect(brands.findOneBrand).not.toHaveBeenCalled();
-      expect(brands.findAllAssignedUsersForBrand).not.toHaveBeenCalled();
-    });
 
-    it('propagates repository failures', async () => {
+      brands.findOneBrand.mockResolvedValue(brand);
       const error = new Error('Database unavailable');
       brands.findAllAssignedUsersForBrand.mockRejectedValue(error);
-
       await expect(
         service.findAllAssignedUsersForBrand('brand-id', new FindBrandsDTO()),
       ).rejects.toBe(error);

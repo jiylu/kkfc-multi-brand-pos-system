@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - development
+      - 'feature/**'
   pull_request:
     branches:
       - main
@@ -14,9 +15,162 @@ permissions:
   contents: read
 
 jobs:
-  ci:
-    name: CI
+  unit-tests:
+    name: Stage 1 - Unit Tests (UT) & Build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
     steps:
-      - name: Placeholder CI step
-        run: echo "CI checks will be configured in a separate issue."
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Jest Unit Tests
+        run: npm run test:unit
+
+      - name: Build backend application
+        run: npm run build
+
+  integration-tests:
+    name: Stage 2 - Integration Tests (IT)
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: pos_test
+          POSTGRES_USER: pos_test_user
+          POSTGRES_PASSWORD: pos_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Run Prisma migrations on test database
+        env:
+          DATABASE_URL: postgresql://pos_test_user:pos_test_password@localhost:5432/pos_test
+        run: npx prisma migrate deploy
+
+      - name: Run Jest Integration Tests
+        env:
+          DATABASE_URL: postgresql://pos_test_user:pos_test_password@localhost:5432/pos_test
+        run: npm run test:integration
+
+  e2e-robot-tests:
+    name: Stage 3 - Robot Framework E2E Tests (E2E)
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: pos_test
+          POSTGRES_USER: pos_test_user
+          POSTGRES_PASSWORD: pos_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install -r robot/requirements.txt
+
+      - name: Install Node dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Generate Prisma client and migrate
+        working-directory: server
+        env:
+          DATABASE_URL: postgresql://pos_test_user:pos_test_password@localhost:5432/pos_test
+        run: |
+          npm run prisma:generate
+          npx prisma migrate deploy
+
+      - name: Seed test database fixtures
+        working-directory: server
+        env:
+          DATABASE_URL: postgresql://pos_test_user:pos_test_password@localhost:5432/pos_test
+        run: npm run db:seed:test
+
+      - name: Build NestJS application
+        working-directory: server
+        run: npm run build
+
+      - name: Start NestJS application in background
+        working-directory: server
+        env:
+          NODE_ENV: production
+          PORT: 3000
+          DATABASE_URL: postgresql://pos_test_user:pos_test_password@localhost:5432/pos_test
+        run: |
+          node dist/main &
+          npx wait-on http://localhost:3000/api/auth/me --timeout 30000
+
+      - name: Execute Robot Framework E2E tests
+        run: robot --outputdir robot/results --xunit xunit.xml robot/tests/
+
+      - name: Upload Robot Framework test results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robot-test-results
+          path: robot/results/
+          if-no-files-found: warn

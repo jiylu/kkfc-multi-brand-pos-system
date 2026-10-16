@@ -49,12 +49,12 @@ describe('UsersService', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
-  it('creates a user with the supplied fields', async () => {
+  it('UT-USER-001: creates a user with the supplied fields', async () => {
     await expect(service.createUser(createDTO)).resolves.toEqual(user);
     expect(repository.create).toHaveBeenCalledWith(createDTO);
   });
 
-  it('returns a conflict when the username is already taken', async () => {
+  it('UT-USER-002: returns a conflict when the username is already taken', async () => {
     repository.findByUsername.mockResolvedValue({
       user_id: user.user_id,
       password_hash: 'password-hash',
@@ -78,7 +78,7 @@ describe('UsersService', () => {
   });
 
   it.each(['P1001', 'P2002', 'P2003'])(
-    'propagates create failures to the global filter: %s',
+    'UT-USER-003: propagates create failures to the global filter: %s',
     async (code) => {
       const error = new Prisma.PrismaClientKnownRequestError(
         'Database request failed',
@@ -94,7 +94,7 @@ describe('UsersService', () => {
   );
 
   it.each([true, false])(
-    'returns pagination metadata and forwards activeOnly=%s',
+    'UT-USER-004: returns pagination metadata and forwards activeOnly=%s',
     async (activeOnly) => {
       await expect(
         service.findAllUsers({ page: 3, limit: 10, activeOnly }),
@@ -106,7 +106,7 @@ describe('UsersService', () => {
     },
   );
 
-  it('returns an empty list and zero pages when no users match', async () => {
+  it('UT-USER-005: returns an empty list and zero pages when no users match', async () => {
     repository.findAll.mockResolvedValue({ users: [], total: 0 });
 
     await expect(service.findAllUsers(new FindUsersDTO())).resolves.toEqual({
@@ -116,7 +116,7 @@ describe('UsersService', () => {
     expect(repository.findAll).toHaveBeenCalledWith(0, 10, true);
   });
 
-  it('returns an empty page past the last result while preserving totals', async () => {
+  it('UT-USER-006: returns an empty page past the last result while preserving totals', async () => {
     repository.findAll.mockResolvedValue({ users: [], total: 21 });
 
     await expect(
@@ -127,7 +127,7 @@ describe('UsersService', () => {
     });
   });
 
-  it('rejects offsets outside the database range before querying', async () => {
+  it('UT-USER-007: rejects offsets outside the database range before querying', async () => {
     await expect(
       service.findAllUsers({
         page: 2_147_483_647,
@@ -144,7 +144,7 @@ describe('UsersService', () => {
     expect(repository.findAll).not.toHaveBeenCalled();
   });
 
-  it('allows the largest page number when its offset fits the database range', async () => {
+  it('UT-USER-008: allows the largest page number when its offset fits the database range', async () => {
     await service.findAllUsers({
       page: 2_147_483_647,
       limit: 1,
@@ -154,12 +154,12 @@ describe('UsersService', () => {
     expect(repository.findAll).toHaveBeenCalledWith(2_147_483_646, 1, true);
   });
 
-  it('returns an existing user', async () => {
+  it('UT-USER-009: returns an existing user', async () => {
     await expect(service.findOneUser(user.user_id)).resolves.toEqual(user);
     expect(repository.findOne).toHaveBeenCalledWith(user.user_id, true);
   });
 
-  it('allows explicitly finding an inactive user', async () => {
+  it('UT-USER-010: allows explicitly finding an inactive user', async () => {
     const inactiveUser = { ...user, is_active: false };
     repository.findOne.mockResolvedValue(inactiveUser);
 
@@ -169,7 +169,7 @@ describe('UsersService', () => {
     expect(repository.findOne).toHaveBeenCalledWith(user.user_id, false);
   });
 
-  it('updates an existing user with the supplied fields', async () => {
+  it('UT-USER-011: updates an existing user with the supplied fields', async () => {
     const dto = { first_name: 'Updated' };
 
     await expect(service.updateUser(user.user_id, dto)).resolves.toEqual({
@@ -180,7 +180,7 @@ describe('UsersService', () => {
     expect(repository.update).toHaveBeenCalledWith(user.user_id, dto);
   });
 
-  it('rejects an update if the user is deactivated after the lookup', async () => {
+  it('UT-USER-012: rejects an update if the user is deactivated after the lookup', async () => {
     repository.update.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('No matching user', {
         code: 'P2025',
@@ -200,7 +200,7 @@ describe('UsersService', () => {
     expect(log).not.toHaveBeenCalledWith(`Updated user ${user.user_id}`);
   });
 
-  it('propagates unrelated Prisma update failures', async () => {
+  it('UT-USER-013: propagates unrelated Prisma update failures', async () => {
     const error = new Prisma.PrismaClientKnownRequestError(
       'Database unavailable',
       {
@@ -215,7 +215,7 @@ describe('UsersService', () => {
     ).rejects.toBe(error);
   });
 
-  it('deactivates an existing user', async () => {
+  it('UT-USER-014: deactivates an existing user', async () => {
     await expect(service.deleteUser(user.user_id)).resolves.toEqual({
       ...user,
       is_active: false,
@@ -232,7 +232,7 @@ describe('UsersService', () => {
     ],
     ['deactivating', () => service.deleteUser(user.user_id)],
   ] as const)(
-    'rejects %s a missing user without writing',
+    'UT-USER-015: rejects %s a missing user without writing',
     async (_action, run) => {
       repository.findOne.mockResolvedValue(null);
 
@@ -254,10 +254,13 @@ describe('UsersService', () => {
       () => service.updateUser(user.user_id, { first_name: 'Updated' }),
     ],
     ['delete', () => service.deleteUser(user.user_id)],
-  ] as const)('propagates repository failures from %s', async (method, run) => {
-    const error = new Error('Database unavailable');
-    repository[method].mockRejectedValue(error);
+  ] as const)(
+    'UT-USER-016: propagates repository failures from %s',
+    async (method, run) => {
+      const error = new Error('Database unavailable');
+      repository[method].mockRejectedValue(error);
 
-    await expect(run()).rejects.toBe(error);
-  });
+      await expect(run()).rejects.toBe(error);
+    },
+  );
 });
