@@ -13,7 +13,7 @@ class App extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'KKFC POS',
-      theme: appTheme,
+      theme: counterTheme,
       debugShowCheckedModeBanner: false,
       routerConfig: router,
     );
