@@ -201,7 +201,7 @@ describe('Brands HTTP endpoints', () => {
   ];
 
   it.each(routes)(
-    '%s %s delegates for an authenticated owner',
+    'IT-BRND-001: %s %s delegates for an authenticated owner',
     async (method, path, handler, args, status) => {
       if (
         handler === 'reactivateBrandAssignment' ||
@@ -390,7 +390,7 @@ describe('Brands HTTP endpoints', () => {
     brand_id: 'f1308de0-f705-45e0-b152-6a9da7399a41',
   };
 
-  it('assigns a user using the JSON body', async () => {
+  it('IT-BRND-002: assigns a user using the JSON body', async () => {
     const response = await fetch(`${url}/assign`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -418,7 +418,7 @@ describe('Brands HTTP endpoints', () => {
     },
     { ...assignmentDTO, brand_id: 'invalid' },
     { ...assignmentDTO, role: 'OWNER' },
-  ])('rejects invalid assignment bodies: %j', async (body) => {
+  ])('IT-BRND-003: rejects invalid assignment bodies: %j', async (body) => {
     const response = await fetch(`${url}/assign`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -428,7 +428,7 @@ describe('Brands HTTP endpoints', () => {
     expect(service.assignUserToBrand).not.toHaveBeenCalled();
   });
 
-  it('does not expose the old assignment POST route', async () => {
+  it('IT-BRND-004: does not expose the old assignment POST route', async () => {
     expect(
       (
         await fetch(
@@ -440,7 +440,7 @@ describe('Brands HTTP endpoints', () => {
     expect(service.assignUserToBrand).not.toHaveBeenCalled();
   });
 
-  it('validates and forwards brand updates', async () => {
+  it('IT-BRND-005: validates and forwards brand updates', async () => {
     const dto = { name: 'Updated', logo_url: null };
     const response = await fetch(
       `${url}/00000000-0000-4000-8000-000000000001`,
@@ -458,7 +458,7 @@ describe('Brands HTTP endpoints', () => {
   });
 
   it.each(['?page=0', '?limit=101', '?activeOnly=yes'])(
-    'rejects invalid list queries: %s',
+    'IT-BRND-006: rejects invalid list queries: %s',
     async (query) => {
       expect((await fetch(`${url}${query}`)).status).toBe(400);
       expect(service.findAllBrands).not.toHaveBeenCalled();
@@ -466,7 +466,7 @@ describe('Brands HTTP endpoints', () => {
   );
 
   it.each(['?page=0', '?limit=101', '?activeOnly=yes'])(
-    'rejects invalid assigned-user list queries: %s',
+    'IT-BRND-007: rejects invalid assigned-user list queries: %s',
     async (query) => {
       expect(
         (
@@ -480,7 +480,7 @@ describe('Brands HTTP endpoints', () => {
   );
 
   it.each(Object.values(UserRole).filter((role) => role !== UserRole.OWNER))(
-    'rejects assigned-user listing for %s',
+    'IT-BRND-008: rejects assigned-user listing for %s',
     async (role) => {
       currentRole = role;
 
@@ -492,7 +492,7 @@ describe('Brands HTTP endpoints', () => {
     },
   );
 
-  it('rejects invalid assignment boolean filters', async () => {
+  it('IT-BRND-009: rejects invalid assignment boolean filters', async () => {
     expect(
       (
         await fetch(
@@ -516,7 +516,7 @@ describe('Brands HTTP endpoints', () => {
     expect(service.updateBrand).not.toHaveBeenCalled();
   });
 
-  it('rejects invalid update fields', async () => {
+  it('IT-BRND-010: rejects invalid update fields', async () => {
     const response = await fetch(
       `${url}/00000000-0000-4000-8000-000000000001`,
       {
@@ -548,16 +548,16 @@ describe('Brands HTTP endpoints', () => {
     ['GET', '/not-a-uuid/users'],
     ['GET', '/not-a-uuid/users/00000000-0000-4000-8000-000000000002'],
     ['GET', '/00000000-0000-4000-8000-000000000001/users/not-a-uuid'],
-  ])('rejects malformed path IDs: %s %s', async (method, path) => {
+  ])('IT-BRND-011: rejects malformed path IDs: %s %s', async (method, path) => {
     expect((await fetch(`${url}${path}`, { method })).status).toBe(400);
     for (const handler of Object.values(service))
       expect(handler).not.toHaveBeenCalled();
   });
 
   it.each([
-    { name: 'King Kungs Kafé', logo_url: null },
-    { name: 'King Kungs Kafé' },
-  ])('creates a brand for the authenticated owner: %j', async (dto) => {
+    { name: 'King Kungs Kafé', code: 'KK', logo_url: null },
+    { name: 'King Kungs Kafé', code: 'KK' },
+  ])('IT-BRND-012: creates a brand for the authenticated owner: %j', async (dto) => {
     assignedBrandIds = [];
     const response = await fetch(url, {
       method: 'POST',
@@ -578,6 +578,9 @@ describe('Brands HTTP endpoints', () => {
     { name: '' },
     { name: 123 },
     { name: 'a'.repeat(151) },
+    { name: 'Brand', code: 'K' },
+    { name: 'Brand', code: 'KKK' },
+    { name: 'Brand', code: '12' },
     { name: 'Brand', logo_url: 'invalid' },
     { name: 'Brand', owner_id: 'another-owner' },
     { name: 'Brand', is_active: false },
@@ -599,7 +602,7 @@ describe('Brands HTTP endpoints', () => {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Brand' }),
+        body: JSON.stringify({ name: 'Brand', code: 'KK' }),
       });
 
       expect(response.status).toBe(403);

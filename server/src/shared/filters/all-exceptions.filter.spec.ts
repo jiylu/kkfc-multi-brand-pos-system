@@ -50,7 +50,7 @@ describe('AllExceptionsFilter', () => {
   afterEach(() => jest.restoreAllMocks());
   afterAll(async () => app?.close());
 
-  it('preserves application error codes and logs client errors as warnings', async () => {
+  it('UT-SHRD-001: preserves application error codes and logs client errors as warnings', async () => {
     const body = { code: 'USER_NOT_FOUND', message: 'User not found.' };
     failure = new BadRequestException(body);
 
@@ -62,7 +62,7 @@ describe('AllExceptionsFilter', () => {
     expect(error).not.toHaveBeenCalled();
   });
 
-  it('preserves validation message arrays', async () => {
+  it('UT-SHRD-002: preserves validation message arrays', async () => {
     failure = new BadRequestException(['username must be a string']);
 
     const response = await fetch(url);
@@ -95,7 +95,7 @@ describe('AllExceptionsFilter', () => {
       exceptionName: 'NotFoundException',
     },
   ])(
-    'maps $code to HTTP $status without exposing database details',
+    'UT-SHRD-003: maps $code to HTTP $status without exposing database details',
     async ({ code, status, body, exceptionName }) => {
       failure = new Prisma.PrismaClientKnownRequestError(
         'private database details',
@@ -116,7 +116,7 @@ describe('AllExceptionsFilter', () => {
     },
   );
 
-  it('preserves custom service not-found responses', async () => {
+  it('UT-SHRD-004: preserves custom service not-found responses', async () => {
     const body = { code: 'USER_NOT_FOUND', message: 'User not found.' };
     failure = new NotFoundException(body);
 
@@ -126,7 +126,7 @@ describe('AllExceptionsFilter', () => {
     expect(await response.json()).toEqual(body);
   });
 
-  it('preserves custom service conflict responses', async () => {
+  it('UT-SHRD-005: preserves custom service conflict responses', async () => {
     const body = {
       code: 'USERNAME_ALREADY_EXISTS',
       message: 'Username already exists.',
@@ -140,7 +140,7 @@ describe('AllExceptionsFilter', () => {
   });
 
   it.each(['P1001', 'P2003'])(
-    'keeps unhandled Prisma error %s as a server error',
+    'UT-SHRD-006: keeps unhandled Prisma error %s as a server error',
     async (code) => {
       failure = new Prisma.PrismaClientKnownRequestError(
         'private database details',
@@ -162,7 +162,7 @@ describe('AllExceptionsFilter', () => {
     },
   );
 
-  it('logs HTTP server errors once', async () => {
+  it('UT-SHRD-007: logs HTTP server errors once', async () => {
     failure = new InternalServerErrorException();
 
     const response = await fetch(url);
@@ -176,7 +176,7 @@ describe('AllExceptionsFilter', () => {
   });
 
   it.each([new Error('private database details'), 'unexpected value', null])(
-    'delegates unexpected failures to Nest without leaking details: %s',
+    'UT-SHRD-008: delegates unexpected failures to Nest without leaking details: %s',
     async (exception) => {
       failure = exception;
 

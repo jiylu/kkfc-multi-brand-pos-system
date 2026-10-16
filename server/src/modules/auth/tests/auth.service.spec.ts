@@ -56,7 +56,7 @@ describe('AuthService', () => {
     jest.restoreAllMocks();
   });
 
-  it('creates a session for an active user with a future expiration', async () => {
+  it('UT-AUTH-001: creates a session for an active user with a future expiration', async () => {
     const dto = {
       user_id: user.user_id,
       token_hash: 'a'.repeat(64),
@@ -66,7 +66,7 @@ describe('AuthService', () => {
     expect(authRepository.create).toHaveBeenCalledWith(dto);
   });
 
-  it('rejects session creation for a missing user', async () => {
+  it('UT-AUTH-002: rejects session creation for a missing user', async () => {
     usersRepository.findOne.mockResolvedValue(null);
     await expect(
       service.createSession({
@@ -79,7 +79,7 @@ describe('AuthService', () => {
   });
 
   it.each([now, new Date('invalid')])(
-    'rejects invalid session expiration %s',
+    'UT-AUTH-003: rejects invalid session expiration %s',
     async (expires_at) => {
       await expect(
         service.createSession({
@@ -92,7 +92,7 @@ describe('AuthService', () => {
     },
   );
 
-  it('hashes the bearer token and records activity only after validation', async () => {
+  it('UT-AUTH-004: hashes the bearer token and records activity only after validation', async () => {
     const token = 'raw-bearer-token';
     await expect(service.validateSession(token)).resolves.toEqual({
       ...session,
@@ -106,7 +106,7 @@ describe('AuthService', () => {
     );
   });
 
-  it('rejects an empty token without a database lookup', async () => {
+  it('UT-AUTH-005: rejects an empty token without a database lookup', async () => {
     await expect(service.validateSession('')).rejects.toBeInstanceOf(
       UnauthorizedException,
     );
@@ -114,7 +114,7 @@ describe('AuthService', () => {
   });
 
   it.each([null, { ...session, expires_at: now }])(
-    'rejects missing or expired sessions',
+    'UT-AUTH-006: rejects missing or expired sessions',
     async (storedSession) => {
       authRepository.findOneSessionByTokenHash.mockResolvedValue(storedSession);
       await expect(service.validateSession('token')).rejects.toBeInstanceOf(
@@ -124,7 +124,7 @@ describe('AuthService', () => {
     },
   );
 
-  it('accepts an unexpired session regardless of inactivity', async () => {
+  it('UT-AUTH-007: accepts an unexpired session regardless of inactivity', async () => {
     authRepository.findOneSessionByTokenHash.mockResolvedValue({
       ...session,
       last_seen_at: new Date('2029-12-31T00:00:00Z'),
@@ -138,7 +138,7 @@ describe('AuthService', () => {
     );
   });
 
-  it('rejects session owners not returned by the active-user lookup', async () => {
+  it('UT-AUTH-008: rejects session owners not returned by the active-user lookup', async () => {
     usersRepository.findOne.mockResolvedValue(null);
     await expect(service.validateSession('token')).rejects.toBeInstanceOf(
       NotFoundException,
@@ -146,7 +146,7 @@ describe('AuthService', () => {
     expect(authRepository.updateLastSeen).not.toHaveBeenCalled();
   });
 
-  it('rejects a session revoked between lookup and activity update', async () => {
+  it('UT-AUTH-009: rejects a session revoked between lookup and activity update', async () => {
     authRepository.updateLastSeen.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('Missing session', {
         code: 'P2025',
@@ -158,7 +158,7 @@ describe('AuthService', () => {
     );
   });
 
-  it('deletes only the specified session on logout', async () => {
+  it('UT-AUTH-010: deletes only the specified session on logout', async () => {
     await expect(service.deleteSession(session.session_id)).resolves.toEqual(
       session,
     );
@@ -166,7 +166,7 @@ describe('AuthService', () => {
     expect(authRepository.deleteMany).not.toHaveBeenCalled();
   });
 
-  it('allows repeated logout of an already deleted session', async () => {
+  it('UT-AUTH-011: allows repeated logout of an already deleted session', async () => {
     authRepository.delete.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('Missing session', {
         code: 'P2025',
@@ -176,13 +176,11 @@ describe('AuthService', () => {
     await expect(service.deleteSession(session.session_id)).resolves.toBeNull();
   });
 
-  it('propagates database failures instead of treating them as logout success', async () => {
+  it('UT-AUTH-012: propagates database failures and revokes all sessions for a user', async () => {
     const error = new Error('Database unavailable');
     authRepository.delete.mockRejectedValue(error);
     await expect(service.deleteSession(session.session_id)).rejects.toBe(error);
-  });
 
-  it('revokes all sessions only for the specified user', async () => {
     await expect(service.deleteUserSessions(user.user_id)).resolves.toEqual({
       count: 2,
     });

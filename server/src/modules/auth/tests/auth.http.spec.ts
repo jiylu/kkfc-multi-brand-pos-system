@@ -192,7 +192,7 @@ describe('Auth HTTP endpoints', () => {
     };
   }
 
-  it('hides unrelated users from listings and individual lookups', async () => {
+  it('IT-AUTH-014: hides unrelated users from listings and individual lookups', async () => {
     const unrelated = {
       ...staff,
       user_id: randomUUID(),
@@ -220,7 +220,7 @@ describe('Auth HTTP endpoints', () => {
     expect(lookup.status).toBe(403);
   });
 
-  it('blocks edits to another owner, password resets, and global staff deactivation', async () => {
+  it('IT-AUTH-015: blocks edits to another owner, password resets, and global staff deactivation', async () => {
     const otherOwner = {
       ...owner,
       user_id: randomUUID(),
@@ -251,7 +251,7 @@ describe('Auth HTTP endpoints', () => {
     expect(deletion.status).toBe(403);
   });
 
-  it('issues a random token, persists its hash, and returns a safe profile', async () => {
+  it('IT-AUTH-001: issues a random token, persists its hash, and returns a safe profile', async () => {
     const body = await login();
     expect(body.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(
@@ -276,7 +276,7 @@ describe('Auth HTTP endpoints', () => {
     { username: 'unknown', password: 'correct-password' },
     { username: 'owner', password: 'wrong-password' },
   ])(
-    'rejects invalid credentials without creating a session',
+    'IT-AUTH-002: rejects invalid credentials without creating a session',
     async (credentials) => {
       const response = await fetch(`${url}/api/auth/login`, {
         method: 'POST',
@@ -291,7 +291,7 @@ describe('Auth HTTP endpoints', () => {
     },
   );
 
-  it('rejects client-supplied session fields', async () => {
+  it('IT-AUTH-003: rejects client-supplied session fields', async () => {
     const response = await fetch(`${url}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -306,7 +306,7 @@ describe('Auth HTTP endpoints', () => {
   });
 
   it.each([undefined, 'Basic abc', 'Bearer', 'Bearer a b', 'Bearer unknown'])(
-    'rejects missing or invalid bearer tokens: %s',
+    'IT-AUTH-004: rejects missing or invalid bearer tokens: %s',
     async (authorization) => {
       const response = await fetch(`${url}/api/auth/me`, {
         headers: authorization ? { Authorization: authorization } : {},
@@ -315,7 +315,7 @@ describe('Auth HTTP endpoints', () => {
     },
   );
 
-  it('returns the authenticated user and accepts old activity timestamps', async () => {
+  it('IT-AUTH-005: returns the authenticated user and accepts old activity timestamps', async () => {
     const { token, user } = await login();
     [...sessions.values()][0].last_seen_at = new Date(0);
     const response = await fetch(`${url}/api/auth/me`, {
@@ -326,7 +326,7 @@ describe('Auth HTTP endpoints', () => {
     expect(await response.json()).toEqual(user);
   });
 
-  it('returns an empty brand list when no brands are assigned', async () => {
+  it('IT-AUTH-006: returns an empty brand list when no brands are assigned', async () => {
     users.set(owner.user_id, { ...owner, user_brand_assignments_user: [] });
     const { token, user } = await login();
     expect(user.brand_ids).toEqual([]);
@@ -337,7 +337,7 @@ describe('Auth HTTP endpoints', () => {
     expect(await response.json()).toEqual(user);
   });
 
-  it('logout invalidates only the current session', async () => {
+  it('IT-AUTH-007: logout invalidates only the current session', async () => {
     const first = await login();
     const second = await login();
     const response = await fetch(`${url}/api/auth/logout`, {
@@ -362,7 +362,7 @@ describe('Auth HTTP endpoints', () => {
     ).toBe(200);
   });
 
-  it('logout-all leaves another user’s sessions intact', async () => {
+  it('IT-AUTH-008: logout-all leaves another user’s sessions intact', async () => {
     const first = await login();
     await login();
     const other = await login('staff');
@@ -384,7 +384,7 @@ describe('Auth HTTP endpoints', () => {
     ).toBe(200);
   });
 
-  it('rejects expired sessions', async () => {
+  it('IT-AUTH-009: rejects expired sessions', async () => {
     const { token } = await login();
     [...sessions.values()][0].expires_at = new Date(0);
     expect(
@@ -396,7 +396,7 @@ describe('Auth HTTP endpoints', () => {
     ).toBe(401);
   });
 
-  it('rejects sessions after account deactivation', async () => {
+  it('IT-AUTH-010: rejects sessions after account deactivation', async () => {
     const { token } = await login();
     users.get(owner.user_id)!.is_active = false;
     expect(
@@ -419,7 +419,7 @@ describe('Auth HTTP endpoints', () => {
     { query: '&activeOnly=true', total: 2, inactiveReturned: false },
     { query: '&activeOnly=false', total: 3, inactiveReturned: true },
   ])(
-    'paginates users with the active-only filter: $query',
+    'IT-AUTH-011: paginates users with the active-only filter: $query',
     async ({ query, total, inactiveReturned }) => {
       const inactive = {
         ...staff,
@@ -455,7 +455,7 @@ describe('Auth HTTP endpoints', () => {
   );
 
   it.each(['', 'yes', '1', '0', 'FALSE', 'false&activeOnly=true'])(
-    'rejects invalid activeOnly query values: %s',
+    'IT-AUTH-012: rejects invalid activeOnly query values: %s',
     async (value) => {
       const { token } = await login();
 
@@ -467,7 +467,7 @@ describe('Auth HTTP endpoints', () => {
     },
   );
 
-  it('requires owner access for user management', async () => {
+  it('IT-AUTH-013: requires owner access for user management', async () => {
     expect((await fetch(`${url}/api/users`)).status).toBe(401);
     const member = await login('staff');
     expect(

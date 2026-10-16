@@ -32,7 +32,7 @@ describe('RolesGuard', () => {
     } as unknown as ExecutionContext;
   }
 
-  it('uses controller roles when the endpoint has no override', () => {
+  it('UT-SHRD-009: uses controller roles when the endpoint has no override', () => {
     expect(guard.canActivate(context('ownerOnly', UserRole.OWNER))).toBe(true);
     expect(() =>
       guard.canActivate(context('ownerOnly', UserRole.KITCHEN_PREPARER)),
@@ -40,7 +40,7 @@ describe('RolesGuard', () => {
   });
 
   it.each([UserRole.KITCHEN_HEAD, UserRole.KITCHEN_PREPARER])(
-    'allows any listed endpoint role and overrides controller roles: %s',
+    'UT-SHRD-010: allows any listed endpoint role and overrides controller roles: %s',
     (role) => {
       expect(guard.canActivate(context('kitchen', role))).toBe(true);
       expect(() =>
@@ -49,7 +49,7 @@ describe('RolesGuard', () => {
     },
   );
 
-  it('requires authentication before checking restricted roles', () => {
+  it('UT-SHRD-014: requires authentication before checking restricted roles', () => {
     expect(() => guard.canActivate(context('ownerOnly'))).toThrow(
       UnauthorizedException,
     );
