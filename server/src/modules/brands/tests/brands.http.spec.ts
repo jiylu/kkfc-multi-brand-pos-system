@@ -12,9 +12,11 @@ import { UserRole } from '@prisma/client';
 describe('Brands HTTP endpoints', () => {
   let app: INestApplication;
   let url: string;
+  let currentRole: UserRole = UserRole.OWNER;
   const service = {
     findAllBrands: jest.fn(),
     findAllBrandAssignmentsForUser: jest.fn(),
+    findAllAssignedUsersForBrand: jest.fn(),
     findOneBrandAssignmentById: jest.fn(),
     reactivateBrandAssignment: jest.fn(),
     deactivateBrandAssignment: jest.fn(),
@@ -39,7 +41,7 @@ describe('Brands HTTP endpoints', () => {
           request.session = {
             user: {
               user_id: '00000000-0000-4000-8000-000000000004',
-              role: UserRole.OWNER,
+              role: currentRole,
             },
           };
           return true;
@@ -60,12 +62,33 @@ describe('Brands HTTP endpoints', () => {
   });
 
   beforeEach(() => {
+    currentRole = UserRole.OWNER;
     for (const method of Object.values(service))
       method.mockReset().mockResolvedValue({ ok: true });
   });
   afterAll(async () => app?.close());
 
   const routes: [string, string, keyof typeof service, unknown[], number][] = [
+    [
+      'GET',
+      '/00000000-0000-4000-8000-000000000001/users',
+      'findAllAssignedUsersForBrand',
+      [
+        '00000000-0000-4000-8000-000000000001',
+        { page: 1, limit: 10, activeOnly: true },
+      ],
+      200,
+    ],
+    [
+      'GET',
+      '/00000000-0000-4000-8000-000000000001/users?page=2&limit=5&activeOnly=false',
+      'findAllAssignedUsersForBrand',
+      [
+        '00000000-0000-4000-8000-000000000001',
+        { page: 2, limit: 5, activeOnly: false },
+      ],
+      200,
+    ],
     [
       'GET',
       '',
@@ -239,6 +262,33 @@ describe('Brands HTTP endpoints', () => {
     },
   );
 
+  it.each(['?page=0', '?limit=101', '?activeOnly=yes'])(
+    'rejects invalid assigned-user list queries: %s',
+    async (query) => {
+      expect(
+        (
+          await fetch(
+            `${url}/00000000-0000-4000-8000-000000000001/users${query}`,
+          )
+        ).status,
+      ).toBe(400);
+      expect(service.findAllAssignedUsersForBrand).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(Object.values(UserRole).filter((role) => role !== UserRole.OWNER))(
+    'rejects assigned-user listing for %s',
+    async (role) => {
+      currentRole = role;
+
+      expect(
+        (await fetch(`${url}/00000000-0000-4000-8000-000000000001/users`))
+          .status,
+      ).toBe(403);
+      expect(service.findAllAssignedUsersForBrand).not.toHaveBeenCalled();
+    },
+  );
+
   it('rejects invalid assignment boolean filters', async () => {
     expect(
       (
@@ -271,6 +321,7 @@ describe('Brands HTTP endpoints', () => {
     ['PATCH', '/assignments/not-a-uuid/reactivate'],
     ['DELETE', '/assignments/not-a-uuid'],
     ['GET', '/assignments/users/not-a-uuid'],
+    ['GET', '/not-a-uuid/users'],
     ['GET', '/not-a-uuid/users/00000000-0000-4000-8000-000000000002'],
     ['GET', '/00000000-0000-4000-8000-000000000001/users/not-a-uuid'],
   ])('rejects malformed path IDs: %s %s', async (method, path) => {

@@ -28,6 +28,7 @@ describe('Repository transaction clients', () => {
       findMany: jest.fn().mockResolvedValue([record]),
       count: jest.fn().mockResolvedValue(1),
       update: jest.fn().mockResolvedValue(record),
+      updateMany: jest.fn().mockResolvedValue({ count: 2 }),
       delete: jest.fn().mockResolvedValue(record),
       deleteMany: jest.fn().mockResolvedValue(record),
     };
@@ -51,8 +52,15 @@ describe('Repository transaction clients', () => {
       brand: model(),
       userBrandAssignment: model(),
     };
-    standaloneTransaction = jest.fn((queries: Promise<unknown>[]) =>
-      Promise.all(queries),
+    standaloneTransaction = jest.fn(
+      (
+        queries:
+          | Promise<unknown>[]
+          | ((tx: Prisma.TransactionClient) => Promise<unknown>),
+      ) =>
+        typeof queries === 'function'
+          ? queries(transaction as unknown as Prisma.TransactionClient)
+          : Promise.all(queries),
     );
     // No root delegates: a query escaping the supplied transaction must fail.
     const prisma = {
@@ -105,7 +113,6 @@ describe('Repository transaction clients', () => {
       'Brands.reactivateBrandAssignment',
       (tx) => brands.reactivateBrandAssignment('assignment-id', tx),
     ],
-    ['Brands.deleteBrand', (tx) => brands.deleteBrand('brand-id', tx)],
     [
       'Brands.deactivateAssignment',
       (tx) => brands.deactivateAssignment('assignment-id', tx),
@@ -134,44 +141,47 @@ describe('Repository transaction clients', () => {
     },
   );
 
-  it.each([true, false])(
-    'lists assignments for the requested brand with activeOnly=%s inside the supplied transaction',
-    async (activeOnly) => {
-      await expect(
-        brands.findAllAssignedUsersForBrand(
-          'brand-id',
-          activeOnly,
-          transaction as unknown as Prisma.TransactionClient,
-        ),
-      ).resolves.toEqual([record]);
-      expect(transaction.userBrandAssignment.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            brand_id: 'brand-id',
-            is_active: activeOnly ? true : undefined,
-          },
-        }),
-      );
-      expect(transaction.user.findMany).not.toHaveBeenCalled();
-      expect(standaloneTransaction).not.toHaveBeenCalled();
-    },
-  );
-
-  it('defaults to active assignments using the injected client', async () => {
-    brands = new BrandsRepository(transaction as unknown as PrismaService);
-
-    await expect(
-      brands.findAllAssignedUsersForBrand('brand-id'),
-    ).resolves.toEqual([record]);
-    expect(transaction.userBrandAssignment.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          brand_id: 'brand-id',
-          is_active: true,
+  it('deletes a brand and deactivates its active assignments in one transaction', async () => {
+    await expect(brands.deleteBrand('brand-id')).resolves.toEqual(record);
+    expect(standaloneTransaction).toHaveBeenCalledTimes(1);
+    expect(transaction.brand.update.mock.calls).toMatchObject([
+      [
+        {
+          where: { brand_id: 'brand-id', is_active: true },
+          data: { is_active: false },
         },
-      }),
+      ],
+    ]);
+    expect(transaction.userBrandAssignment.updateMany.mock.calls).toMatchObject(
+      [
+        [
+          {
+            where: { brand_id: 'brand-id', is_active: true },
+            data: { is_active: false },
+          },
+        ],
+      ],
     );
   });
+
+  it('deletes a brand with no active assignments', async () => {
+    transaction.userBrandAssignment.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(brands.deleteBrand('brand-id')).resolves.toEqual(record);
+    expect(transaction.userBrandAssignment.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['brand', 'assignment update'])(
+    'rejects the delete transaction when %s fails',
+    async (step) => {
+      const error = new Error('Database operation failed');
+      if (step === 'brand') transaction.brand.update.mockRejectedValue(error);
+      else transaction.userBrandAssignment.updateMany.mockRejectedValue(error);
+
+      await expect(brands.deleteBrand('brand-id')).rejects.toBe(error);
+      expect(standaloneTransaction).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it.each([true, false])(
     'paginates assignments with matching row and count filters for activeOnly=%s',
@@ -180,7 +190,7 @@ describe('Repository transaction clients', () => {
       transaction.userBrandAssignment.count.mockResolvedValue(21);
 
       await expect(
-        brands.findAllAssignedUsersForBrandPaginated(
+        brands.findAllAssignedUsersForBrand(
           'brand-id',
           30,
           10,
@@ -209,15 +219,9 @@ describe('Repository transaction clients', () => {
   const listings: [string, (tx?: Client) => Promise<unknown>, string][] = [
     ['Users.findAll', (tx) => users.findAll(0, 10, false, tx), 'users'],
     [
-      'Brands.findAllAssignedUsersForBrandPaginated',
+      'Brands.findAllAssignedUsersForBrand',
       (tx) =>
-        brands.findAllAssignedUsersForBrandPaginated(
-          'brand-id',
-          0,
-          10,
-          undefined,
-          tx,
-        ),
+        brands.findAllAssignedUsersForBrand('brand-id', 0, 10, undefined, tx),
       'users',
     ],
     [

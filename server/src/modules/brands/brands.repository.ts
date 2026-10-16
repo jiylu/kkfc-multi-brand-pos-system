@@ -131,20 +131,6 @@ export class BrandsRepository {
 
   async findAllAssignedUsersForBrand(
     brandId: string,
-    activeOnly = true,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.userBrandAssignment.findMany({
-      where: {
-        brand_id: brandId,
-        is_active: activeOnly ? true : undefined,
-      },
-      orderBy: [{ created_at: 'desc' }, { user_id: 'asc' }],
-    });
-  }
-
-  async findAllAssignedUsersForBrandPaginated(
-    brandId: string,
     skip: number,
     take: number,
     activeOnly = true,
@@ -207,19 +193,31 @@ export class BrandsRepository {
     });
   }
 
-  async deleteBrand(
-    brandId: string,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.brand.update({
-      where: {
-        brand_id: brandId,
-        is_active: true,
-      },
-      data: {
-        is_active: false,
-        modified_at: new Date(),
-      },
+  async deleteBrand(brandId: string) {
+    return await this.prisma.$transaction(async (tx) => {
+      const deletedBrand = await tx.brand.update({
+        where: {
+          brand_id: brandId,
+          is_active: true,
+        },
+        data: {
+          is_active: false,
+          modified_at: new Date(),
+        },
+      });
+
+      await tx.userBrandAssignment.updateMany({
+        where: {
+          brand_id: brandId,
+          is_active: true,
+        },
+        data: {
+          is_active: false,
+          modified_at: new Date(),
+        },
+      });
+
+      return deletedBrand;
     });
   }
 

@@ -171,6 +171,43 @@ export class BrandsService {
     };
   }
 
+  async findAllAssignedUsersForBrand(
+    brandId: string,
+    { page, limit, activeOnly }: FindBrandsDTO,
+  ) {
+    this.logger.log(
+      `Listing assigned users for brand ${brandId}: page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
+    );
+
+    const skip = (page - 1) * limit;
+    assertValidPagination(skip, this.logger);
+
+    const brand = await this.brandsRepository.findOneBrand(brandId, false);
+    assertExists(brand, 'Brand', brandId, this.logger);
+
+    const { users, total } =
+      await this.brandsRepository.findAllAssignedUsersForBrand(
+        brand.brand_id,
+        skip,
+        limit,
+        activeOnly,
+      );
+
+    this.logger.log(
+      `Listed assigned users for brand ${brandId}: page=${page}, returned=${users.length}, total=${total}`,
+    );
+
+    return {
+      data: users,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async findAllBrands({ page, limit, activeOnly }: FindBrandsDTO) {
     this.logger.log(
       `Listing brands: page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
