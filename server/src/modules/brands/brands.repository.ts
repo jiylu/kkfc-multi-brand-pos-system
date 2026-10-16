@@ -129,6 +129,36 @@ export class BrandsRepository {
     return { brandAssignments, total };
   }
 
+  async findAllAssignedUsersForBrand(
+    brandId: string,
+    skip: number,
+    take: number,
+    activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const where: Prisma.UserBrandAssignmentWhereInput = {
+      brand_id: brandId,
+      is_active: activeOnly ? true : undefined,
+    };
+
+    const usersQuery = tx.userBrandAssignment.findMany({
+      where,
+      skip,
+      take,
+      orderBy: [{ created_at: 'desc' }, { user_id: 'asc' }],
+    });
+    const totalQuery = tx.userBrandAssignment.count({ where });
+
+    const [users, total] =
+      '$transaction' in tx
+        ? await tx.$transaction([usersQuery, totalQuery], {
+            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+          })
+        : await Promise.all([usersQuery, totalQuery]);
+
+    return { users, total };
+  }
+
   async updateBrand(
     brandId: string,
     dto: UpdateBrandDTO,
@@ -163,19 +193,31 @@ export class BrandsRepository {
     });
   }
 
-  async deleteBrand(
-    brandId: string,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.brand.update({
-      where: {
-        brand_id: brandId,
-        is_active: true,
-      },
-      data: {
-        is_active: false,
-        modified_at: new Date(),
-      },
+  async deleteBrand(brandId: string) {
+    return await this.prisma.$transaction(async (tx) => {
+      const deletedBrand = await tx.brand.update({
+        where: {
+          brand_id: brandId,
+          is_active: true,
+        },
+        data: {
+          is_active: false,
+          modified_at: new Date(),
+        },
+      });
+
+      await tx.userBrandAssignment.updateMany({
+        where: {
+          brand_id: brandId,
+          is_active: true,
+        },
+        data: {
+          is_active: false,
+          modified_at: new Date(),
+        },
+      });
+
+      return deletedBrand;
     });
   }
 

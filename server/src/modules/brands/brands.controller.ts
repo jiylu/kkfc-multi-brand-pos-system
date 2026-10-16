@@ -92,6 +92,16 @@ export class BrandsController {
     return this.brandsService.deactivateBrandAssignment(assignmentId);
   }
 
+  @Get(':brandId/users')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.OWNER)
+  async findAllAssignedUsersForBrand(
+    @Param('brandId', ParseUUIDPipe) brandId: string,
+    @Query() query: FindBrandsDTO,
+  ) {
+    return this.brandsService.findAllAssignedUsersForBrand(brandId, query);
+  }
+
   @Get(':brandId/users/:userId')
   async findAssignmentByUserAndBrand(
     @Req() request: AuthenticatedRequest,
@@ -131,7 +141,6 @@ export class BrandsController {
     return this.brandsService.updateBrand(id, dto);
   }
 
-  // todo: deactivate brand assignments on brand deletion
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
