@@ -8,6 +8,9 @@ import {
 } from 'class-validator';
 
 export class UpdateBrandDTO {
+  // NOTE: `code` is intentionally omitted — brand codes (GC, AI, KK) are
+  // immutable after creation. With whitelist + forbidNonWhitelisted, any
+  // PATCH body containing `code` is rejected with 400.
   @ValidateIf((_object: unknown, value: unknown) => value !== undefined)
   @IsString({ message: 'Name must be a string.' })
   @IsNotEmpty({ message: 'Name is required and cannot be empty.' })

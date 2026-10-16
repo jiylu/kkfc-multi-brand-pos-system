@@ -20,6 +20,7 @@ describe('BrandsService', () => {
   };
   const brand = {
     brand_id: 'brand-id',
+    code: 'GC',
     name: 'Brand',
     logo_url: null,
     is_active: true,
