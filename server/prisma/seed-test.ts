@@ -81,15 +81,45 @@ async function seedTestDatabase() {
     }
 
     console.log('Seeding test brands...');
+    const seededBrands: { brand_id: string; name: string }[] = [];
     for (const brand of TEST_BRANDS) {
-      const existing = await prisma.brand.findFirst({
+      let existing = await prisma.brand.findFirst({
         where: { name: brand.name },
       });
       if (!existing) {
-        await prisma.brand.create({
+        existing = await prisma.brand.create({
           data: {
             name: brand.name,
             logo_url: brand.logo_url,
+            is_active: true,
+          },
+        });
+      }
+      seededBrands.push(existing);
+    }
+
+    console.log('Seeding user brand assignments...');
+    const seededUsers = await prisma.user.findMany({
+      where: {
+        username: { in: TEST_USERS.map((u) => u.username) },
+      },
+    });
+
+    for (const user of seededUsers) {
+      for (const brand of seededBrands) {
+        await prisma.userBrandAssignment.upsert({
+          where: {
+            user_id_brand_id: {
+              user_id: user.user_id,
+              brand_id: brand.brand_id,
+            },
+          },
+          update: {
+            is_active: true,
+          },
+          create: {
+            user_id: user.user_id,
+            brand_id: brand.brand_id,
             is_active: true,
           },
         });

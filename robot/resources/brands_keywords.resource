@@ -21,7 +21,7 @@ The client updates the target brand name to "${new_name}"
 
 The client assigns a user to the target brand
     ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}    Content-Type=application/json
-    ${payload}=    Create Dictionary    user_id=${ASSIGNMENT_USER_ID}    brand_id=${TARGET_BRAND_ID}
+    ${payload}=    Create Dictionary    username=${ASSIGNMENT_USERNAME}    brand_id=${TARGET_BRAND_ID}
     ${response}=   POST On Session      api    /api/brands/assign    headers=${headers}    json=${payload}    expected_status=any
     Set Test Variable    ${LAST_RESPONSE}    ${response}
     IF    ${response.status_code} == 201
@@ -31,10 +31,10 @@ The client assigns a user to the target brand
 
 The client deactivates the brand assignment
     ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}
-    ${response}=   DELETE On Session    api    /api/brands/assignments/${ASSIGNMENT_ID}    headers=${headers}    expected_status=any
+    ${response}=   DELETE On Session    api    /api/brands/${TARGET_BRAND_ID}/assignments/${ASSIGNMENT_ID}    headers=${headers}    expected_status=any
     Set Test Variable    ${LAST_RESPONSE}    ${response}
 
 The client reactivates the brand assignment
     ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}
-    ${response}=   PATCH On Session     api    /api/brands/assignments/${ASSIGNMENT_ID}/reactivate    headers=${headers}    expected_status=any
+    ${response}=   PATCH On Session     api    /api/brands/${TARGET_BRAND_ID}/assignments/${ASSIGNMENT_ID}/reactivate    headers=${headers}    expected_status=any
     Set Test Variable    ${LAST_RESPONSE}    ${response}

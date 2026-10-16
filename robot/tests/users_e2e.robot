@@ -33,16 +33,19 @@ E2E-USER-002: Owner retrieves paginated user list
     And The response JSON should contain key "data"
     And The response JSON should contain key "meta"
 
-E2E-USER-003: Owner inspects and deactivates created user
-    [Documentation]    Verify that an Owner can fetch and deactivate an existing user.
+E2E-USER-003: Owner inspects and manages created user access
+    [Documentation]    Verify that an Owner can assign brand access, fetch user details, and cannot delete other users globally.
     [Tags]             E2E    USERS    E2E-USER-003    FR-USER-001
     Given the backend server is running against the test database
     And An authenticated session exists for role "OWNER"
+    When The client assigns the created user to the owner brand
+    Then the HTTP response status should be 201
     When The client retrieves the created user
     Then the HTTP response status should be 200
     When The client deactivates the created user
+    Then the HTTP response status should be 403
+    When The client deactivates the created user brand assignment
     Then the HTTP response status should be 200
-    And The response JSON key "is_active" should be equal to "False"
 
 E2E-USER-004: Non-owner staff is denied access to user management
     [Documentation]    Verify that non-owner staff cannot access user administration.

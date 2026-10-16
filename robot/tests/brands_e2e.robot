@@ -33,12 +33,16 @@ E2E-BRND-002: Owner updates a brand's configuration
     Then the HTTP response status should be 200
     And The response JSON key "name" should be equal to "Gamcheon Premium Kitchen"
 
-E2E-BRND-003: Direct brand creation endpoint is disabled
-    [Documentation]    Verify that POST /api/brands is not exposed directly.
+E2E-BRND-003: Owner creates a new brand
+    [Documentation]    Verify that an Owner can successfully create a new brand.
     [Tags]             E2E    BRANDS    E2E-BRND-003    FR-001
     Given the backend server is running against the test database
     And An authenticated session exists for role "OWNER"
+    ${random_suffix}=  Generate Random String    6    [NUMBERS]
     ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}    Content-Type=application/json
-    ${payload}=    Create Dictionary    name=Forbidden New Brand
+    ${payload}=    Create Dictionary    name=New Brand ${random_suffix}
     ${response}=   POST On Session      api    /api/brands    headers=${headers}    json=${payload}    expected_status=any
-    Status Should Be    404    ${response}
+    Status Should Be    201    ${response}
+    ${body}=       Set Variable    ${response.json()}
+    Dictionary Should Contain Key    ${body}    brand_id
+    Dictionary Should Contain Key    ${body}    name
