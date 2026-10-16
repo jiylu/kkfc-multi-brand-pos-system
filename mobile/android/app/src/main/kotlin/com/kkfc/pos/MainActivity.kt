@@ -1,4 +1,4 @@
-package com.example.mobile
+package com.kkfc.pos
 
 import io.flutter.embedding.android.FlutterActivity
 
