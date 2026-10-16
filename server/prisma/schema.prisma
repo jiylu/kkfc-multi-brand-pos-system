@@ -203,15 +203,17 @@ model UserSession {
 }
 
 model UserBrandAssignment {
-  user_id     String   @db.Uuid
-  brand_id    String   @db.Uuid
-  created_at  DateTime @default(now()) @db.Timestamp(6)
-  modified_at DateTime @default(now()) @db.Timestamp(6)
+  assignment_id String   @id @default(uuid()) @db.Uuid
+  user_id       String   @db.Uuid
+  brand_id      String   @db.Uuid
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  modified_at   DateTime @default(now()) @db.Timestamp(6)
+  is_active     Boolean  @default(true)
 
   user  User  @relation("UserBrandAssignmentUser", fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
   brand Brand @relation("UserBrandAssignmentBrand", fields: [brand_id], references: [brand_id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@id([user_id, brand_id])
+  @@unique([user_id, brand_id])
   @@map("user_brand_assignments")
 }
 

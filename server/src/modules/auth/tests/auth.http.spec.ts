@@ -48,6 +48,27 @@ describe('Auth HTTP endpoints', () => {
 
   beforeAll(async () => {
     passwordHash = await argon2.hash('correct-password');
+    const matchingUsers = (where: { is_active?: boolean }) =>
+      [...users.values()].filter(
+        (user) =>
+          where.is_active === undefined || user.is_active === where.is_active,
+      );
+    const listingRepository = new UsersRepository({
+      user: {
+        findMany: ({
+          where,
+          skip,
+          take,
+        }: {
+          where: { is_active?: boolean };
+          skip: number;
+          take: number;
+        }) => Promise.resolve(matchingUsers(where).slice(skip, skip + take)),
+        count: ({ where }: { where: { is_active?: boolean } }) =>
+          Promise.resolve(matchingUsers(where).length),
+      },
+      $transaction: (queries: Promise<unknown>[]) => Promise.all(queries),
+    } as unknown as PrismaService);
     const module = await Test.createTestingModule({ imports: [AuthModule] })
       .overrideProvider(PrismaService)
       .useValue({})
@@ -67,7 +88,10 @@ describe('Auth HTTP endpoints', () => {
           const user = users.get(userId);
           return Promise.resolve(user?.is_active ? user : null);
         }),
-        findAll: jest.fn().mockResolvedValue({ users: [], total: 0 }),
+        findAll: jest.fn(
+          (skip: number, take: number, activeOnly: boolean = true) =>
+            listingRepository.findAll(skip, take, activeOnly),
+        ),
       })
       .overrideProvider(AuthRepository)
       .useValue({
@@ -311,6 +335,59 @@ describe('Auth HTTP endpoints', () => {
     });
     expect(response.status).toBe(401);
   });
+
+  it.each([
+    { query: '', total: 2, inactiveReturned: false },
+    { query: '&activeOnly=true', total: 2, inactiveReturned: false },
+    { query: '&activeOnly=false', total: 3, inactiveReturned: true },
+  ])(
+    'paginates users with the active-only filter: $query',
+    async ({ query, total, inactiveReturned }) => {
+      const inactive = {
+        ...staff,
+        user_id: randomUUID(),
+        username: 'inactive',
+        is_active: false,
+      };
+      users.set(inactive.user_id, inactive);
+      const { token } = await login();
+
+      const response = await fetch(`${url}/api/users?page=2&limit=2${query}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        data: inactiveReturned
+          ? [
+              expect.objectContaining({
+                user_id: inactive.user_id,
+                is_active: false,
+              }),
+            ]
+          : [],
+        meta: {
+          page: 2,
+          limit: 2,
+          total,
+          totalPages: inactiveReturned ? 2 : 1,
+        },
+      });
+    },
+  );
+
+  it.each(['', 'yes', '1', '0', 'FALSE', 'false&activeOnly=true'])(
+    'rejects invalid activeOnly query values: %s',
+    async (value) => {
+      const { token } = await login();
+
+      const response = await fetch(`${url}/api/users?activeOnly=${value}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      expect(response.status).toBe(400);
+    },
+  );
 
   it('requires owner access for user management', async () => {
     expect((await fetch(`${url}/api/users`)).status).toBe(401);

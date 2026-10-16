@@ -8,27 +8,32 @@ import {
 } from 'class-validator';
 
 export class CreateUserDTO {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(64)
+  @IsString({ message: 'Username must be a string.' })
+  @IsNotEmpty({ message: 'Username is required and cannot be empty.' })
+  @MaxLength(64, { message: 'Username must be at most 64 characters long.' })
   username!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
+  @IsString({ message: 'First name must be a string.' })
+  @IsNotEmpty({ message: 'First name is required and cannot be empty.' })
+  @MaxLength(100, {
+    message: 'First name must be at most 100 characters long.',
+  })
   first_name!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
+  @IsString({ message: 'Last name must be a string.' })
+  @IsNotEmpty({ message: 'Last name is required and cannot be empty.' })
+  @MaxLength(100, { message: 'Last name must be at most 100 characters long.' })
   last_name!: string;
 
-  @IsString()
-  @MinLength(8)
-  @MaxLength(32)
-  @IsNotEmpty()
+  @IsString({ message: 'Password must be a string.' })
+  @MinLength(8, { message: 'Password must be at least 8 characters long.' })
+  @MaxLength(32, { message: 'Password must be at most 32 characters long.' })
+  @IsNotEmpty({ message: 'Password is required and cannot be empty.' })
   password!: string;
 
-  @IsEnum(UserRole)
+  @IsEnum(UserRole, {
+    message:
+      'Role must be one of: ORDER_STAFF, KITCHEN_PREPARER, INVENTORY_STAFF, KITCHEN_HEAD, OWNER.',
+  })
   role!: UserRole;
 }
