@@ -45,9 +45,21 @@ export const TEST_USERS = [
 ];
 
 export const TEST_BRANDS = [
-  { name: 'Gamcheon Test Brand', logo_url: 'https://example.com/gc.png' },
-  { name: 'Aurelia Inasal Test Brand', logo_url: 'https://example.com/ai.png' },
-  { name: 'King Kungs Test Brand', logo_url: 'https://example.com/kk.png' },
+  {
+    code: 'GC',
+    name: 'Gamcheon Test Brand',
+    logo_url: 'https://example.com/gc.png',
+  },
+  {
+    code: 'AI',
+    name: 'Aurelia Inasal Test Brand',
+    logo_url: 'https://example.com/ai.png',
+  },
+  {
+    code: 'KK',
+    name: 'King Kungs Test Brand',
+    logo_url: 'https://example.com/kk.png',
+  },
 ];
 
 async function seedTestDatabase() {
@@ -81,21 +93,23 @@ async function seedTestDatabase() {
     }
 
     console.log('Seeding test brands...');
-    const seededBrands: { brand_id: string; name: string }[] = [];
+    const seededBrands: { brand_id: string; code: string; name: string }[] = [];
     for (const brand of TEST_BRANDS) {
-      let existing = await prisma.brand.findFirst({
-        where: { name: brand.name },
+      const b = await prisma.brand.upsert({
+        where: { code: brand.code },
+        update: {
+          name: brand.name,
+          logo_url: brand.logo_url,
+          is_active: true,
+        },
+        create: {
+          code: brand.code,
+          name: brand.name,
+          logo_url: brand.logo_url,
+          is_active: true,
+        },
       });
-      if (!existing) {
-        existing = await prisma.brand.create({
-          data: {
-            name: brand.name,
-            logo_url: brand.logo_url,
-            is_active: true,
-          },
-        });
-      }
-      seededBrands.push(existing);
+      seededBrands.push(b);
     }
 
     console.log('Seeding user brand assignments...');

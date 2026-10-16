@@ -219,6 +219,7 @@ model UserBrandAssignment {
 
 model Brand {
   brand_id    String   @id @default(uuid()) @db.Uuid
+  code        String   @unique @db.Char(2)
   name        String   @db.VarChar(150)
   logo_url    String?  @db.VarChar(2048)
   created_at  DateTime @default(now()) @db.Timestamp(6)

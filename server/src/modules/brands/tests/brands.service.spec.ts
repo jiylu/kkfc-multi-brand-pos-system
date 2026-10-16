@@ -20,6 +20,7 @@ describe('BrandsService', () => {
   };
   const brand = {
     brand_id: 'brand-id',
+    code: 'GC',
     name: 'Brand',
     logo_url: null,
     is_active: true,
@@ -33,6 +34,12 @@ describe('BrandsService', () => {
     is_active: true,
     created_at: now,
     modified_at: now,
+    brand: {
+      brand_id: brand.brand_id,
+      code: brand.code,
+      name: brand.name,
+      logo_url: brand.logo_url,
+    },
   };
   const assignments = [assignment];
   let brands: jest.Mocked<
@@ -418,6 +425,22 @@ describe('BrandsService', () => {
       await expect(
         service.findAllBrandAssignmentsForUser('user-id', new FindBrandsDTO()),
       ).rejects.toBe(error);
+    });
+
+    it('passes the embedded brand (with code) through unstripped', async () => {
+      const result = await service.findAllBrandAssignmentsForUser(
+        'user-id',
+        new FindBrandsDTO(),
+      );
+      expect(result.data[0]).toMatchObject({
+        brand_id: brand.brand_id,
+        brand: {
+          brand_id: brand.brand_id,
+          code: 'GC',
+          name: brand.name,
+          logo_url: brand.logo_url,
+        },
+      });
     });
   });
 

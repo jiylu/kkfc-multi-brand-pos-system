@@ -503,6 +503,19 @@ describe('Brands HTTP endpoints', () => {
     expect(service.findOneBrandAssignmentById).not.toHaveBeenCalled();
   });
 
+  it('rejects brand code updates (code is immutable)', async () => {
+    const response = await fetch(
+      `${url}/00000000-0000-4000-8000-000000000001`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Updated', code: 'AI' }),
+      },
+    );
+    expect(response.status).toBe(400);
+    expect(service.updateBrand).not.toHaveBeenCalled();
+  });
+
   it('IT-BRND-010: rejects invalid update fields', async () => {
     const response = await fetch(
       `${url}/00000000-0000-4000-8000-000000000001`,
@@ -542,8 +555,8 @@ describe('Brands HTTP endpoints', () => {
   });
 
   it.each([
-    { name: 'King Kungs Kafé', logo_url: null },
-    { name: 'King Kungs Kafé' },
+    { name: 'King Kungs Kafé', code: 'KK', logo_url: null },
+    { name: 'King Kungs Kafé', code: 'KK' },
   ])('IT-BRND-012: creates a brand for the authenticated owner: %j', async (dto) => {
     assignedBrandIds = [];
     const response = await fetch(url, {
@@ -565,6 +578,9 @@ describe('Brands HTTP endpoints', () => {
     { name: '' },
     { name: 123 },
     { name: 'a'.repeat(151) },
+    { name: 'Brand', code: 'K' },
+    { name: 'Brand', code: 'KKK' },
+    { name: 'Brand', code: '12' },
     { name: 'Brand', logo_url: 'invalid' },
     { name: 'Brand', owner_id: 'another-owner' },
     { name: 'Brand', is_active: false },
@@ -586,7 +602,7 @@ describe('Brands HTTP endpoints', () => {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Brand' }),
+        body: JSON.stringify({ name: 'Brand', code: 'KK' }),
       });
 
       expect(response.status).toBe(403);

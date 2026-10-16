@@ -13,7 +13,7 @@
     "db:push:dev": "dotenv -e .env.development -- prisma db push",
     "db:push:prod": "dotenv -e .env.production -- prisma db push",
     "db:migrate:dev": "dotenv -e .env.development -- prisma migrate dev",
-    "db:migrate:deploy": "dotenv -e .env.production -- prisma migrate deploy",
+    "db:seed": "prisma db seed",
     "db:seed:test": "ts-node prisma/seed-test.ts",
     "prebuild": "npm run prisma:generate",
     "prestart": "npm run prisma:generate",
