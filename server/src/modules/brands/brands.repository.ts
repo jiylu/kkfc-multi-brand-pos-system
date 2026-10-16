@@ -143,6 +143,16 @@ export class BrandsRepository {
       skip,
       take,
       orderBy: { created_at: 'desc' },
+      include: {
+        brand: {
+          select: {
+            brand_id: true,
+            code: true,
+            name: true,
+            logo_url: true,
+          },
+        },
+      },
     });
     const totalQuery = tx.userBrandAssignment.count({ where });
 

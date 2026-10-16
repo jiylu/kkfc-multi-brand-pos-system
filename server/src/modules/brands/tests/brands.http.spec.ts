@@ -503,6 +503,19 @@ describe('Brands HTTP endpoints', () => {
     expect(service.findOneBrandAssignmentById).not.toHaveBeenCalled();
   });
 
+  it('rejects brand code updates (code is immutable)', async () => {
+    const response = await fetch(
+      `${url}/00000000-0000-4000-8000-000000000001`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Updated', code: 'AI' }),
+      },
+    );
+    expect(response.status).toBe(400);
+    expect(service.updateBrand).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid update fields', async () => {
     const response = await fetch(
       `${url}/00000000-0000-4000-8000-000000000001`,

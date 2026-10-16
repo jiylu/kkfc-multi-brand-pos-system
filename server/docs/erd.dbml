@@ -149,6 +149,7 @@ Table user_sessions {
 // Provides stable brand identities for catalog separation, order tagging, and historical demand tracking (FR-001, FR-024).
 Table brands {
   brand_id uuid [pk]
+  code char(2) [not null, unique, note: 'Short brand code, e.g. GC, AI, KK. Immutable after creation.']
   name varchar(150) [not null]
   logo_url varchar(2048)
   is_active boolean [not null, default: true]

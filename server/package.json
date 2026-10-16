@@ -14,6 +14,7 @@
     "db:push:prod": "dotenv -e .env.production -- prisma db push",
     "db:migrate:dev": "dotenv -e .env.development -- prisma migrate dev",
     "db:migrate:deploy": "dotenv -e .env.production -- prisma migrate deploy",
+    "db:seed": "prisma db seed",
     "prebuild": "npm run prisma:generate",
     "prestart": "npm run prisma:generate",
     "prestart:dev": "npm run prisma:generate",
