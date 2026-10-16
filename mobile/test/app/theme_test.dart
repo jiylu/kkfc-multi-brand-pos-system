@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mobile/app/semantic_colors.dart';
-import 'package:mobile/app/theme.dart';
+import 'package:mobile/app/theme/semantic_colors.dart';
+import 'package:mobile/app/theme/theme.dart';
 
 void main() {
   test('counter theme uses the light token scheme', () {
