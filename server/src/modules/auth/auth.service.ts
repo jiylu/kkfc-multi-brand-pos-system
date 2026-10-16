@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Injectable,
   Logger,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -12,6 +11,7 @@ import { AuthRepository } from './auth.repository';
 import { UsersRepository } from '../users/users.repository';
 import { CreateSessionDTO } from './dto/create-session.dto';
 import { LoginDTO } from './dto/login.dto';
+import { assertExists } from '../../shared/assertions/assert-exists';
 
 @Injectable()
 export class AuthService {
@@ -49,6 +49,9 @@ export class AuthService {
       });
     }
 
+    const user = await this.usersRepository.findOne(credentials.user_id);
+    assertExists(user, 'User', credentials.user_id, this.logger);
+
     const token = randomBytes(32).toString('base64url');
     const expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const session = await this.createSession({
@@ -56,15 +59,6 @@ export class AuthService {
       token_hash: createHash('sha256').update(token).digest('hex'),
       expires_at,
     });
-    const user = await this.usersRepository.findOne(credentials.user_id);
-
-    if (!user) {
-      await this.deleteSession(session.session_id);
-      throw new UnauthorizedException({
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid username or password.',
-      });
-    }
 
     return {
       token,
@@ -76,13 +70,7 @@ export class AuthService {
   async createSession(dto: CreateSessionDTO) {
     const user = await this.usersRepository.findOne(dto.user_id);
 
-    if (!user) {
-      this.logger.warn(`User ${dto.user_id} not found.`);
-      throw new NotFoundException({
-        code: 'USER_NOT_FOUND',
-        message: 'User not found.',
-      });
-    }
+    assertExists(user, 'User', dto.user_id, this.logger);
 
     if (
       !Number.isFinite(dto.expires_at.getTime()) ||
@@ -113,14 +101,7 @@ export class AuthService {
     }
 
     const user = await this.usersRepository.findOne(session.user_id);
-
-    if (!user) {
-      this.logger.warn(`User ${session.user_id} not found.`);
-      throw new NotFoundException({
-        code: 'USER_NOT_FOUND',
-        message: 'User not found.',
-      });
-    }
+    assertExists(user, 'User', session.user_id, this.logger);
 
     return { ...session, user };
   }
