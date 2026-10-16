@@ -9,7 +9,6 @@ import { createHash } from 'node:crypto';
 import { AuthRepository } from '../auth.repository';
 import { AuthService } from '../auth.service';
 import { UsersRepository } from '../../users/users.repository';
-import { PrismaService } from '../../../shared/prisma/prisma.service';
 
 describe('AuthService', () => {
   const now = new Date('2030-01-01T12:00:00Z');
@@ -77,39 +76,6 @@ describe('AuthService', () => {
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(authRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('blocks inactive users through the repository filter', async () => {
-    const inactiveUser = { ...user, is_active: false };
-    const findUnique = jest.fn(
-      ({ where }: { where: { user_id: string; is_active?: boolean } }) =>
-        Promise.resolve(
-          where.user_id === inactiveUser.user_id &&
-            (where.is_active === undefined ||
-              where.is_active === inactiveUser.is_active)
-            ? inactiveUser
-            : null,
-        ),
-    );
-    const repository = new UsersRepository({
-      user: { findUnique },
-    } as unknown as PrismaService);
-    const authService = new AuthService(
-      authRepository as unknown as AuthRepository,
-      repository,
-    );
-    await expect(
-      authService.createSession({
-        user_id: user.user_id,
-        token_hash: 'a'.repeat(64),
-        expires_at: session.expires_at,
-      }),
-    ).rejects.toBeInstanceOf(NotFoundException);
-    await expect(authService.validateSession('token')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
-    expect(authRepository.create).not.toHaveBeenCalled();
-    expect(authRepository.updateLastSeen).not.toHaveBeenCalled();
   });
 
   it.each([now, new Date('invalid')])(

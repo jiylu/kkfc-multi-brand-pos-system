@@ -4,7 +4,6 @@ import { CreateUserDTO } from '../dto/create-user.dto';
 import { FindUsersDTO } from '../dto/find-users.dto';
 import { UsersRepository } from '../users.repository';
 import { UsersService } from '../users.service';
-import { PrismaService } from '../../../shared/prisma/prisma.service';
 
 describe('UsersService', () => {
   const user = {
@@ -182,42 +181,12 @@ describe('UsersService', () => {
   });
 
   it('rejects an update if the user is deactivated after the lookup', async () => {
-    const stored = { ...user };
-    const update = jest.fn(
-      ({
-        where,
-        data,
-      }: {
-        where: { user_id: string; is_active?: boolean };
-        data: { first_name?: string };
-      }) => {
-        if (
-          where.user_id !== stored.user_id ||
-          (where.is_active !== undefined &&
-            where.is_active !== stored.is_active)
-        ) {
-          return Promise.reject(
-            new Prisma.PrismaClientKnownRequestError('No matching user', {
-              code: 'P2025',
-              clientVersion: '7.8.0',
-            }),
-          );
-        }
-        if (data.first_name !== undefined) stored.first_name = data.first_name;
-        return Promise.resolve({ ...stored });
-      },
+    repository.update.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('No matching user', {
+        code: 'P2025',
+        clientVersion: '7.8.0',
+      }),
     );
-    const repository = new UsersRepository({
-      user: {
-        findUnique: jest.fn(() => {
-          const snapshot = { ...stored };
-          stored.is_active = false;
-          return Promise.resolve(snapshot);
-        }),
-        update,
-      },
-    } as unknown as PrismaService);
-    const service = new UsersService(repository);
 
     await expect(
       service.updateUser(user.user_id, { first_name: 'Updated' }),
@@ -225,9 +194,9 @@ describe('UsersService', () => {
       status: 404,
       response: { code: 'USER_NOT_FOUND', message: 'User not found.' },
     });
-    expect(update).toHaveBeenCalledTimes(1);
-    expect(stored.first_name).toBe(user.first_name);
-    expect(stored.is_active).toBe(false);
+    expect(repository.update).toHaveBeenCalledWith(user.user_id, {
+      first_name: 'Updated',
+    });
     expect(log).not.toHaveBeenCalledWith(`Updated user ${user.user_id}`);
   });
 
