@@ -49,6 +49,113 @@ describe('UsersService', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
+  describe('brand access', () => {
+    const caller = {
+      ...user,
+      user_brand_assignments_user: [{ brand_id: 'shared-brand' }],
+    };
+    const staff = {
+      ...user,
+      user_id: 'staff-id',
+      role: UserRole.ORDER_STAFF,
+      user_brand_assignments_user: [
+        { brand_id: 'shared-brand' },
+        { brand_id: 'other-brand' },
+      ],
+    };
+
+    beforeEach(() => {
+      repository.findOne.mockImplementation((id) =>
+        Promise.resolve(id === caller.user_id ? caller : staff),
+      );
+    });
+
+    it('returns only shared brand assignments when reading another user', async () => {
+      await expect(
+        service.findOneUser(staff.user_id, caller.user_id),
+      ).resolves.toEqual({
+        ...staff,
+        user_brand_assignments_user: [{ brand_id: 'shared-brand' }],
+      });
+    });
+
+    it('allows profile edits for staff in a shared brand', async () => {
+      const dto = { first_name: 'Updated' };
+      await service.updateUser(staff.user_id, dto, caller.user_id);
+      expect(repository.update).toHaveBeenCalledWith(staff.user_id, dto);
+    });
+
+    it.each([true, false])(
+      'denies unrelated users even with activeOnly=%s',
+      async (activeOnly) => {
+        repository.findOne.mockImplementation((id) =>
+          Promise.resolve(
+            id === caller.user_id
+              ? caller
+              : {
+                  ...staff,
+                  user_brand_assignments_user: [{ brand_id: 'other-brand' }],
+                },
+          ),
+        );
+        await expect(
+          service.findOneUser(staff.user_id, caller.user_id, activeOnly),
+        ).rejects.toMatchObject({ status: 403 });
+        await expect(
+          service.updateUser(
+            staff.user_id,
+            { first_name: 'Updated' },
+            caller.user_id,
+          ),
+        ).rejects.toMatchObject({ status: 403 });
+        expect(repository.update).not.toHaveBeenCalled();
+      },
+    );
+
+    it('denies edits to another owner even in a shared brand', async () => {
+      repository.findOne.mockImplementation((id) =>
+        Promise.resolve(
+          id === caller.user_id ? caller : { ...staff, role: UserRole.OWNER },
+        ),
+      );
+      await expect(
+        service.updateUser(
+          staff.user_id,
+          { first_name: 'Updated' },
+          caller.user_id,
+        ),
+      ).rejects.toMatchObject({ status: 403 });
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('denies password resets for shared staff without partially updating their profile', async () => {
+      await expect(
+        service.updateUser(
+          staff.user_id,
+          {
+            first_name: 'Updated',
+            password: 'new-password',
+          },
+          caller.user_id,
+        ),
+      ).rejects.toMatchObject({ status: 403 });
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('allows changing your own password', async () => {
+      const dto = { password: 'new-password' };
+      await service.updateUser(caller.user_id, dto, caller.user_id);
+      expect(repository.update).toHaveBeenCalledWith(caller.user_id, dto);
+    });
+
+    it('denies global deactivation of another user', async () => {
+      await expect(
+        service.deleteUser(staff.user_id, caller.user_id),
+      ).rejects.toMatchObject({ status: 403 });
+      expect(repository.delete).not.toHaveBeenCalled();
+    });
+  });
+
   it('UT-USER-001: creates a user with the supplied fields', async () => {
     await expect(service.createUser(createDTO)).resolves.toEqual(user);
     expect(repository.create).toHaveBeenCalledWith(createDTO);
@@ -97,30 +204,40 @@ describe('UsersService', () => {
     'UT-USER-004: returns pagination metadata and forwards activeOnly=%s',
     async (activeOnly) => {
       await expect(
-        service.findAllUsers({ page: 3, limit: 10, activeOnly }),
+        service.findAllUsers({ page: 3, limit: 10, activeOnly }, user.user_id),
       ).resolves.toEqual({
         data: [user],
         meta: { page: 3, limit: 10, total: 21, totalPages: 3 },
       });
-      expect(repository.findAll).toHaveBeenCalledWith(20, 10, activeOnly);
+      expect(repository.findAll).toHaveBeenCalledWith(
+        user.user_id,
+        20,
+        10,
+        activeOnly,
+      );
     },
   );
 
   it('UT-USER-005: returns an empty list and zero pages when no users match', async () => {
     repository.findAll.mockResolvedValue({ users: [], total: 0 });
 
-    await expect(service.findAllUsers(new FindUsersDTO())).resolves.toEqual({
+    await expect(
+      service.findAllUsers(new FindUsersDTO(), user.user_id),
+    ).resolves.toEqual({
       data: [],
       meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
     });
-    expect(repository.findAll).toHaveBeenCalledWith(0, 10, true);
+    expect(repository.findAll).toHaveBeenCalledWith(user.user_id, 0, 10, true);
   });
 
   it('UT-USER-006: returns an empty page past the last result while preserving totals', async () => {
     repository.findAll.mockResolvedValue({ users: [], total: 21 });
 
     await expect(
-      service.findAllUsers({ page: 4, limit: 10, activeOnly: true }),
+      service.findAllUsers(
+        { page: 4, limit: 10, activeOnly: true },
+        user.user_id,
+      ),
     ).resolves.toEqual({
       data: [],
       meta: { page: 4, limit: 10, total: 21, totalPages: 3 },
@@ -129,11 +246,14 @@ describe('UsersService', () => {
 
   it('UT-USER-007: rejects offsets outside the database range before querying', async () => {
     await expect(
-      service.findAllUsers({
-        page: 2_147_483_647,
-        limit: 2,
-        activeOnly: true,
-      }),
+      service.findAllUsers(
+        {
+          page: 2_147_483_647,
+          limit: 2,
+          activeOnly: true,
+        },
+        user.user_id,
+      ),
     ).rejects.toMatchObject({
       status: 400,
       response: {
@@ -145,17 +265,27 @@ describe('UsersService', () => {
   });
 
   it('UT-USER-008: allows the largest page number when its offset fits the database range', async () => {
-    await service.findAllUsers({
-      page: 2_147_483_647,
-      limit: 1,
-      activeOnly: true,
-    });
+    await service.findAllUsers(
+      {
+        page: 2_147_483_647,
+        limit: 1,
+        activeOnly: true,
+      },
+      user.user_id,
+    );
 
-    expect(repository.findAll).toHaveBeenCalledWith(2_147_483_646, 1, true);
+    expect(repository.findAll).toHaveBeenCalledWith(
+      user.user_id,
+      2_147_483_646,
+      1,
+      true,
+    );
   });
 
   it('UT-USER-009: returns an existing user', async () => {
-    await expect(service.findOneUser(user.user_id)).resolves.toEqual(user);
+    await expect(
+      service.findOneUser(user.user_id, user.user_id),
+    ).resolves.toEqual(user);
     expect(repository.findOne).toHaveBeenCalledWith(user.user_id, true);
   });
 
@@ -163,16 +293,18 @@ describe('UsersService', () => {
     const inactiveUser = { ...user, is_active: false };
     repository.findOne.mockResolvedValue(inactiveUser);
 
-    await expect(service.findOneUser(user.user_id, false)).resolves.toEqual(
-      inactiveUser,
-    );
+    await expect(
+      service.findOneUser(user.user_id, user.user_id, false),
+    ).resolves.toEqual(inactiveUser);
     expect(repository.findOne).toHaveBeenCalledWith(user.user_id, false);
   });
 
   it('UT-USER-011: updates an existing user with the supplied fields', async () => {
     const dto = { first_name: 'Updated' };
 
-    await expect(service.updateUser(user.user_id, dto)).resolves.toEqual({
+    await expect(
+      service.updateUser(user.user_id, dto, user.user_id),
+    ).resolves.toEqual({
       ...user,
       first_name: 'Updated',
     });
@@ -189,7 +321,7 @@ describe('UsersService', () => {
     );
 
     await expect(
-      service.updateUser(user.user_id, { first_name: 'Updated' }),
+      service.updateUser(user.user_id, { first_name: 'Updated' }, user.user_id),
     ).rejects.toMatchObject({
       status: 404,
       response: { code: 'USER_NOT_FOUND', message: 'User not found.' },
@@ -211,12 +343,14 @@ describe('UsersService', () => {
     repository.update.mockRejectedValue(error);
 
     await expect(
-      service.updateUser(user.user_id, { first_name: 'Updated' }),
+      service.updateUser(user.user_id, { first_name: 'Updated' }, user.user_id),
     ).rejects.toBe(error);
   });
 
   it('UT-USER-014: deactivates an existing user', async () => {
-    await expect(service.deleteUser(user.user_id)).resolves.toEqual({
+    await expect(
+      service.deleteUser(user.user_id, user.user_id),
+    ).resolves.toEqual({
       ...user,
       is_active: false,
     });
@@ -225,12 +359,17 @@ describe('UsersService', () => {
   });
 
   it.each([
-    ['finding', () => service.findOneUser(user.user_id)],
+    ['finding', () => service.findOneUser(user.user_id, user.user_id)],
     [
       'updating',
-      () => service.updateUser(user.user_id, { first_name: 'Updated' }),
+      () =>
+        service.updateUser(
+          user.user_id,
+          { first_name: 'Updated' },
+          user.user_id,
+        ),
     ],
-    ['deactivating', () => service.deleteUser(user.user_id)],
+    ['deactivating', () => service.deleteUser(user.user_id, user.user_id)],
   ] as const)(
     'UT-USER-015: rejects %s a missing user without writing',
     async (_action, run) => {
@@ -247,13 +386,18 @@ describe('UsersService', () => {
 
   it.each([
     ['create', () => service.createUser(createDTO)],
-    ['findAll', () => service.findAllUsers(new FindUsersDTO())],
-    ['findOne', () => service.findOneUser(user.user_id)],
+    ['findAll', () => service.findAllUsers(new FindUsersDTO(), user.user_id)],
+    ['findOne', () => service.findOneUser(user.user_id, user.user_id)],
     [
       'update',
-      () => service.updateUser(user.user_id, { first_name: 'Updated' }),
+      () =>
+        service.updateUser(
+          user.user_id,
+          { first_name: 'Updated' },
+          user.user_id,
+        ),
     ],
-    ['delete', () => service.deleteUser(user.user_id)],
+    ['delete', () => service.deleteUser(user.user_id, user.user_id)],
   ] as const)(
     'UT-USER-016: propagates repository failures from %s',
     async (method, run) => {

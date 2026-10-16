@@ -152,21 +152,27 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   it('IT-USER-003: lists users with default and custom pagination/activeOnly filters', async () => {
     const defaultResp = await fetch(url);
     expect(defaultResp.status).toBe(200);
-    expect(service.findAllUsers).toHaveBeenCalledWith({
-      page: 1,
-      limit: 10,
-      activeOnly: true,
-    });
+    expect(service.findAllUsers).toHaveBeenCalledWith(
+      {
+        page: 1,
+        limit: 10,
+        activeOnly: true,
+      },
+      '00000000-0000-4000-8000-000000000001',
+    );
 
     const filteredResp = await fetch(
       `${url}?page=2&limit=5&activeOnly=false`,
     );
     expect(filteredResp.status).toBe(200);
-    expect(service.findAllUsers).toHaveBeenLastCalledWith({
-      page: 2,
-      limit: 5,
-      activeOnly: false,
-    });
+    expect(service.findAllUsers).toHaveBeenLastCalledWith(
+      {
+        page: 2,
+        limit: 5,
+        activeOnly: false,
+      },
+      '00000000-0000-4000-8000-000000000001',
+    );
   });
 
   it.each(['?page=0', '?limit=0', '?limit=101', '?activeOnly=invalid'])(
@@ -181,11 +187,19 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   it('IT-USER-005: gets a single user by UUID and respects activeOnly query parameter', async () => {
     const defaultResp = await fetch(`${url}/${userId}`);
     expect(defaultResp.status).toBe(200);
-    expect(service.findOneUser).toHaveBeenCalledWith(userId, true);
+    expect(service.findOneUser).toHaveBeenCalledWith(
+      userId,
+      '00000000-0000-4000-8000-000000000001',
+      true,
+    );
 
     const inactiveResp = await fetch(`${url}/${userId}?activeOnly=false`);
     expect(inactiveResp.status).toBe(200);
-    expect(service.findOneUser).toHaveBeenLastCalledWith(userId, false);
+    expect(service.findOneUser).toHaveBeenLastCalledWith(
+      userId,
+      '00000000-0000-4000-8000-000000000001',
+      false,
+    );
   });
 
   it('IT-USER-006: updates an existing user by UUID with valid fields', async () => {
@@ -197,7 +211,11 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(service.updateUser).toHaveBeenCalledWith(userId, dto);
+    expect(service.updateUser).toHaveBeenCalledWith(
+      userId,
+      dto,
+      '00000000-0000-4000-8000-000000000001',
+    );
   });
 
   it.each([
@@ -222,7 +240,10 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   it('IT-USER-008: deactivates a user via DELETE /:id', async () => {
     const response = await fetch(`${url}/${userId}`, { method: 'DELETE' });
     expect(response.status).toBe(200);
-    expect(service.deleteUser).toHaveBeenCalledWith(userId);
+    expect(service.deleteUser).toHaveBeenCalledWith(
+      userId,
+      '00000000-0000-4000-8000-000000000001',
+    );
   });
 
   it.each([

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateBrandDTO } from './dto/create-brand.dto';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
@@ -8,24 +8,27 @@ import { UpdateBrandDTO } from './dto/update-brand.dto';
 export class BrandsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createBrand(
-    dto: CreateBrandDTO,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.brand.create({
-      data: dto,
+  async createBrand(dto: CreateBrandDTO, ownerId: string) {
+    return await this.prisma.$transaction(async (tx) => {
+      const brand = await tx.brand.create({
+        data: dto,
+      });
+
+      await this.assignUser({ user_id: ownerId }, brand.brand_id, tx);
+
+      return brand;
     });
   }
 
   async assignUser(
-    userId: string,
+    user: Prisma.UserWhereUniqueInput,
     brandId: string,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.userBrandAssignment.create({
       data: {
-        user_id: userId,
-        brand_id: brandId,
+        user: { connect: user },
+        brand: { connect: { brand_id: brandId } },
       },
     });
   }
@@ -44,6 +47,7 @@ export class BrandsRepository {
   }
 
   async findAllBrands(
+    userId: string,
     skip: number,
     take: number,
     activeOnly = true,
@@ -51,6 +55,9 @@ export class BrandsRepository {
   ) {
     const where: Prisma.BrandWhereInput = {
       is_active: activeOnly ? true : undefined,
+      user_brand_assignments_brand: {
+        some: { user_id: userId, is_active: true },
+      },
     };
 
     const brandsQuery = tx.brand.findMany({
@@ -69,6 +76,26 @@ export class BrandsRepository {
         : await Promise.all([brandsQuery, totalQuery]);
 
     return { brands, total };
+  }
+
+  async findAllOwnersForBrand(
+    brandId: string,
+    activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.user.findMany({
+      where: {
+        role: UserRole.OWNER,
+        is_active: activeOnly ? true : undefined,
+        user_brand_assignments_user: {
+          some: {
+            brand_id: brandId,
+            is_active: activeOnly ? true : undefined,
+          },
+        },
+      },
+      omit: { password_hash: true },
+    });
   }
 
   async findAssignmentByUserAndBrand(
