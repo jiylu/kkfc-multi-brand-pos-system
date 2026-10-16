@@ -68,7 +68,13 @@ export class UsersRepository {
       },
       omit: { password_hash: true },
       include: {
-        user_brand_assignments_user: { select: { brand_id: true } },
+        user_brand_assignments_user: {
+          where: {
+            is_active: true,
+            brand: { is_active: true },
+          },
+          select: { brand_id: true },
+        },
       },
     });
   }
