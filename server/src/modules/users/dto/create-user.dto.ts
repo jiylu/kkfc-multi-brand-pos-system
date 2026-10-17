@@ -42,11 +42,19 @@ export class CreateUserDTO {
     message:
       'Role must be one of: ORDER_STAFF, KITCHEN_PREPARER, INVENTORY_STAFF, KITCHEN_HEAD, OWNER, SUPERADMIN.',
   })
-  @ApiProperty({ enum: UserRole })
+  @ApiProperty({
+    enum: UserRole,
+    description: 'Only superadmins can create OWNER or SUPERADMIN accounts.',
+  })
   role!: UserRole;
 
   @IsOptional()
   @IsUUID('all', { message: 'Brand ID must be a valid UUID.' })
-  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @ApiPropertyOptional({
+    format: 'uuid',
+    nullable: true,
+    description:
+      'Required for staff; optional or null for OWNER and SUPERADMIN. Any supplied brand must be active. Owners can create users only in their assigned brand.',
+  })
   brand_id?: string | null;
 }
