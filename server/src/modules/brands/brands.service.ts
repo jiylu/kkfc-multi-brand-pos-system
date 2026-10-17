@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BrandsRepository } from './brands.repository';
 import { CreateBrandDTO } from './dto/create-brand.dto';
-import { assertExists } from '../../../shared/assertions/assert-exists';
+import { assertExists } from '../../shared/assertions/assert-exists';
 import { FindBrandsDTO } from './dto/find-brands.dto';
-import { assertValidPagination } from '../../../shared/assertions/assert-valid-pagination';
+import { assertValidPagination } from '../../shared/assertions/assert-valid-pagination';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
-import { withUniqueBrandCode } from '../utils/generate-brand-code';
+import { withUniqueBrandCode } from './utils/generate-brand-code';
 
 @Injectable()
 export class BrandsService {

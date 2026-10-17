@@ -16,13 +16,10 @@ import { BrandsService } from './brands.service';
 import { CreateBrandDTO } from './dto/create-brand.dto';
 import { FindBrandsDTO } from './dto/find-brands.dto';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
-import {
-  Authenticated,
-  type AuthenticatedRequest,
-} from '../../auth/auth.guard';
-import { RolesGuard } from '../../../shared/guards/roles.guard';
-import { BrandsGuard } from '../../../shared/guards/brands.guard';
-import { Roles } from '../../../shared/decorators/roles.decorator';
+import { Authenticated, type AuthenticatedRequest } from '../auth/auth.guard';
+import { RolesGuard } from '../../shared/guards/roles.guard';
+import { BrandsGuard } from '../../shared/guards/brands.guard';
+import { Roles } from '../../shared/decorators/roles.decorator';
 import {
   BrandsDocs,
   CreateBrandDocs,

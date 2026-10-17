@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { randomInt } from 'node:crypto';
 import { BrandsRepository } from '../brands.repository';
 import { BrandsService } from '../brands.service';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
 
 jest.mock('node:crypto', () => ({
   ...jest.requireActual<typeof import('node:crypto')>('node:crypto'),
@@ -58,6 +59,89 @@ describe('BrandsService', () => {
     service = new BrandsService(brands as unknown as BrandsRepository);
   });
   afterEach(() => jest.restoreAllMocks());
+
+  describe('direct user-brand relation', () => {
+    const tx = {
+      brand: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        findMany: jest.fn(),
+        count: jest.fn(),
+        update: jest.fn(),
+      },
+      user: { updateMany: jest.fn() },
+    };
+    let repository: BrandsRepository;
+
+    beforeEach(() => {
+      for (const method of Object.values(tx.brand)) method.mockReset();
+      tx.user.updateMany.mockReset().mockResolvedValue({ count: 1 });
+      repository = new BrandsRepository({
+        $transaction: (run: (client: typeof tx) => Promise<unknown>) => run(tx),
+      } as unknown as PrismaService);
+    });
+
+    it('sets the owner brand without overwriting an existing assignment', async () => {
+      tx.brand.create.mockResolvedValue(brand);
+      await repository.createBrand(
+        { name: brand.name, code: brand.code },
+        'owner',
+      );
+      expect(tx.user.updateMany).toHaveBeenCalledWith({
+        where: { user_id: 'owner', brand_id: null, is_active: true },
+        data: {
+          brand_id: brand.brand_id,
+          modified_at: expect.any(Date) as Date,
+        },
+      });
+    });
+
+    it('rejects brand creation when the owner already has a brand or is inactive', async () => {
+      tx.brand.create.mockResolvedValue(brand);
+      tx.user.updateMany.mockResolvedValue({ count: 0 });
+      await expect(
+        repository.createBrand({ name: brand.name, code: brand.code }, 'owner'),
+      ).rejects.toMatchObject({ status: 409 });
+    });
+
+    it('lists brands through users_brand with matching totals', async () => {
+      tx.brand.findMany.mockResolvedValue([brand]);
+      tx.brand.count.mockResolvedValue(1);
+      await expect(
+        repository.findAllBrands(
+          'owner',
+          0,
+          10,
+          true,
+          tx as unknown as PrismaService,
+        ),
+      ).resolves.toEqual({ brands: [brand], total: 1 });
+      const where = {
+        is_active: true,
+        users_brand: { some: { user_id: 'owner', is_active: true } },
+      };
+      expect(tx.brand.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where }),
+      );
+      expect(tx.brand.count).toHaveBeenCalledWith({ where });
+    });
+
+    it('deactivates the brand and its active users together', async () => {
+      tx.brand.update.mockResolvedValue({ ...brand, is_active: false });
+      await repository.deleteBrand(brand.brand_id);
+      expect(tx.user.updateMany).toHaveBeenCalledWith({
+        where: { brand_id: brand.brand_id, is_active: true },
+        data: { is_active: false, modified_at: expect.any(Date) as Date },
+      });
+    });
+
+    it('propagates user deactivation failures so the transaction rolls back', async () => {
+      tx.brand.update.mockResolvedValue({ ...brand, is_active: false });
+      const error = new Error('User update failed');
+      tx.user.updateMany.mockRejectedValue(error);
+      await expect(repository.deleteBrand(brand.brand_id)).rejects.toBe(error);
+    });
+  });
   it('creates a brand with an automatically generated code for its owner', async () => {
     const dto = { name: 'New Brand' };
 

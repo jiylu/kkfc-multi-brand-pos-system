@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateBrandDTO } from './dto/create-brand.dto';
 import { Prisma } from '@prisma/client';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
@@ -10,14 +10,28 @@ export class BrandsRepository {
 
   async createBrand(dto: CreateBrandDTO & { code: string }, ownerId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const brand = await tx.brand.create({ data: dto });
+      const brand = await tx.brand.create({
+        data: dto,
+      });
 
-      await tx.userBrandAssignment.create({
+      const { count } = await tx.user.updateMany({
+        where: {
+          user_id: ownerId,
+          brand_id: null,
+          is_active: true,
+        },
         data: {
-          user: { connect: { user_id: ownerId } },
-          brand: { connect: { brand_id: brand.brand_id } },
+          brand_id: brand.brand_id,
+          modified_at: new Date(),
         },
       });
+
+      if (count === 0) {
+        throw new ConflictException({
+          code: 'OWNER_CANNOT_CREATE_BRAND',
+          message: 'The owner must be active and have no existing brand.',
+        });
+      }
 
       return brand;
     });
@@ -58,7 +72,7 @@ export class BrandsRepository {
   ) {
     const where: Prisma.BrandWhereInput = {
       is_active: activeOnly ? true : undefined,
-      user_brand_assignments_brand: {
+      users_brand: {
         some: { user_id: userId, is_active: true },
       },
     };
@@ -113,7 +127,7 @@ export class BrandsRepository {
         },
       });
 
-      await tx.userBrandAssignment.updateMany({
+      await tx.user.updateMany({
         where: {
           brand_id: brandId,
           is_active: true,

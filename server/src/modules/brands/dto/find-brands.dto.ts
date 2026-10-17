@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsBoolean } from 'class-validator';
-import { PaginationDTO } from '../../../../shared/dto/pagination.dto';
+import { PaginationDTO } from '../../../shared/dto/pagination.dto';
 
 export class FindBrandsDTO extends PaginationDTO {
   @Transform(({ value }: { value: unknown }) =>

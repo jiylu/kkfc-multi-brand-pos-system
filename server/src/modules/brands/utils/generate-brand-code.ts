@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto';
 import { Prisma, type Brand } from '@prisma/client';
-import type { BrandsRepository } from '../brands/brands.repository';
+import type { BrandsRepository } from '../brands.repository';
 
 export function generateBrandCode(name: string, retry = false): string {
   const letters = name
