@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsBoolean } from 'class-validator';
 import { PaginationDTO } from '../../../shared/dto/pagination.dto';
@@ -7,5 +8,6 @@ export class FindBrandsDTO extends PaginationDTO {
     value === 'true' ? true : value === 'false' ? false : value,
   )
   @IsBoolean({ message: 'activeOnly must be true or false.' })
+  @ApiPropertyOptional({ default: true, description: 'Only active records.' })
   activeOnly: boolean = true;
 }

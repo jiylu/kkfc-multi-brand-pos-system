@@ -1,4 +1,11 @@
 import {
+  AuthDocs,
+  LoginDocs,
+  MeDocs,
+  LogoutDocs,
+  LogoutAllDocs,
+} from './docs/auth.docs';
+import {
   Body,
   Controller,
   Get,
@@ -15,12 +22,14 @@ import { AuthService } from './auth.service';
 import { LoginDTO } from './dto/login.dto';
 
 @Controller('auth')
+@AuthDocs()
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
   @Header('Cache-Control', 'no-store')
   @HttpCode(HttpStatus.OK)
+  @LoginDocs()
   async login(@Body() dto: LoginDTO) {
     return this.authService.login(dto);
   }
@@ -28,6 +37,7 @@ export class AuthController {
   @Get('me')
   @Header('Cache-Control', 'no-store')
   @UseGuards(Authenticated)
+  @MeDocs()
   me(@Req() request: AuthenticatedRequest) {
     return this.authService.getUserProfile(request.session.user);
   }
@@ -35,6 +45,7 @@ export class AuthController {
   @Post('logout')
   @UseGuards(Authenticated)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @LogoutDocs()
   async logout(@Req() request: AuthenticatedRequest) {
     await this.authService.deleteSession(request.session.session_id);
   }
@@ -42,6 +53,7 @@ export class AuthController {
   @Post('logout-all')
   @UseGuards(Authenticated)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @LogoutAllDocs()
   async logoutAll(@Req() request: AuthenticatedRequest) {
     await this.authService.deleteUserSessions(request.session.user_id);
   }

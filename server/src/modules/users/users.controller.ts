@@ -1,4 +1,12 @@
 import {
+  UsersDocs,
+  CreateUserDocs,
+  UpdateUserDocs,
+  FindAllUsersDocs,
+  FindOneUserDocs,
+  DeleteUserDocs,
+} from './docs/users.docs';
+import {
   Body,
   Controller,
   DefaultValuePipe,
@@ -23,6 +31,7 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 
 @Controller('users')
+@UsersDocs()
 @UseGuards(Authenticated)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -30,6 +39,7 @@ export class UsersController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
+  @CreateUserDocs()
   async create(@Body() dto: CreateUserDTO) {
     return this.usersService.createUser(dto);
   }
@@ -37,6 +47,7 @@ export class UsersController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
+  @UpdateUserDocs()
   async update(
     @Req() request: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
@@ -48,6 +59,7 @@ export class UsersController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
+  @FindAllUsersDocs()
   async findAll(
     @Req() request: AuthenticatedRequest,
     @Query() query: FindUsersDTO,
@@ -58,6 +70,7 @@ export class UsersController {
   @Get(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
+  @FindOneUserDocs()
   async findOne(
     @Req() request: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
@@ -74,6 +87,7 @@ export class UsersController {
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
+  @DeleteUserDocs()
   async delete(
     @Req() request: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,

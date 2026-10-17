@@ -1,4 +1,19 @@
 import {
+  BrandsDocs,
+  CreateBrandDocs,
+  AssignUserToBrandDocs,
+  FindAllBrandsDocs,
+  FindOneBrandDocs,
+  FindAllBrandAssignmentsForUserDocs,
+  FindOneBrandAssignmentDocs,
+  ReactivateBrandAssignmentDocs,
+  DeactivateBrandAssignmentDocs,
+  FindAllAssignedUsersForBrandDocs,
+  FindAssignmentByUserAndBrandDocs,
+  UpdateBrandDocs,
+  DeleteBrandDocs,
+} from './docs/brands.docs';
+import {
   Body,
   Controller,
   DefaultValuePipe,
@@ -27,6 +42,7 @@ import { UserRole } from '@prisma/client';
 import { BrandsGuard } from '../../shared/guards/brands.guard';
 
 @Controller('brands')
+@BrandsDocs()
 @UseGuards(Authenticated)
 export class BrandsController {
   constructor(private readonly brandsService: BrandsService) {}
@@ -35,6 +51,7 @@ export class BrandsController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
+  @CreateBrandDocs()
   async createBrand(
     @Body() dto: CreateBrandDTO,
     @Req() request: AuthenticatedRequest,
@@ -45,14 +62,14 @@ export class BrandsController {
   @Post('assign')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
+  @AssignUserToBrandDocs()
   async assignUserToBrand(@Body() dto: AssignUserToBrandDTO) {
     return this.brandsService.assignUserToBrand(dto.username, dto.brand_id);
   }
 
-  // todo: remove if superadmin is not needed
   @Get()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OWNER)
+  @FindAllBrandsDocs()
   async findAll(
     @Req() request: AuthenticatedRequest,
     @Query() query: FindBrandsDTO,
@@ -64,6 +81,7 @@ export class BrandsController {
   }
 
   @Get('assignments/users/:userId')
+  @FindAllBrandAssignmentsForUserDocs()
   async findAllBrandAssignmentsForUser(
     @Req() request: AuthenticatedRequest,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -82,6 +100,7 @@ export class BrandsController {
   @Get(':brandId/assignments/:assignmentId')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
+  @FindOneBrandAssignmentDocs()
   async findOneBrandAssignment(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
@@ -106,6 +125,7 @@ export class BrandsController {
   @Patch(':brandId/assignments/:assignmentId/reactivate')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
+  @ReactivateBrandAssignmentDocs()
   async reactivateBrandAssignment(
     @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -128,6 +148,7 @@ export class BrandsController {
   @Delete(':brandId/assignments/:assignmentId')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
+  @DeactivateBrandAssignmentDocs()
   async deactivateBrandAssignment(
     @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -148,6 +169,7 @@ export class BrandsController {
   @Get(':brandId/users')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
+  @FindAllAssignedUsersForBrandDocs()
   async findAllAssignedUsersForBrand(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Query() query: FindBrandsDTO,
@@ -157,6 +179,7 @@ export class BrandsController {
 
   @Get(':brandId/users/:userId')
   @UseGuards(BrandsGuard)
+  @FindAssignmentByUserAndBrandDocs()
   async findAssignmentByUserAndBrand(
     @Req() request: AuthenticatedRequest,
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -182,6 +205,7 @@ export class BrandsController {
 
   @Get(':brandId')
   @UseGuards(BrandsGuard)
+  @FindOneBrandDocs()
   async findOne(@Param('brandId', ParseUUIDPipe) brandId: string) {
     return this.brandsService.findOneBrand(brandId);
   }
@@ -189,6 +213,7 @@ export class BrandsController {
   @Patch(':brandId')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
+  @UpdateBrandDocs()
   async update(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Body() dto: UpdateBrandDTO,
@@ -199,6 +224,7 @@ export class BrandsController {
   @Delete(':brandId')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
+  @DeleteBrandDocs()
   async delete(@Param('brandId', ParseUUIDPipe) brandId: string) {
     return this.brandsService.deleteBrand(brandId);
   }

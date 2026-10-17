@@ -88,6 +88,11 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## API documentation
+
+Swagger UI: `http://localhost:3000/api/docs` (JSON: `/api/docs-json`).
+Log in through `POST /api/auth/login`, then paste the returned token into **Authorize**.
+
 ## Run tests
 
 ```bash
