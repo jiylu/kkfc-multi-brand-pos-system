@@ -84,8 +84,10 @@ describe('Brands HTTP endpoints', () => {
       { page: 2, limit: 5, activeOnly: false },
     ],
   ] as const)('lists brands with pagination: %s', async (query, expected) => {
+    currentRole = UserRole.SUPERADMIN;
+    currentBrandId = null;
     expect((await fetch(url + query)).status).toBe(200);
-    expect(service.findAll).toHaveBeenCalledWith(ownerId, expected);
+    expect(service.findAll).toHaveBeenCalledWith(expected);
   });
 
   it.each(['GET', 'DELETE'])(
@@ -99,7 +101,7 @@ describe('Brands HTTP endpoints', () => {
   );
 
   it('validates and forwards brand updates', async () => {
-    const dto = { name: 'Updated', logo_url: null };
+    const dto = { name: 'Updated', code: 'EDIT', logo_url: null };
     const response = await fetch(url + '/' + brandId, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -109,17 +111,24 @@ describe('Brands HTTP endpoints', () => {
     expect(service.update).toHaveBeenCalledWith(brandId, dto);
   });
 
-  it('allows assigned staff to read their brand', async () => {
-    currentRole = UserRole.ORDER_STAFF;
+  it.each(
+    Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
+  )('allows %s to read their brand', async (role) => {
+    currentRole = role;
     expect((await fetch(url + '/' + brandId)).status).toBe(200);
     expect(service.findOne).toHaveBeenCalledWith(brandId);
   });
 
-  it('allows superadmins to read another brand', async () => {
-    currentRole = UserRole.SUPERADMIN;
-    currentBrandId = null;
-    expect((await fetch(url + '/' + otherBrandId)).status).toBe(200);
-  });
+  it.each(['GET', 'PATCH', 'DELETE'])(
+    'allows superadmins to access another brand: %s',
+    async (method) => {
+      currentRole = UserRole.SUPERADMIN;
+      currentBrandId = null;
+      expect((await fetch(url + '/' + otherBrandId, { method })).status).toBe(
+        200,
+      );
+    },
+  );
 
   it.each(['GET', 'PATCH', 'DELETE'])(
     'blocks owners from another brand: %s',
@@ -159,8 +168,8 @@ describe('Brands HTTP endpoints', () => {
   });
 
   it.each([
-    { name: 'King Kungs Kafé', logo_url: null },
-    { name: 'King Kungs Kafé' },
+    { name: 'King Kungs Kafé', code: 'KKFC', logo_url: null },
+    { name: 'King Kungs Kafé', code: 'KK' },
   ])('creates a brand for the authenticated owner: %j', async (dto) => {
     currentBrandId = null;
     const response = await fetch(url, {
@@ -169,18 +178,24 @@ describe('Brands HTTP endpoints', () => {
       body: JSON.stringify(dto),
     });
     expect(response.status).toBe(201);
-    expect(service.create).toHaveBeenCalledWith(dto, ownerId);
+    expect(service.create).toHaveBeenCalledWith(dto, ownerId, false);
   });
 
   it.each([
     {},
-    { name: '' },
-    { name: 123 },
-    { name: 'a'.repeat(151) },
-    { name: 'Brand', code: 'ABCD' },
-    { name: 'Brand', logo_url: 'invalid' },
-    { name: 'Brand', owner_id: 'another-owner' },
-    { name: 'Brand', is_active: false },
+    { code: 'BRND' },
+    { name: '', code: 'BRND' },
+    { name: 123, code: 'BRND' },
+    { name: 'a'.repeat(151), code: 'BRND' },
+    { name: 'Brand' },
+    { name: 'Brand', code: '' },
+    { name: 'Brand', code: null },
+    { name: 'Brand', code: 123 },
+    { name: 'Brand', code: 'ABCDE' },
+    { name: 'Brand', code: 'BRND', logo_url: 'invalid' },
+    { name: 'Brand', code: 'BRND', owner_id: 'another-owner' },
+    { name: 'Brand', code: 'BRND', owner_id: null },
+    { name: 'Brand', code: 'BRND', is_active: false },
   ])('rejects invalid creation bodies: %j', async (body) => {
     const response = await fetch(url, {
       method: 'POST',
@@ -191,23 +206,49 @@ describe('Brands HTTP endpoints', () => {
     expect(service.create).not.toHaveBeenCalled();
   });
 
-  it.each(Object.values(UserRole).filter((role) => role !== UserRole.OWNER))(
-    'rejects brand creation for %s',
-    async (role) => {
-      currentRole = role;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Brand' }),
-      });
-      expect(response.status).toBe(403);
-      expect(service.create).not.toHaveBeenCalled();
-    },
-  );
+  it('passes the selected owner and authenticated superadmin flag on creation', async () => {
+    currentRole = UserRole.SUPERADMIN;
+    currentBrandId = null;
+    const dto = { name: 'Brand', code: 'BRND', owner_id: ownerId };
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dto),
+    });
+    expect(response.status).toBe(201);
+    expect(service.create).toHaveBeenCalledWith(dto, ownerId, true);
+  });
+
+  it.each(
+    Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
+  )('keeps the all-brands listing restricted from %s', async (role) => {
+    currentRole = role;
+    expect((await fetch(url)).status).toBe(403);
+    expect(service.findAll).not.toHaveBeenCalled();
+  });
+
+  it.each(
+    Object.values(UserRole).filter(
+      (role) => role !== UserRole.OWNER && role !== UserRole.SUPERADMIN,
+    ),
+  )('rejects brand creation for %s', async (role) => {
+    currentRole = role;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Brand', code: 'BRND' }),
+    });
+    expect(response.status).toBe(403);
+    expect(service.create).not.toHaveBeenCalled();
+  });
 
   it.each([
     { name: '', is_active: true },
-    { name: 'Updated', code: 'ABCD' },
+    { code: '' },
+    { code: null },
+    { code: 123 },
+    { code: 'ABCDE' },
+    { owner_id: ownerId },
   ])('rejects invalid update bodies: %j', async (body) => {
     const response = await fetch(url + '/' + brandId, {
       method: 'PATCH',
@@ -230,6 +271,7 @@ describe('Brands HTTP endpoints', () => {
   it.each(['?page=0', '?limit=0', '?limit=101', '?activeOnly=invalid'])(
     'rejects invalid list filters: %s',
     async (query) => {
+      currentRole = UserRole.SUPERADMIN;
       expect((await fetch(url + query)).status).toBe(400);
       expect(service.findAll).not.toHaveBeenCalled();
     },

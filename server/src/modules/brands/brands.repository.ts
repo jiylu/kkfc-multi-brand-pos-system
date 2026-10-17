@@ -1,22 +1,23 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateBrandDTO } from './dto/create-brand.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
 
 @Injectable()
 export class BrandsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createBrand(dto: CreateBrandDTO & { code: string }, ownerId: string) {
+  async createBrand(dto: CreateBrandDTO, ownerId: string) {
     return this.prisma.$transaction(async (tx) => {
       const brand = await tx.brand.create({
-        data: dto,
+        data: { name: dto.name, code: dto.code, logo_url: dto.logo_url },
       });
 
       const { count } = await tx.user.updateMany({
         where: {
           user_id: ownerId,
+          role: UserRole.OWNER,
           brand_id: null,
           is_active: true,
         },
@@ -29,7 +30,7 @@ export class BrandsRepository {
       if (count === 0) {
         throw new ConflictException({
           code: 'OWNER_CANNOT_CREATE_BRAND',
-          message: 'The owner must be active and have no existing brand.',
+          message: 'The user must be an active owner with no existing brand.',
         });
       }
 
@@ -64,7 +65,6 @@ export class BrandsRepository {
   }
 
   async findAllBrands(
-    userId: string,
     skip: number,
     take: number,
     activeOnly = true,
@@ -72,9 +72,6 @@ export class BrandsRepository {
   ) {
     const where: Prisma.BrandWhereInput = {
       is_active: activeOnly ? true : undefined,
-      users_brand: {
-        some: { user_id: userId, is_active: true },
-      },
     };
 
     const brandsQuery = tx.brand.findMany({
@@ -97,7 +94,7 @@ export class BrandsRepository {
 
   async updateBrand(
     brandId: string,
-    dto: UpdateBrandDTO & { code?: string },
+    dto: UpdateBrandDTO,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.brand.update({

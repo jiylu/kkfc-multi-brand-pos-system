@@ -19,9 +19,9 @@ export function BrandsDocs() {
 export function CreateBrandDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Create a brand (owner).',
+      summary: 'Create a brand (owner or superadmin).',
       description:
-        'A unique four-letter uppercase code is generated from the brand name.',
+        'Provide a unique brand code of up to four characters. Superadmins must supply owner_id for an active owner with no brand. Owners create brands for themselves.',
     }),
     ApiResponse({ status: 201, description: 'Created.' }),
     ApiResponse({
@@ -52,9 +52,10 @@ export function UpdateBrandDocs() {
     ApiOperation({
       summary: 'Update your brand (owner).',
       description:
-        'Changing the name generates a new unique four-letter code from the new name.',
+        'Update the name, code, or logo URL. The code is unchanged when omitted.',
     }),
     ApiResponse({ status: 200, description: 'Success.' }),
+    ApiResponse({ status: 409, description: 'Brand code is already taken.' }),
     ApiResponse({ status: 404, description: 'Resource not found.' }),
   );
 }

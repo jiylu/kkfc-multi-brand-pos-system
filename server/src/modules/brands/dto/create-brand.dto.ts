@@ -4,7 +4,9 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  IsUUID,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateBrandDTO {
@@ -13,6 +15,20 @@ export class CreateBrandDTO {
   @MaxLength(150, { message: 'Name must be at most 150 characters long.' })
   @ApiProperty({ maxLength: 150 })
   name!: string;
+
+  @IsString({ message: 'Code must be a string.' })
+  @IsNotEmpty({ message: 'Code is required and cannot be empty.' })
+  @MaxLength(4, { message: 'Code must be at most 4 characters long.' })
+  @ApiProperty({ maxLength: 4 })
+  code!: string;
+
+  @ValidateIf((_object: unknown, value: unknown) => value !== undefined)
+  @IsUUID('all', { message: 'Owner ID must be a valid UUID.' })
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Required for superadmins creating a brand for an owner.',
+  })
+  owner_id?: string;
 
   @IsOptional()
   @IsUrl({}, { message: 'Logo URL must be a valid URL.' })

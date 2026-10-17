@@ -37,13 +37,17 @@ export class BrandsController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.SUPERADMIN)
   @CreateBrandDocs()
   async create(
     @Body() dto: CreateBrandDTO,
     @Req() request: AuthenticatedRequest,
   ) {
-    return this.brandsService.create(dto, request.session.user.user_id);
+    return this.brandsService.create(
+      dto,
+      request.session.user.user_id,
+      request.session.user.role === UserRole.SUPERADMIN,
+    );
   }
 
   @Get(':brandId')
@@ -55,17 +59,15 @@ export class BrandsController {
 
   @Get()
   @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPERADMIN)
   @FindAllBrandsDocs()
-  async findAll(
-    @Req() request: AuthenticatedRequest,
-    @Query() query: FindBrandsDTO,
-  ) {
-    return this.brandsService.findAll(request.session.user.user_id, query);
+  async findAll(@Query() query: FindBrandsDTO) {
+    return this.brandsService.findAll(query);
   }
 
   @Patch(':brandId')
   @UseGuards(RolesGuard, BrandsGuard)
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.SUPERADMIN)
   @UpdateBrandDocs()
   async update(
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -76,7 +78,7 @@ export class BrandsController {
 
   @Delete(':brandId')
   @UseGuards(RolesGuard, BrandsGuard)
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.SUPERADMIN)
   @DeleteBrandDocs()
   async delete(@Param('brandId', ParseUUIDPipe) brandId: string) {
     return this.brandsService.delete(brandId);
