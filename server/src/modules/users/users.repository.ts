@@ -129,6 +129,7 @@ export class UsersRepository {
     return tx.user.update({
       where: { user_id: userId, is_active: true },
       data: {
+        username: dto.username,
         first_name: dto.first_name,
         last_name: dto.last_name,
         password_hash:

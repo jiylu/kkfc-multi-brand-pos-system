@@ -34,9 +34,10 @@ export function UpdateUserDocs() {
     ApiOperation({
       summary: 'Update a user in your brands (owner).',
       description:
-        'Cannot edit another owner or change another user’s password.',
+        'Update username, name, or your own password. Cannot edit another owner.',
     }),
     ApiResponse({ status: 200, description: 'Success.' }),
+    ApiResponse({ status: 409, description: 'Username is already taken.' }),
     ApiResponse({ status: 404, description: 'Resource not found.' }),
   );
 }

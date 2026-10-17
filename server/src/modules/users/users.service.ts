@@ -124,6 +124,20 @@ export class UsersService {
       });
     }
 
+    if (dto.username !== undefined && dto.username !== user.username) {
+      const existingUsername = await this.usersRepository.safeFindByUsername(
+        dto.username,
+        false,
+      );
+
+      if (existingUsername) {
+        throw new ConflictException({
+          code: 'USERNAME_ALREADY_EXISTS',
+          message: 'Username already exists.',
+        });
+      }
+    }
+
     try {
       const updated = await this.usersRepository.update(user.user_id, dto);
       this.logger.log(`Updated user ${userId}`);

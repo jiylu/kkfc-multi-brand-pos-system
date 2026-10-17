@@ -1,11 +1,12 @@
 import {
+  ConflictException,
   ExecutionContext,
   INestApplication,
   ValidationPipe,
 } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { Authenticated } from '../../auth/auth.guard';
 import { UsersController } from '../users.controller';
 import { UsersService } from '../users.service';
@@ -216,7 +217,65 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     );
   });
 
+  it.each(['renamed_user', 'a'.repeat(64)])(
+    'updates a username without requiring other profile fields: %s',
+    async (username) => {
+      const response = await fetch(`${url}/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(service.updateUser).toHaveBeenCalledWith(
+        userId,
+        { username },
+        '00000000-0000-4000-8000-000000000001',
+      );
+    },
+  );
+
+  it('preserves the username availability conflict response', async () => {
+    const body = {
+      code: 'USERNAME_ALREADY_EXISTS',
+      message: 'Username already exists.',
+    };
+    service.updateUser.mockRejectedValue(new ConflictException(body));
+
+    const response = await fetch(`${url}/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'existing_user' }),
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual(body);
+  });
+
+  it('returns a conflict when a username update violates uniqueness', async () => {
+    service.updateUser.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Username is already taken', {
+        code: 'P2002',
+        clientVersion: '7.8.0',
+        meta: { target: ['username'] },
+      }),
+    );
+
+    const response = await fetch(`${url}/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'existing_user' }),
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: 'DUPLICATE_RESOURCE' });
+  });
+
   it.each([
+    { username: '' },
+    { username: null },
+    { username: 123 },
+    { username: 'a'.repeat(65) },
     { first_name: '' },
     { password: '123' },
     { role: UserRole.OWNER },

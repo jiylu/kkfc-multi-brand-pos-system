@@ -27,7 +27,13 @@ describe('UsersService', () => {
   let repository: jest.Mocked<
     Pick<
       UsersRepository,
-      'create' | 'findAll' | 'findOne' | 'findByUsername' | 'update' | 'delete'
+      | 'create'
+      | 'findAll'
+      | 'findOne'
+      | 'findByUsername'
+      | 'safeFindByUsername'
+      | 'update'
+      | 'delete'
     >
   >;
   let service: UsersService;
@@ -41,6 +47,7 @@ describe('UsersService', () => {
       findAll: jest.fn().mockResolvedValue({ users: [user], total: 21 }),
       findOne: jest.fn().mockResolvedValue(user),
       findByUsername: jest.fn().mockResolvedValue(null),
+      safeFindByUsername: jest.fn().mockResolvedValue(null),
       update: jest.fn().mockResolvedValue({ ...user, first_name: 'Updated' }),
       delete: jest.fn().mockResolvedValue({ ...user, is_active: false }),
     };
@@ -80,7 +87,7 @@ describe('UsersService', () => {
     });
 
     it('allows profile edits for staff in a shared brand', async () => {
-      const dto = { first_name: 'Updated' };
+      const dto = { username: 'renamed_staff', first_name: 'Updated' };
       await service.updateUser(staff.user_id, dto, caller.user_id);
       expect(repository.update).toHaveBeenCalledWith(staff.user_id, dto);
     });
@@ -310,6 +317,95 @@ describe('UsersService', () => {
     });
     expect(repository.findOne).toHaveBeenCalledWith(user.user_id, true);
     expect(repository.update).toHaveBeenCalledWith(user.user_id, dto);
+  });
+
+  describe('username updates', () => {
+    it('updates to an available username and checks inactive accounts too', async () => {
+      const dto = { username: 'renamed_owner' };
+      repository.update.mockResolvedValue({ ...user, ...dto });
+
+      await expect(
+        service.updateUser(user.user_id, dto, user.user_id),
+      ).resolves.toMatchObject(dto);
+      expect(repository.safeFindByUsername).toHaveBeenCalledWith(
+        dto.username,
+        false,
+      );
+      expect(repository.update).toHaveBeenCalledWith(user.user_id, dto);
+    });
+
+    it.each([true, false])(
+      'rejects a username belonging to another account with is_active=%s',
+      async (is_active) => {
+        repository.safeFindByUsername.mockResolvedValue({
+          ...user,
+          user_id: 'other-user-id',
+          username: 'taken_username',
+          is_active,
+        });
+
+        await expect(
+          service.updateUser(
+            user.user_id,
+            { username: 'taken_username', first_name: 'Changed' },
+            user.user_id,
+          ),
+        ).rejects.toMatchObject({
+          status: 409,
+          response: {
+            code: 'USERNAME_ALREADY_EXISTS',
+            message: 'Username already exists.',
+          },
+        });
+        expect(repository.safeFindByUsername).toHaveBeenCalledWith(
+          'taken_username',
+          false,
+        );
+        expect(repository.update).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([undefined, user.username])(
+      'skips the availability check for an omitted or unchanged username: %s',
+      async (username) => {
+        const dto = { username, first_name: 'Updated' };
+
+        await service.updateUser(user.user_id, dto, user.user_id);
+
+        expect(repository.safeFindByUsername).not.toHaveBeenCalled();
+        expect(repository.update).toHaveBeenCalledWith(user.user_id, dto);
+      },
+    );
+
+    it('does not write if the availability lookup fails', async () => {
+      const error = new Error('Database unavailable');
+      repository.safeFindByUsername.mockRejectedValue(error);
+
+      await expect(
+        service.updateUser(
+          user.user_id,
+          { username: 'renamed_owner' },
+          user.user_id,
+        ),
+      ).rejects.toBe(error);
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('propagates a concurrent username conflict to the global filter', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError(
+        'Username is already taken',
+        { code: 'P2002', clientVersion: '7.8.0' },
+      );
+      repository.update.mockRejectedValue(error);
+
+      await expect(
+        service.updateUser(
+          user.user_id,
+          { username: 'renamed_owner' },
+          user.user_id,
+        ),
+      ).rejects.toBe(error);
+    });
   });
 
   it('UT-USER-012: rejects an update if the user is deactivated after the lookup', async () => {
