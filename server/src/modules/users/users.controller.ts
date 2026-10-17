@@ -1,10 +1,11 @@
 import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiQuery,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+  UsersDocs,
+  CreateUserDocs,
+  UpdateUserDocs,
+  FindAllUsersDocs,
+  FindOneUserDocs,
+  DeleteUserDocs,
+} from './docs/users.docs';
 import {
   Body,
   Controller,
@@ -30,11 +31,7 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 
 @Controller('users')
-@ApiTags('Users')
-@ApiResponse({ status: 400, description: 'Invalid request.' })
-@ApiBearerAuth()
-@ApiResponse({ status: 401, description: 'Missing or expired session.' })
-@ApiResponse({ status: 403, description: 'Access denied.' })
+@UsersDocs()
 @UseGuards(Authenticated)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -42,12 +39,7 @@ export class UsersController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Create a user (owner).' })
-  @ApiResponse({ status: 201, description: 'Created.' })
-  @ApiResponse({
-    status: 409,
-    description: 'Resource already exists or conflicts with the current state.',
-  })
+  @CreateUserDocs()
   async create(@Body() dto: CreateUserDTO) {
     return this.usersService.createUser(dto);
   }
@@ -55,12 +47,7 @@ export class UsersController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({
-    summary: 'Update a user in your brands (owner).',
-    description: 'Cannot edit another owner or change another user’s password.',
-  })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
+  @UpdateUserDocs()
   async update(
     @Req() request: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
@@ -72,8 +59,7 @@ export class UsersController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'List users in your brands (owner).' })
-  @ApiResponse({ status: 200, description: 'Success.' })
+  @FindAllUsersDocs()
   async findAll(
     @Req() request: AuthenticatedRequest,
     @Query() query: FindUsersDTO,
@@ -84,15 +70,7 @@ export class UsersController {
   @Get(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Get yourself or a user in your brands (owner).' })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiQuery({
-    name: 'activeOnly',
-    required: false,
-    type: Boolean,
-    schema: { default: true },
-  })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
+  @FindOneUserDocs()
   async findOne(
     @Req() request: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
@@ -109,9 +87,7 @@ export class UsersController {
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Deactivate your own account (owner).' })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
+  @DeleteUserDocs()
   async delete(
     @Req() request: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,

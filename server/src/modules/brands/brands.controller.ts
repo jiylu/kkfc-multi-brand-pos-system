@@ -1,10 +1,18 @@
 import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiQuery,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+  BrandsDocs,
+  CreateBrandDocs,
+  AssignUserToBrandDocs,
+  FindAllBrandsDocs,
+  FindOneBrandDocs,
+  FindAllBrandAssignmentsForUserDocs,
+  FindOneBrandAssignmentDocs,
+  ReactivateBrandAssignmentDocs,
+  DeactivateBrandAssignmentDocs,
+  FindAllAssignedUsersForBrandDocs,
+  FindAssignmentByUserAndBrandDocs,
+  UpdateBrandDocs,
+  DeleteBrandDocs,
+} from './docs/brands.docs';
 import {
   Body,
   Controller,
@@ -34,11 +42,7 @@ import { UserRole } from '@prisma/client';
 import { BrandsGuard } from '../../shared/guards/brands.guard';
 
 @Controller('brands')
-@ApiTags('Brands')
-@ApiResponse({ status: 400, description: 'Invalid request.' })
-@ApiBearerAuth()
-@ApiResponse({ status: 401, description: 'Missing or expired session.' })
-@ApiResponse({ status: 403, description: 'Access denied.' })
+@BrandsDocs()
 @UseGuards(Authenticated)
 export class BrandsController {
   constructor(private readonly brandsService: BrandsService) {}
@@ -47,12 +51,7 @@ export class BrandsController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Create a brand (owner).' })
-  @ApiResponse({ status: 201, description: 'Created.' })
-  @ApiResponse({
-    status: 409,
-    description: 'Resource already exists or conflicts with the current state.',
-  })
+  @CreateBrandDocs()
   async createBrand(
     @Body() dto: CreateBrandDTO,
     @Req() request: AuthenticatedRequest,
@@ -63,21 +62,14 @@ export class BrandsController {
   @Post('assign')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Assign a user to your brand (owner).' })
-  @ApiResponse({ status: 201, description: 'Created.' })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
-  @ApiResponse({
-    status: 409,
-    description: 'Resource already exists or conflicts with the current state.',
-  })
+  @AssignUserToBrandDocs()
   async assignUserToBrand(@Body() dto: AssignUserToBrandDTO) {
     return this.brandsService.assignUserToBrand(dto.username, dto.brand_id);
   }
 
   @Get()
   @UseGuards(RolesGuard)
-  @ApiOperation({ summary: 'List your brands.' })
-  @ApiResponse({ status: 200, description: 'Success.' })
+  @FindAllBrandsDocs()
   async findAll(
     @Req() request: AuthenticatedRequest,
     @Query() query: FindBrandsDTO,
@@ -89,17 +81,13 @@ export class BrandsController {
   }
 
   @Get(':brandId')
-  @ApiOperation({ summary: 'Get a brand.' })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
+  @FindOneBrandDocs()
   async findOneBrand(@Param('brandId') brandId: string) {
     return this.brandsService.findOneBrand(brandId);
   }
 
   @Get('assignments/users/:userId')
-  @ApiOperation({ summary: 'List your own brand assignments.' })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
+  @FindAllBrandAssignmentsForUserDocs()
   async findAllBrandAssignmentsForUser(
     @Req() request: AuthenticatedRequest,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -118,15 +106,7 @@ export class BrandsController {
   @Get(':brandId/assignments/:assignmentId')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Get an assignment in your brand (owner).' })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiQuery({
-    name: 'activeOnly',
-    required: false,
-    type: Boolean,
-    schema: { default: true },
-  })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
+  @FindOneBrandAssignmentDocs()
   async findOneBrandAssignment(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
@@ -151,13 +131,7 @@ export class BrandsController {
   @Patch(':brandId/assignments/:assignmentId/reactivate')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Reactivate an assignment in your brand (owner).' })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
-  @ApiResponse({
-    status: 409,
-    description: 'Resource already exists or conflicts with the current state.',
-  })
+  @ReactivateBrandAssignmentDocs()
   async reactivateBrandAssignment(
     @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -180,13 +154,7 @@ export class BrandsController {
   @Delete(':brandId/assignments/:assignmentId')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Deactivate an assignment in your brand (owner).' })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
-  @ApiResponse({
-    status: 409,
-    description: 'Resource already exists or conflicts with the current state.',
-  })
+  @DeactivateBrandAssignmentDocs()
   async deactivateBrandAssignment(
     @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -207,9 +175,7 @@ export class BrandsController {
   @Get(':brandId/users')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'List users assigned to your brand (owner).' })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
+  @FindAllAssignedUsersForBrandDocs()
   async findAllAssignedUsersForBrand(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Query() query: FindBrandsDTO,
@@ -219,17 +185,7 @@ export class BrandsController {
 
   @Get(':brandId/users/:userId')
   @UseGuards(BrandsGuard)
-  @ApiOperation({
-    summary: 'Get your assignment, or any in your brand as owner.',
-  })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiQuery({
-    name: 'activeOnly',
-    required: false,
-    type: Boolean,
-    schema: { default: true },
-  })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
+  @FindAssignmentByUserAndBrandDocs()
   async findAssignmentByUserAndBrand(
     @Req() request: AuthenticatedRequest,
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -255,9 +211,7 @@ export class BrandsController {
 
   @Get(':brandId')
   @UseGuards(BrandsGuard)
-  @ApiOperation({ summary: 'Get a brand.' })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
+  @FindOneBrandDocs()
   async findOne(@Param('brandId', ParseUUIDPipe) brandId: string) {
     return this.brandsService.findOneBrand(brandId);
   }
@@ -265,9 +219,7 @@ export class BrandsController {
   @Patch(':brandId')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Update your brand (owner); code is immutable.' })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
+  @UpdateBrandDocs()
   async update(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Body() dto: UpdateBrandDTO,
@@ -278,9 +230,7 @@ export class BrandsController {
   @Delete(':brandId')
   @UseGuards(RolesGuard, BrandsGuard)
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Deactivate your brand (owner).' })
-  @ApiResponse({ status: 200, description: 'Success.' })
-  @ApiResponse({ status: 404, description: 'Resource not found.' })
+  @DeleteBrandDocs()
   async delete(@Param('brandId', ParseUUIDPipe) brandId: string) {
     return this.brandsService.deleteBrand(brandId);
   }
