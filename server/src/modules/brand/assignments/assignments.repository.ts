@@ -1,24 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { Prisma, UserRole } from '@prisma/client';
-import { PrismaService } from '../../shared/prisma/prisma.service';
-import { CreateBrandDTO } from './dto/create-brand.dto';
-import { UpdateBrandDTO } from './dto/update-brand.dto';
 
 @Injectable()
-export class BrandsRepository {
+export class AssignmentsRepository {
   constructor(private readonly prisma: PrismaService) {}
-
-  async createBrand(dto: CreateBrandDTO, ownerId: string) {
-    return await this.prisma.$transaction(async (tx) => {
-      const brand = await tx.brand.create({
-        data: dto,
-      });
-
-      await this.assignUser({ user_id: ownerId }, brand.brand_id, tx);
-
-      return brand;
-    });
-  }
 
   async assignUser(
     user: Prisma.UserWhereUniqueInput,
@@ -31,51 +17,6 @@ export class BrandsRepository {
         brand: { connect: { brand_id: brandId } },
       },
     });
-  }
-
-  async findOneBrand(
-    brandId: string,
-    activeOnly = true,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.brand.findUnique({
-      where: {
-        brand_id: brandId,
-        is_active: activeOnly ? true : undefined,
-      },
-    });
-  }
-
-  async findAllBrands(
-    userId: string,
-    skip: number,
-    take: number,
-    activeOnly = true,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    const where: Prisma.BrandWhereInput = {
-      is_active: activeOnly ? true : undefined,
-      user_brand_assignments_brand: {
-        some: { user_id: userId, is_active: true },
-      },
-    };
-
-    const brandsQuery = tx.brand.findMany({
-      where,
-      skip,
-      take,
-      orderBy: [{ created_at: 'desc' }, { brand_id: 'asc' }],
-    });
-    const totalQuery = tx.brand.count({ where });
-
-    const [brands, total] =
-      '$transaction' in tx
-        ? await tx.$transaction([brandsQuery, totalQuery], {
-            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
-          })
-        : await Promise.all([brandsQuery, totalQuery]);
-
-    return { brands, total };
   }
 
   async findAllOwnersForBrand(
@@ -98,6 +39,19 @@ export class BrandsRepository {
     });
   }
 
+  async findOneBrandAssignment(
+    assignmentId: string,
+    activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.userBrandAssignment.findUnique({
+      where: {
+        assignment_id: assignmentId,
+        is_active: activeOnly ? true : undefined,
+      },
+    });
+  }
+
   async findAssignmentByUserAndBrand(
     userId: string,
     brandId: string,
@@ -108,19 +62,6 @@ export class BrandsRepository {
       where: {
         user_id: userId,
         brand_id: brandId,
-        is_active: activeOnly ? true : undefined,
-      },
-    });
-  }
-
-  async findOneBrandAssignment(
-    assignmentId: string,
-    activeOnly = true,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.userBrandAssignment.findUnique({
-      where: {
-        assignment_id: assignmentId,
         is_active: activeOnly ? true : undefined,
       },
     });
@@ -173,18 +114,22 @@ export class BrandsRepository {
     activeOnly = true,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
-    const where: Prisma.UserBrandAssignmentWhereInput = {
-      brand_id: brandId,
-      is_active: activeOnly ? true : undefined,
-    };
-
     const usersQuery = tx.userBrandAssignment.findMany({
-      where,
+      where: {
+        brand_id: brandId,
+        is_active: activeOnly ? true : undefined,
+      },
       skip,
       take,
       orderBy: [{ created_at: 'desc' }, { user_id: 'asc' }],
     });
-    const totalQuery = tx.userBrandAssignment.count({ where });
+
+    const totalQuery = tx.userBrandAssignment.count({
+      where: {
+        brand_id: brandId,
+        is_active: activeOnly ? true : undefined,
+      },
+    });
 
     const [users, total] =
       '$transaction' in tx
@@ -194,24 +139,6 @@ export class BrandsRepository {
         : await Promise.all([usersQuery, totalQuery]);
 
     return { users, total };
-  }
-
-  async updateBrand(
-    brandId: string,
-    dto: UpdateBrandDTO,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.brand.update({
-      where: {
-        brand_id: brandId,
-        is_active: true,
-      },
-      data: {
-        name: dto.name,
-        logo_url: dto.logo_url,
-        modified_at: new Date(),
-      },
-    });
   }
 
   async reactivateBrandAssignment(
@@ -227,34 +154,6 @@ export class BrandsRepository {
         is_active: true,
         modified_at: new Date(),
       },
-    });
-  }
-
-  async deleteBrand(brandId: string) {
-    return await this.prisma.$transaction(async (tx) => {
-      const deletedBrand = await tx.brand.update({
-        where: {
-          brand_id: brandId,
-          is_active: true,
-        },
-        data: {
-          is_active: false,
-          modified_at: new Date(),
-        },
-      });
-
-      await tx.userBrandAssignment.updateMany({
-        where: {
-          brand_id: brandId,
-          is_active: true,
-        },
-        data: {
-          is_active: false,
-          modified_at: new Date(),
-        },
-      });
-
-      return deletedBrand;
     });
   }
 

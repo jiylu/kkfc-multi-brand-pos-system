@@ -31,13 +31,7 @@ describe('Authenticated Guard (UT-AUTH)', () => {
 
   beforeEach(() => {
     authService = {
-      validateSession: jest
-        .fn()
-        .mockResolvedValue(
-          session as unknown as Awaited<
-            ReturnType<AuthService['validateSession']>
-          >,
-        ),
+      validateSession: jest.fn().mockResolvedValue(session),
     };
     guard = new Authenticated(authService as unknown as AuthService);
   });

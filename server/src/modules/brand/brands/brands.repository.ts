@@ -1,0 +1,116 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { CreateBrandDTO } from './dto/create-brand.dto';
+import { Prisma } from '@prisma/client';
+import { UpdateBrandDTO } from './dto/update-brand.dto';
+
+@Injectable()
+export class BrandsRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async createBrand(dto: CreateBrandDTO, ownerId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const brand = await tx.brand.create({ data: dto });
+
+      await tx.userBrandAssignment.create({
+        data: {
+          user: { connect: { user_id: ownerId } },
+          brand: { connect: { brand_id: brand.brand_id } },
+        },
+      });
+
+      return brand;
+    });
+  }
+
+  async findOneBrand(
+    brandId: string,
+    activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.brand.findUnique({
+      where: {
+        brand_id: brandId,
+        is_active: activeOnly ? true : undefined,
+      },
+    });
+  }
+
+  async findAllBrands(
+    userId: string,
+    skip: number,
+    take: number,
+    activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const where: Prisma.BrandWhereInput = {
+      is_active: activeOnly ? true : undefined,
+      user_brand_assignments_brand: {
+        some: { user_id: userId, is_active: true },
+      },
+    };
+
+    const brandsQuery = tx.brand.findMany({
+      where,
+      skip,
+      take,
+      orderBy: [{ created_at: 'desc' }, { brand_id: 'asc' }],
+    });
+    const totalQuery = tx.brand.count({ where });
+
+    const [brands, total] =
+      '$transaction' in tx
+        ? await tx.$transaction([brandsQuery, totalQuery], {
+            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+          })
+        : await Promise.all([brandsQuery, totalQuery]);
+
+    return { brands, total };
+  }
+
+  async updateBrand(
+    brandId: string,
+    dto: UpdateBrandDTO,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.brand.update({
+      where: {
+        brand_id: brandId,
+        is_active: true,
+      },
+      data: {
+        name: dto.name,
+        logo_url: dto.logo_url,
+        modified_at: new Date(),
+      },
+    });
+  }
+
+  async deleteBrand(brandId: string) {
+    return await this.prisma.$transaction(async (tx) => {
+      const deletedBrand = await tx.brand.update({
+        where: {
+          brand_id: brandId,
+          is_active: true,
+        },
+        data: {
+          is_active: false,
+          modified_at: new Date(),
+        },
+      });
+
+      await tx.userBrandAssignment.updateMany({
+        where: {
+          brand_id: brandId,
+          is_active: true,
+        },
+        data: {
+          is_active: false,
+          modified_at: new Date(),
+        },
+      });
+
+      return deletedBrand;
+    });
+  }
+}

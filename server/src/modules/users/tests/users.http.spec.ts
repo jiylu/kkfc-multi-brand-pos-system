@@ -161,9 +161,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       '00000000-0000-4000-8000-000000000001',
     );
 
-    const filteredResp = await fetch(
-      `${url}?page=2&limit=5&activeOnly=false`,
-    );
+    const filteredResp = await fetch(`${url}?page=2&limit=5&activeOnly=false`);
     expect(filteredResp.status).toBe(200);
     expect(service.findAllUsers).toHaveBeenLastCalledWith(
       {
@@ -269,9 +267,9 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       expect((await fetch(url)).status).toBe(403);
       expect((await fetch(`${url}/${userId}`)).status).toBe(403);
       expect((await fetch(url, { method: 'POST' })).status).toBe(403);
-      expect((await fetch(`${url}/${userId}`, { method: 'PATCH' })).status).toBe(
-        403,
-      );
+      expect(
+        (await fetch(`${url}/${userId}`, { method: 'PATCH' })).status,
+      ).toBe(403);
       expect(
         (await fetch(`${url}/${userId}`, { method: 'DELETE' })).status,
       ).toBe(403);
