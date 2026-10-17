@@ -38,10 +38,9 @@ E2E-BRND-003: Owner creates a new brand
     [Tags]             E2E    BRANDS    E2E-BRND-003    FR-001
     Given the backend server is running against the test database
     And An authenticated session exists for role "OWNER"
-    ${random_suffix}=  Generate Random String    6    [NUMBERS]
-    ${random_code}=    Generate Random String    2    [UPPER]
+    ${random_suffix}=  Generate Random String    4    [NUMBERS]
     ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}    Content-Type=application/json
-    ${payload}=    Create Dictionary    name=New Brand ${random_suffix}    code=${random_code}
+    ${payload}=    Create Dictionary    name=New Brand ${random_suffix}
     ${response}=   POST On Session      api    /api/brands    headers=${headers}    json=${payload}    expected_status=any
     Status Should Be    201    ${response}
     ${body}=       Set Variable    ${response.json()}
