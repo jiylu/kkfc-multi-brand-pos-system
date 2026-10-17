@@ -1,10 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:mobile/core/api/auth_interceptor.dart';
+import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/core/config/app_config.dart';
+import 'package:mobile/features/auth/providers/session_provider.dart';
 
-final dioProvider = Provider<Dio>((_) {
-  return Dio(
+final dioProvider = Provider<Dio>((ref) {
+  final dio = Dio(
     BaseOptions(
       baseUrl: AppConfig.apiBaseUrl,
       connectTimeout: const Duration(seconds: 10),
@@ -14,4 +17,16 @@ final dioProvider = Provider<Dio>((_) {
       contentType: Headers.jsonContentType,
     ),
   );
+
+  dio.interceptors.add(
+    AuthInterceptor(
+      readToken: () => ref.read(sessionTokenProvider),
+      onUnauthorized: () {
+        ref.read(tokenStoreProvider).clear();
+        ref.read(sessionTokenProvider.notifier).setToken(null);
+      },
+    ),
+  );
+
+  return dio;
 });

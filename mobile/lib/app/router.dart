@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,14 +8,19 @@ import '../shared/widgets/placeholder_screen.dart';
 import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final loggedIn = ValueNotifier<bool>(ref.read(sessionProvider));
+  ref.listen<bool>(sessionProvider, (_, next) => loggedIn.value = next);
+  ref.onDispose(loggedIn.dispose);
+
   final router = GoRouter(
     initialLocation: AppRoutes.login,
+    refreshListenable: loggedIn,
     redirect: (context, state) {
-      final loggedIn = ref.read(sessionProvider);
+      final isLoggedIn = ref.read(sessionProvider);
       final onLogin = state.matchedLocation == AppRoutes.login;
 
-      if (!loggedIn && !onLogin) return AppRoutes.login;
-      if (loggedIn && onLogin) return AppRoutes.orders;
+      if (!isLoggedIn && !onLogin) return AppRoutes.login;
+      if (isLoggedIn && onLogin) return AppRoutes.orders;
       return null;
     },
     routes: [
@@ -32,3 +38,5 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(router.dispose);
   return router;
 });
+
+

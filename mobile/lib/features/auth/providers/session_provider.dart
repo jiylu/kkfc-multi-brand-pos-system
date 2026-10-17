@@ -1,12 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SessionNotifier extends Notifier<bool> {
-  @override
-  bool build() => false; // logged out by default
+/// Token restored from secure storage before runApp. main.dart overrides it.
+final initialTokenProvider = Provider<String?>((ref) => null);
 
-  void setLoggedIn(bool value) => state = value;
+class SessionTokenNotifier extends Notifier<String?> {
+  @override
+  String? build() => ref.watch(initialTokenProvider);
+
+  void setToken(String? token) => state = token;
 }
 
-final sessionProvider = NotifierProvider<SessionNotifier, bool>(
-  SessionNotifier.new,
-);
+final sessionTokenProvider =
+    NotifierProvider<SessionTokenNotifier, String?>(SessionTokenNotifier.new);
+
+/// True while a token is held. The router redirect reads this.
+final sessionProvider =
+    Provider<bool>((ref) => ref.watch(sessionTokenProvider) != null);
