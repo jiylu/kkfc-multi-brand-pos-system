@@ -4,8 +4,10 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { BrandsController } from '../brands.controller';
-import { BrandsService } from '../brands.service';
+import { BrandModule } from '../brand.module';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { BrandsService } from '../brands/brands.service';
+import { AssignmentsService } from '../assignments/assignments.service';
 import { Authenticated } from '../../auth/auth.guard';
 import { UserRole } from '@prisma/client';
 
@@ -17,13 +19,13 @@ describe('Brands HTTP endpoints', () => {
   const service = {
     createBrand: jest.fn(),
     findAllBrands: jest.fn(),
-    findAllBrandAssignmentsForUser: jest.fn(),
-    findAllAssignedUsersForBrand: jest.fn(),
-    findOneBrandAssignmentById: jest.fn(),
-    reactivateBrandAssignment: jest.fn(),
-    deactivateBrandAssignment: jest.fn(),
-    assignUserToBrand: jest.fn(),
-    findAssignmentByUserAndBrand: jest.fn(),
+    findAllForUser: jest.fn(),
+    findAllForBrand: jest.fn(),
+    findOneById: jest.fn(),
+    reactivate: jest.fn(),
+    deactivate: jest.fn(),
+    assign: jest.fn(),
+    findOneByUserAndBrand: jest.fn(),
     findOneBrand: jest.fn(),
     updateBrand: jest.fn(),
     deleteBrand: jest.fn(),
@@ -31,9 +33,20 @@ describe('Brands HTTP endpoints', () => {
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
-      controllers: [BrandsController],
-      providers: [{ provide: BrandsService, useValue: service }],
+      imports: [BrandModule],
     })
+      .overrideProvider(PrismaService)
+      .useValue({})
+      .overrideProvider(BrandsService)
+      .useValue({
+        create: service.createBrand,
+        findOne: service.findOneBrand,
+        findAll: service.findAllBrands,
+        update: service.updateBrand,
+        delete: service.deleteBrand,
+      })
+      .overrideProvider(AssignmentsService)
+      .useValue(service)
       .overrideGuard(Authenticated)
       .useValue({
         canActivate(context: ExecutionContext) {
@@ -87,7 +100,7 @@ describe('Brands HTTP endpoints', () => {
     [
       'GET',
       '/00000000-0000-4000-8000-000000000001/users',
-      'findAllAssignedUsersForBrand',
+      'findAllForBrand',
       [
         '00000000-0000-4000-8000-000000000001',
         { page: 1, limit: 10, activeOnly: true },
@@ -97,7 +110,7 @@ describe('Brands HTTP endpoints', () => {
     [
       'GET',
       '/00000000-0000-4000-8000-000000000001/users?page=2&limit=5&activeOnly=false',
-      'findAllAssignedUsersForBrand',
+      'findAllForBrand',
       [
         '00000000-0000-4000-8000-000000000001',
         { page: 2, limit: 5, activeOnly: false },
@@ -127,7 +140,7 @@ describe('Brands HTTP endpoints', () => {
     [
       'GET',
       '/assignments/users/00000000-0000-4000-8000-000000000004?activeOnly=false',
-      'findAllBrandAssignmentsForUser',
+      'findAllForUser',
       [
         '00000000-0000-4000-8000-000000000004',
         { page: 1, limit: 10, activeOnly: false },
@@ -137,35 +150,35 @@ describe('Brands HTTP endpoints', () => {
     [
       'GET',
       '/00000000-0000-4000-8000-000000000001/assignments/00000000-0000-4000-8000-000000000003',
-      'findOneBrandAssignmentById',
+      'findOneById',
       ['00000000-0000-4000-8000-000000000003', true],
       200,
     ],
     [
       'GET',
       '/00000000-0000-4000-8000-000000000001/assignments/00000000-0000-4000-8000-000000000003?activeOnly=false',
-      'findOneBrandAssignmentById',
+      'findOneById',
       ['00000000-0000-4000-8000-000000000003', false],
       200,
     ],
     [
       'PATCH',
       '/00000000-0000-4000-8000-000000000001/assignments/00000000-0000-4000-8000-000000000003/reactivate',
-      'reactivateBrandAssignment',
+      'reactivate',
       ['00000000-0000-4000-8000-000000000003'],
       200,
     ],
     [
       'DELETE',
       '/00000000-0000-4000-8000-000000000001/assignments/00000000-0000-4000-8000-000000000003',
-      'deactivateBrandAssignment',
+      'deactivate',
       ['00000000-0000-4000-8000-000000000003'],
       200,
     ],
     [
       'GET',
       '/00000000-0000-4000-8000-000000000001/users/00000000-0000-4000-8000-000000000002',
-      'findAssignmentByUserAndBrand',
+      'findOneByUserAndBrand',
       [
         '00000000-0000-4000-8000-000000000002',
         '00000000-0000-4000-8000-000000000001',
@@ -176,7 +189,7 @@ describe('Brands HTTP endpoints', () => {
     [
       'GET',
       '/00000000-0000-4000-8000-000000000001/users/00000000-0000-4000-8000-000000000002?activeOnly=false',
-      'findAssignmentByUserAndBrand',
+      'findOneByUserAndBrand',
       [
         '00000000-0000-4000-8000-000000000002',
         '00000000-0000-4000-8000-000000000001',
@@ -204,11 +217,11 @@ describe('Brands HTTP endpoints', () => {
     'IT-BRND-001: %s %s delegates for an authenticated owner',
     async (method, path, handler, args, status) => {
       if (
-        handler === 'reactivateBrandAssignment' ||
-        handler === 'deactivateBrandAssignment' ||
-        handler === 'findOneBrandAssignmentById'
+        handler === 'reactivate' ||
+        handler === 'deactivate' ||
+        handler === 'findOneById'
       ) {
-        service.findOneBrandAssignmentById.mockResolvedValue({
+        service.findOneById.mockResolvedValue({
           ok: true,
           brand_id: '00000000-0000-4000-8000-000000000001',
         });
@@ -216,16 +229,13 @@ describe('Brands HTTP endpoints', () => {
       const response = await fetch(`${url}${path}`, { method });
       expect(response.status).toBe(status);
       expect(await response.json()).toEqual(
-        handler === 'findOneBrandAssignmentById'
+        handler === 'findOneById'
           ? { ok: true, brand_id: '00000000-0000-4000-8000-000000000001' }
           : { ok: true },
       );
       expect(service[handler]).toHaveBeenCalledWith(...args);
-      if (handler === 'reactivateBrandAssignment') {
-        expect(service.findOneBrandAssignmentById).toHaveBeenCalledWith(
-          args[0],
-          false,
-        );
+      if (handler === 'reactivate') {
+        expect(service.findOneById).toHaveBeenCalledWith(args[0], false);
       }
     },
   );
@@ -235,12 +245,9 @@ describe('Brands HTTP endpoints', () => {
     const userId = '00000000-0000-4000-8000-000000000004';
     const assignmentId = '00000000-0000-4000-8000-000000000003';
     const otherBrandId = '00000000-0000-4000-8000-000000000099';
-    const staffRoutes: [
-      string,
-      'findOneBrand' | 'findAssignmentByUserAndBrand',
-    ][] = [
+    const staffRoutes: [string, 'findOneBrand' | 'findOneByUserAndBrand'][] = [
       [`/${brandId}`, 'findOneBrand'],
-      [`/${brandId}/users/${userId}`, 'findAssignmentByUserAndBrand'],
+      [`/${brandId}/users/${userId}`, 'findOneByUserAndBrand'],
     ];
 
     it.each(staffRoutes)(
@@ -278,7 +285,7 @@ describe('Brands HTTP endpoints', () => {
       );
 
       expect(response.status).toBe(403);
-      expect(service.findAssignmentByUserAndBrand).not.toHaveBeenCalled();
+      expect(service.findOneByUserAndBrand).not.toHaveBeenCalled();
     });
 
     it.each([
@@ -307,7 +314,7 @@ describe('Brands HTTP endpoints', () => {
     ])(
       'rejects %s of an assignment belonging to another brand',
       async (method, suffix) => {
-        service.findOneBrandAssignmentById.mockResolvedValue({
+        service.findOneById.mockResolvedValue({
           brand_id: '00000000-0000-4000-8000-000000000099',
         });
 
@@ -320,8 +327,8 @@ describe('Brands HTTP endpoints', () => {
         expect(await response.json()).toMatchObject({
           code: 'BRAND_ASSIGNMENT_NOT_FOUND',
         });
-        expect(service.reactivateBrandAssignment).not.toHaveBeenCalled();
-        expect(service.deactivateBrandAssignment).not.toHaveBeenCalled();
+        expect(service.reactivate).not.toHaveBeenCalled();
+        expect(service.deactivate).not.toHaveBeenCalled();
       },
     );
 
@@ -374,14 +381,14 @@ describe('Brands HTTP endpoints', () => {
       );
 
       expect(response.status).toBe(403);
-      expect(service.findAllBrandAssignmentsForUser).not.toHaveBeenCalled();
+      expect(service.findAllForUser).not.toHaveBeenCalled();
     });
 
     it('does not expose the unscoped assignment lookup', async () => {
       expect((await fetch(`${url}/assignments/${assignmentId}`)).status).toBe(
         404,
       );
-      expect(service.findOneBrandAssignmentById).not.toHaveBeenCalled();
+      expect(service.findOneById).not.toHaveBeenCalled();
     });
   });
 
@@ -398,7 +405,7 @@ describe('Brands HTTP endpoints', () => {
     });
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ ok: true });
-    expect(service.assignUserToBrand).toHaveBeenCalledWith(
+    expect(service.assign).toHaveBeenCalledWith(
       assignmentDTO.username,
       assignmentDTO.brand_id,
     );
@@ -425,7 +432,7 @@ describe('Brands HTTP endpoints', () => {
       body: JSON.stringify(body),
     });
     expect(response.status).toBe(400);
-    expect(service.assignUserToBrand).not.toHaveBeenCalled();
+    expect(service.assign).not.toHaveBeenCalled();
   });
 
   it('IT-BRND-004: does not expose the old assignment POST route', async () => {
@@ -437,7 +444,7 @@ describe('Brands HTTP endpoints', () => {
         )
       ).status,
     ).toBe(404);
-    expect(service.assignUserToBrand).not.toHaveBeenCalled();
+    expect(service.assign).not.toHaveBeenCalled();
   });
 
   it('IT-BRND-005: validates and forwards brand updates', async () => {
@@ -475,7 +482,7 @@ describe('Brands HTTP endpoints', () => {
           )
         ).status,
       ).toBe(400);
-      expect(service.findAllAssignedUsersForBrand).not.toHaveBeenCalled();
+      expect(service.findAllForBrand).not.toHaveBeenCalled();
     },
   );
 
@@ -488,7 +495,7 @@ describe('Brands HTTP endpoints', () => {
         (await fetch(`${url}/00000000-0000-4000-8000-000000000001/users`))
           .status,
       ).toBe(403);
-      expect(service.findAllAssignedUsersForBrand).not.toHaveBeenCalled();
+      expect(service.findAllForBrand).not.toHaveBeenCalled();
     },
   );
 
@@ -500,10 +507,10 @@ describe('Brands HTTP endpoints', () => {
         )
       ).status,
     ).toBe(400);
-    expect(service.findOneBrandAssignmentById).not.toHaveBeenCalled();
+    expect(service.findOneById).not.toHaveBeenCalled();
   });
 
-  it('rejects brand code updates (code is immutable)', async () => {
+  it('rejects manually supplied brand codes on update', async () => {
     const response = await fetch(
       `${url}/00000000-0000-4000-8000-000000000001`,
       {
@@ -555,23 +562,26 @@ describe('Brands HTTP endpoints', () => {
   });
 
   it.each([
-    { name: 'King Kungs Kafé', code: 'KK', logo_url: null },
-    { name: 'King Kungs Kafé', code: 'KK' },
-  ])('IT-BRND-012: creates a brand for the authenticated owner: %j', async (dto) => {
-    assignedBrandIds = [];
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dto),
-    });
+    { name: 'King Kungs Kafé', logo_url: null },
+    { name: 'King Kungs Kafé' },
+  ])(
+    'IT-BRND-012: creates a brand for the authenticated owner: %j',
+    async (dto) => {
+      assignedBrandIds = [];
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dto),
+      });
 
-    expect(response.status).toBe(201);
-    expect(await response.json()).toEqual({ ok: true });
-    expect(service.createBrand).toHaveBeenCalledWith(
-      dto,
-      '00000000-0000-4000-8000-000000000004',
-    );
-  });
+      expect(response.status).toBe(201);
+      expect(await response.json()).toEqual({ ok: true });
+      expect(service.createBrand).toHaveBeenCalledWith(
+        dto,
+        '00000000-0000-4000-8000-000000000004',
+      );
+    },
+  );
 
   it.each([
     {},
@@ -580,6 +590,7 @@ describe('Brands HTTP endpoints', () => {
     { name: 'a'.repeat(151) },
     { name: 'Brand', code: 'K' },
     { name: 'Brand', code: 'KKK' },
+    { name: 'Brand', code: 'ABCD' },
     { name: 'Brand', code: '12' },
     { name: 'Brand', logo_url: 'invalid' },
     { name: 'Brand', owner_id: 'another-owner' },
@@ -602,7 +613,7 @@ describe('Brands HTTP endpoints', () => {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Brand', code: 'KK' }),
+        body: JSON.stringify({ name: 'Brand' }),
       });
 
       expect(response.status).toBe(403);

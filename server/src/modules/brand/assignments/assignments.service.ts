@@ -5,35 +5,23 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { BrandsRepository } from './brands.repository';
-import { UsersRepository } from '../users/users.repository';
-import { CreateBrandDTO } from './dto/create-brand.dto';
-import { UpdateBrandDTO } from './dto/update-brand.dto';
-import { assertExists } from '../../shared/assertions/assert-exists';
-import { FindBrandsDTO } from './dto/find-brands.dto';
-import { assertValidPagination } from '../../shared/assertions/assert-valid-pagination';
+import { AssignmentsRepository } from './assignments.repository';
+import { BrandsRepository } from '../brands/brands.repository';
+import { UsersRepository } from '../../users/users.repository';
+import { FindBrandsDTO } from '../brands/dto/find-brands.dto';
+import { assertExists } from '../../../shared/assertions/assert-exists';
+import { assertValidPagination } from '../../../shared/assertions/assert-valid-pagination';
 
 @Injectable()
-export class BrandsService {
-  private readonly logger = new Logger(BrandsService.name);
+export class AssignmentsService {
+  private readonly logger = new Logger(AssignmentsService.name);
   constructor(
+    private readonly assignmentsRepository: AssignmentsRepository,
     private readonly brandsRepository: BrandsRepository,
     private readonly usersRepository: UsersRepository,
   ) {}
 
-  async createBrand(dto: CreateBrandDTO, ownerId: string) {
-    this.logger.log(`Creating new brand ${dto.name}`);
-
-    const brand = await this.brandsRepository.createBrand(dto, ownerId);
-
-    this.logger.log(
-      `Created new brand ${brand.name} with brand_id ${brand.brand_id}`,
-    );
-
-    return brand;
-  }
-
-  async assignUserToBrand(username: string, brandId: string) {
+  async assign(username: string, brandId: string) {
     this.logger.log(`Assigning user ${username} to brand ${brandId}`);
 
     const user = await this.usersRepository.safeFindByUsername(username);
@@ -43,7 +31,7 @@ export class BrandsService {
     assertExists(brand, 'Brand', brandId, this.logger);
 
     const existingBrandAssignment =
-      await this.brandsRepository.findAssignmentByUserAndBrand(
+      await this.assignmentsRepository.findAssignmentByUserAndBrand(
         user.user_id,
         brand.brand_id,
         false,
@@ -62,7 +50,7 @@ export class BrandsService {
 
     this.logger.debug(`Assigning ${user.user_id} to brand ${brand.brand_id}`);
 
-    const brandAssignment = await this.brandsRepository.assignUser(
+    const brandAssignment = await this.assignmentsRepository.assignUser(
       { user_id: user.user_id },
       brand.brand_id,
     );
@@ -72,24 +60,14 @@ export class BrandsService {
     return brandAssignment;
   }
 
-  async findOneBrand(brandId: string) {
-    this.logger.debug(`Finding brand with brandId ${brandId}`);
-
-    const brand = await this.brandsRepository.findOneBrand(brandId);
-
-    assertExists(brand, 'Brand', brandId, this.logger);
-
-    this.logger.log(`Brand with brandId ${brand.brand_id} found`);
-    return brand;
-  }
-
-  async findOneBrandAssignmentById(assignmentId: string, activeOnly = true) {
+  async findOneById(assignmentId: string, activeOnly = true) {
     this.logger.debug(`Finding brand assignment with id ${assignmentId}`);
 
-    const brandAssignment = await this.brandsRepository.findOneBrandAssignment(
-      assignmentId,
-      activeOnly,
-    );
+    const brandAssignment =
+      await this.assignmentsRepository.findOneBrandAssignment(
+        assignmentId,
+        activeOnly,
+      );
 
     assertExists(brandAssignment, 'BrandAssignment', assignmentId, this.logger);
 
@@ -100,7 +78,7 @@ export class BrandsService {
     return brandAssignment;
   }
 
-  async findAssignmentByUserAndBrand(
+  async findOneByUserAndBrand(
     userId: string,
     brandId: string,
     activeOnly = true,
@@ -110,7 +88,7 @@ export class BrandsService {
     );
 
     const brandAssignment =
-      await this.brandsRepository.findAssignmentByUserAndBrand(
+      await this.assignmentsRepository.findAssignmentByUserAndBrand(
         userId,
         brandId,
         activeOnly,
@@ -134,7 +112,7 @@ export class BrandsService {
     return brandAssignment;
   }
 
-  async findAllBrandAssignmentsForUser(
+  async findAllForUser(
     userId: string,
     { page, limit, activeOnly }: FindBrandsDTO,
   ) {
@@ -149,7 +127,7 @@ export class BrandsService {
     assertExists(user, 'User', userId, this.logger);
 
     const { brandAssignments, total } =
-      await this.brandsRepository.findAllBrandAssignmentsForUser(
+      await this.assignmentsRepository.findAllBrandAssignmentsForUser(
         user.user_id,
         skip,
         limit,
@@ -171,7 +149,7 @@ export class BrandsService {
     };
   }
 
-  async findAllAssignedUsersForBrand(
+  async findAllForBrand(
     brandId: string,
     { page, limit, activeOnly }: FindBrandsDTO,
   ) {
@@ -186,7 +164,7 @@ export class BrandsService {
     assertExists(brand, 'Brand', brandId, this.logger);
 
     const { users, total } =
-      await this.brandsRepository.findAllAssignedUsersForBrand(
+      await this.assignmentsRepository.findAllAssignedUsersForBrand(
         brand.brand_id,
         skip,
         limit,
@@ -208,64 +186,14 @@ export class BrandsService {
     };
   }
 
-  async findAllBrands(
-    userId: string,
-    { page, limit, activeOnly }: FindBrandsDTO,
-  ) {
-    this.logger.log(
-      `Listing brands: page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
-    );
-
-    const skip = (page - 1) * limit;
-
-    assertValidPagination(skip, this.logger);
-
-    const { brands, total } = await this.brandsRepository.findAllBrands(
-      userId,
-      skip,
-      limit,
-      activeOnly,
-    );
-
-    this.logger.log(
-      `Listed brands: page=${page}, returned=${brands.length}, total=${total}`,
-    );
-
-    return {
-      data: brands,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async updateBrand(brandId: string, dto: UpdateBrandDTO) {
-    this.logger.log(`Updating brand ${brandId}`);
-
-    const brand = await this.brandsRepository.findOneBrand(brandId);
-
-    assertExists(brand, 'Brand', brandId, this.logger);
-
-    const updatedBrand = await this.brandsRepository.updateBrand(
-      brand.brand_id,
-      dto,
-    );
-
-    this.logger.log(`Updated brand ${updatedBrand.brand_id}`);
-
-    return updatedBrand;
-  }
-
-  async reactivateBrandAssignment(assignmentId: string) {
+  async reactivate(assignmentId: string) {
     this.logger.log(`Reactivating brand assignment ${assignmentId}`);
 
-    const brandAssignment = await this.brandsRepository.findOneBrandAssignment(
-      assignmentId,
-      false,
-    );
+    const brandAssignment =
+      await this.assignmentsRepository.findOneBrandAssignment(
+        assignmentId,
+        false,
+      );
 
     assertExists(brandAssignment, 'BrandAssignment', assignmentId, this.logger);
 
@@ -288,7 +216,9 @@ export class BrandsService {
 
     try {
       const reactivatedBrandAssignment =
-        await this.brandsRepository.reactivateBrandAssignment(assignmentId);
+        await this.assignmentsRepository.reactivateBrandAssignment(
+          assignmentId,
+        );
 
       this.logger.log(
         `Reactivated brand assignment ${reactivatedBrandAssignment.assignment_id}`,
@@ -314,15 +244,15 @@ export class BrandsService {
     }
   }
 
-  async deactivateBrandAssignment(assignmentId: string) {
+  async deactivate(assignmentId: string) {
     this.logger.debug(`Deactivating brand assignment ${assignmentId}`);
 
     const brandAssignment =
-      await this.brandsRepository.findOneBrandAssignment(assignmentId);
+      await this.assignmentsRepository.findOneBrandAssignment(assignmentId);
 
     assertExists(brandAssignment, 'BrandAssignment', assignmentId, this.logger);
 
-    const brandOwners = await this.brandsRepository.findAllOwnersForBrand(
+    const brandOwners = await this.assignmentsRepository.findAllOwnersForBrand(
       brandAssignment.brand_id,
     );
 
@@ -337,25 +267,10 @@ export class BrandsService {
     }
 
     const deactivatedBrandAssignment =
-      await this.brandsRepository.deactivateAssignment(assignmentId);
+      await this.assignmentsRepository.deactivateAssignment(assignmentId);
 
     this.logger.log(`Deactivated brand assignment ${assignmentId}`);
 
     return deactivatedBrandAssignment;
-  }
-
-  async deleteBrand(brandId: string) {
-    this.logger.debug(`Deleting brand ${brandId}`);
-
-    const brand = await this.brandsRepository.findOneBrand(brandId);
-    assertExists(brand, 'Brand', brandId, this.logger);
-
-    const deletedBrand = await this.brandsRepository.deleteBrand(
-      brand.brand_id,
-    );
-
-    this.logger.log(`Deleted brand ${deletedBrand.brand_id}`);
-
-    return deletedBrand;
   }
 }
