@@ -80,12 +80,6 @@ export class BrandsController {
     );
   }
 
-  @Get(':brandId')
-  @FindOneBrandDocs()
-  async findOneBrand(@Param('brandId') brandId: string) {
-    return this.brandsService.findOneBrand(brandId);
-  }
-
   @Get('assignments/users/:userId')
   @FindAllBrandAssignmentsForUserDocs()
   async findAllBrandAssignmentsForUser(
