@@ -18,7 +18,11 @@ export function BrandsDocs() {
 
 export function CreateBrandDocs() {
   return applyDecorators(
-    ApiOperation({ summary: 'Create a brand (owner).' }),
+    ApiOperation({
+      summary: 'Create a brand (owner).',
+      description:
+        'A unique four-letter uppercase code is generated from the brand name.',
+    }),
     ApiResponse({ status: 201, description: 'Created.' }),
     ApiResponse({
       status: 409,
@@ -45,7 +49,11 @@ export function FindOneBrandDocs() {
 
 export function UpdateBrandDocs() {
   return applyDecorators(
-    ApiOperation({ summary: 'Update your brand (owner); code is immutable.' }),
+    ApiOperation({
+      summary: 'Update your brand (owner).',
+      description:
+        'Changing the name generates a new unique four-letter code from the new name.',
+    }),
     ApiResponse({ status: 200, description: 'Success.' }),
     ApiResponse({ status: 404, description: 'Resource not found.' }),
   );

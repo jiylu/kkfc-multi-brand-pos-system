@@ -72,8 +72,8 @@ Feature: Brands HTTP Integration Endpoints
     When the client sends the request
     Then the status code should be 400
 
-  Scenario: Do not expose brand creation route
+  Scenario: Create a brand with an automatically generated code
     Test Case ID: IT-BRND-012
-    Given any request to POST /api/brands
-    When the client sends the request
-    Then the status code should be 404
+    Given an authenticated OWNER session and a valid brand name without a code
+    When the client sends POST to "/api/brands"
+    Then the status code should be 201 and the brand should have a unique four-letter code

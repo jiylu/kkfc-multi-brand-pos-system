@@ -5,6 +5,7 @@ import { assertExists } from '../../../shared/assertions/assert-exists';
 import { FindBrandsDTO } from './dto/find-brands.dto';
 import { assertValidPagination } from '../../../shared/assertions/assert-valid-pagination';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
+import { withUniqueBrandCode } from '../utils/generate-brand-code';
 
 @Injectable()
 export class BrandsService {
@@ -14,7 +15,11 @@ export class BrandsService {
   async create(dto: CreateBrandDTO, ownerId: string) {
     this.logger.log(`Creating new brand ${dto.name}`);
 
-    const brand = await this.brandsRepository.createBrand(dto, ownerId);
+    const brand = await withUniqueBrandCode(
+      dto.name,
+      this.brandsRepository,
+      (code) => this.brandsRepository.createBrand({ ...dto, code }, ownerId),
+    );
 
     this.logger.log(
       `Created new brand ${brand.name} with brand_id ${brand.brand_id}`,
@@ -72,10 +77,12 @@ export class BrandsService {
 
     assertExists(brand, 'Brand', brandId, this.logger);
 
-    const updatedBrand = await this.brandsRepository.updateBrand(
-      brand.brand_id,
-      dto,
-    );
+    const updatedBrand =
+      dto.name !== undefined && dto.name !== brand.name
+        ? await withUniqueBrandCode(dto.name, this.brandsRepository, (code) =>
+            this.brandsRepository.updateBrand(brand.brand_id, { ...dto, code }),
+          )
+        : await this.brandsRepository.updateBrand(brand.brand_id, dto);
 
     this.logger.log(`Updated brand ${updatedBrand.brand_id}`);
 

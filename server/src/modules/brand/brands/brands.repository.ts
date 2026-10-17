@@ -8,7 +8,7 @@ import { UpdateBrandDTO } from './dto/update-brand.dto';
 export class BrandsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createBrand(dto: CreateBrandDTO, ownerId: string) {
+  async createBrand(dto: CreateBrandDTO & { code: string }, ownerId: string) {
     return this.prisma.$transaction(async (tx) => {
       const brand = await tx.brand.create({ data: dto });
 
@@ -31,6 +31,19 @@ export class BrandsRepository {
     return tx.brand.findUnique({
       where: {
         brand_id: brandId,
+        is_active: activeOnly ? true : undefined,
+      },
+    });
+  }
+
+  async findOneBrandByCode(
+    brandCode: string,
+    activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.brand.findUnique({
+      where: {
+        code: brandCode,
         is_active: activeOnly ? true : undefined,
       },
     });
@@ -70,7 +83,7 @@ export class BrandsRepository {
 
   async updateBrand(
     brandId: string,
-    dto: UpdateBrandDTO,
+    dto: UpdateBrandDTO & { code?: string },
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.brand.update({
@@ -79,6 +92,7 @@ export class BrandsRepository {
         is_active: true,
       },
       data: {
+        code: dto.code,
         name: dto.name,
         logo_url: dto.logo_url,
         modified_at: new Date(),

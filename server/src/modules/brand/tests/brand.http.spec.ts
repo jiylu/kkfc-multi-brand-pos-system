@@ -510,7 +510,7 @@ describe('Brands HTTP endpoints', () => {
     expect(service.findOneById).not.toHaveBeenCalled();
   });
 
-  it('rejects brand code updates (code is immutable)', async () => {
+  it('rejects manually supplied brand codes on update', async () => {
     const response = await fetch(
       `${url}/00000000-0000-4000-8000-000000000001`,
       {
@@ -562,8 +562,8 @@ describe('Brands HTTP endpoints', () => {
   });
 
   it.each([
-    { name: 'King Kungs Kafé', code: 'KK', logo_url: null },
-    { name: 'King Kungs Kafé', code: 'KK' },
+    { name: 'King Kungs Kafé', logo_url: null },
+    { name: 'King Kungs Kafé' },
   ])(
     'IT-BRND-012: creates a brand for the authenticated owner: %j',
     async (dto) => {
@@ -590,6 +590,7 @@ describe('Brands HTTP endpoints', () => {
     { name: 'a'.repeat(151) },
     { name: 'Brand', code: 'K' },
     { name: 'Brand', code: 'KKK' },
+    { name: 'Brand', code: 'ABCD' },
     { name: 'Brand', code: '12' },
     { name: 'Brand', logo_url: 'invalid' },
     { name: 'Brand', owner_id: 'another-owner' },
@@ -612,7 +613,7 @@ describe('Brands HTTP endpoints', () => {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Brand', code: 'KK' }),
+        body: JSON.stringify({ name: 'Brand' }),
       });
 
       expect(response.status).toBe(403);
