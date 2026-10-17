@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mobile/core/api/auth_interceptor.dart';
-import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 
@@ -21,10 +20,8 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(
     AuthInterceptor(
       readToken: () => ref.read(sessionTokenProvider),
-      onUnauthorized: () {
-        ref.read(tokenStoreProvider).clear();
-        ref.read(sessionTokenProvider.notifier).setToken(null);
-      },
+      onUnauthorized: (rejectedToken) =>
+          ref.read(sessionTokenProvider.notifier).expire(rejectedToken),
     ),
   );
 

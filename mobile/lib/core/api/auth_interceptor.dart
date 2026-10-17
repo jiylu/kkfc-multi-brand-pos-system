@@ -6,8 +6,8 @@ class AuthInterceptor extends Interceptor {
   /// Returns the current access token, or null when signed out.
   final String? Function() readToken;
 
-  /// Called when a protected request returns 401.
-  final void Function()? onUnauthorized;
+  /// Called with the token the server rejected.
+  final void Function(String rejectedToken)? onUnauthorized;
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -21,9 +21,19 @@ class AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     final isLogin = err.requestOptions.path.endsWith('/auth/login');
-    if (err.response?.statusCode == 401 && !isLogin) {
-      onUnauthorized?.call();
+    final sent = _sentToken(err.requestOptions);
+
+    if (err.response?.statusCode == 401 && !isLogin && sent != null) {
+      onUnauthorized?.call(sent);
     }
     handler.next(err);
+  }
+
+  String? _sentToken(RequestOptions options) {
+    final header = options.headers['Authorization'];
+    if (header is String && header.startsWith('Bearer ')) {
+      return header.substring(7);
+    }
+    return null;
   }
 }

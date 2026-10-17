@@ -61,6 +61,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final expired = ref.watch(sessionExpiredProvider);
+    final warning = context.semanticColors.warning;
+
     return KkfcScaffold(
       appBar: AppBar(title: const Text('Sign in')),
       body: Center(
@@ -72,6 +75,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (expired) ...[
+                  Semantics(
+                    liveRegion: true,
+                    child: Container(
+                      padding: const EdgeInsets.all(KkfcSpace.s12),
+                      decoration: BoxDecoration(
+                        color: warning.bg,
+                        border: Border.all(color: warning.border ?? warning.fg),
+                        borderRadius: BorderRadius.circular(KkfcRadius.md),
+                      ),
+                      child: Text(
+                        'Your session expired. Sign in again.',
+                        style: TextStyle(color: warning.fg),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: KkfcSpace.s16),
+                ],
                 TextField(
                   controller: _username,
                   autofillHints: const [AutofillHints.username],

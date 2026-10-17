@@ -6,6 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/api/auth_interceptor.dart';
 
 class _CaptureAdapter implements HttpClientAdapter {
+  _CaptureAdapter({this.status = 200});
+
+  final int status;
   RequestOptions? last;
 
   @override
@@ -17,7 +20,7 @@ class _CaptureAdapter implements HttpClientAdapter {
     last = options;
     return ResponseBody.fromString(
       '{}',
-      200,
+      status,
       headers: {Headers.contentTypeHeader: [Headers.jsonContentType]},
     );
   }
@@ -26,10 +29,16 @@ class _CaptureAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-Dio _dioWith(String? Function() readToken) {
+Dio _dioWith(
+  String? Function() readToken, {
+  int status = 200,
+  void Function(String)? onUnauthorized,
+}) {
   final dio = Dio(BaseOptions(baseUrl: 'http://test.local'));
-  dio.httpClientAdapter = _CaptureAdapter();
-  dio.interceptors.add(AuthInterceptor(readToken: readToken));
+  dio.httpClientAdapter = _CaptureAdapter(status: status);
+  dio.interceptors.add(
+    AuthInterceptor(readToken: readToken, onUnauthorized: onUnauthorized),
+  );
   return dio;
 }
 
@@ -48,5 +57,41 @@ void main() {
 
     final adapter = dio.httpClientAdapter as _CaptureAdapter;
     expect(adapter.last!.headers.containsKey('Authorization'), isFalse);
+  });
+
+    test('401 on a protected request reports the rejected token', () async {
+    String? rejected;
+    final dio = _dioWith(
+      () => 'abc123',
+      status: 401,
+      onUnauthorized: (t) => rejected = t,
+    );
+
+    await expectLater(dio.get<dynamic>('/orders'), throwsA(isA<DioException>()));
+    expect(rejected, 'abc123');
+  });
+
+  test('401 from the login endpoint does not sign out', () async {
+    var called = false;
+    final dio = _dioWith(
+      () => 'abc123',
+      status: 401,
+      onUnauthorized: (_) => called = true,
+    );
+
+    await expectLater(dio.post<dynamic>('/auth/login'), throwsA(isA<DioException>()));
+    expect(called, isFalse);
+  });
+
+  test('401 on a request that sent no token does not sign out', () async {
+    var called = false;
+    final dio = _dioWith(
+      () => null,
+      status: 401,
+      onUnauthorized: (_) => called = true,
+    );
+
+    await expectLater(dio.get<dynamic>('/orders'), throwsA(isA<DioException>()));
+    expect(called, isFalse);
   });
 }
