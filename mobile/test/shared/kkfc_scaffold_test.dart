@@ -37,7 +37,9 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
   });
 
-  testWidgets('body clears the top system inset when there is no app bar', (tester) async {
+  testWidgets('body clears the top system inset when there is no app bar', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _harness(
         const KkfcScaffold(body: Text('Body')),

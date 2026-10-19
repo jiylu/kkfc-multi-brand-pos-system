@@ -21,7 +21,9 @@ class _CaptureAdapter implements HttpClientAdapter {
     return ResponseBody.fromString(
       '{}',
       status,
-      headers: {Headers.contentTypeHeader: [Headers.jsonContentType]},
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
     );
   }
 
@@ -59,7 +61,7 @@ void main() {
     expect(adapter.last!.headers.containsKey('Authorization'), isFalse);
   });
 
-    test('401 on a protected request reports the rejected token', () async {
+  test('401 on a protected request reports the rejected token', () async {
     String? rejected;
     final dio = _dioWith(
       () => 'abc123',
@@ -67,7 +69,10 @@ void main() {
       onUnauthorized: (t) => rejected = t,
     );
 
-    await expectLater(dio.get<dynamic>('/orders'), throwsA(isA<DioException>()));
+    await expectLater(
+      dio.get<dynamic>('/orders'),
+      throwsA(isA<DioException>()),
+    );
     expect(rejected, 'abc123');
   });
 
@@ -79,7 +84,10 @@ void main() {
       onUnauthorized: (_) => called = true,
     );
 
-    await expectLater(dio.post<dynamic>('/auth/login'), throwsA(isA<DioException>()));
+    await expectLater(
+      dio.post<dynamic>('/auth/login'),
+      throwsA(isA<DioException>()),
+    );
     expect(called, isFalse);
   });
 
@@ -91,7 +99,10 @@ void main() {
       onUnauthorized: (_) => called = true,
     );
 
-    await expectLater(dio.get<dynamic>('/orders'), throwsA(isA<DioException>()));
+    await expectLater(
+      dio.get<dynamic>('/orders'),
+      throwsA(isA<DioException>()),
+    );
     expect(called, isFalse);
   });
 }
