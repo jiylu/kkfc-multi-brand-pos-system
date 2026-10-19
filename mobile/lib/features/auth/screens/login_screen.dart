@@ -10,13 +10,13 @@ import 'package:mobile/features/auth/widgets/login_top_bar.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreenView({super.key});
+  const LoginScreen({super.key});
 
   @override
-  State<LoginScreenView> createState() => _LoginScreenViewState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenViewState extends State<LoginScreenView> {
+class _LoginScreenState extends State<LoginScreen> {
   final _username = TextEditingController();
   final _password = TextEditingController();
   LoginStatus _status = LoginStatus.idle;

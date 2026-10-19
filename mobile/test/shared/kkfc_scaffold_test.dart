@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mobile/app/theme/theme.dart';
-import 'package:mobile/features/auth/screens/temp_login_screen.dart';
+import 'package:mobile/features/auth/screens/login_screen.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 
 Widget _harness(
