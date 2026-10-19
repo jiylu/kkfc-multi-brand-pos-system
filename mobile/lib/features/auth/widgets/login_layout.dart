@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 
-/// Layout-only numbers for the login screen.
-/// TODO: replace spacing, radius, motion and alpha values with the matching
-/// KkfcSpace / KkfcRadius / KkfcBorderWidth / KkfcMotion / KkfcOpacity tokens
-/// once their names are confirmed. Keep every edit in this file.
 abstract final class LoginLayout {
   // Breakpoints and widths
   static const double wideBreakpoint = 900;
