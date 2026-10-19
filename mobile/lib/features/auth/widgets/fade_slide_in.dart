@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobile/features/auth/widgets/login_layout.dart';
 
-/// Fades and slides its child up slightly after [delay].
+/// Fades and slides its child up slightly after delay.
 class FadeSlideIn extends StatefulWidget {
   const FadeSlideIn({
     super.key,
