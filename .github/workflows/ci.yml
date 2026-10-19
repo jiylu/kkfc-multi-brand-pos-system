@@ -15,8 +15,31 @@ permissions:
   contents: read
 
 jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for backend modifications
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'server/**'
+              - 'robot/**'
+              - 'features/**'
+              - '!features/mobile/**'
+              - '.github/workflows/ci.yml'
+
   unit-tests:
     name: Stage 1 - Unit Tests (UT) & Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -60,7 +83,8 @@ jobs:
 
   integration-tests:
     name: Stage 2 - Integration Tests (IT)
-    needs: unit-tests
+    needs: [detect-changes, unit-tests]
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -116,7 +140,8 @@ jobs:
 
   e2e-robot-tests:
     name: Stage 3 - Robot Framework E2E Tests (E2E)
-    needs: integration-tests
+    needs: [detect-changes, integration-tests]
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -196,12 +221,18 @@ jobs:
 
   ci:
     name: CI
-    needs: [unit-tests, integration-tests, e2e-robot-tests]
+    needs: [detect-changes, unit-tests, integration-tests, e2e-robot-tests]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Verify QA Automation Pipeline Completion
         run: |
+          if [ "${{ needs.detect-changes.outputs.backend }}" != "true" ]; then
+            echo "No backend or QA test files were modified. Backend pipeline skipped."
+            echo "QA Pipeline Success: Mobile-only change satisfied branch protection."
+            exit 0
+          fi
+
           if [ "${{ needs.unit-tests.result }}" != "success" ] || \
              [ "${{ needs.integration-tests.result }}" != "success" ] || \
              [ "${{ needs.e2e-robot-tests.result }}" != "success" ]; then

@@ -6,10 +6,18 @@ on:
       - main
       - development
       - 'feature/**'
+    paths:
+      - 'mobile/**'
+      - 'features/mobile/**'
+      - '.github/workflows/flutter-ci.yml'
   pull_request:
     branches:
       - main
       - development
+    paths:
+      - 'mobile/**'
+      - 'features/mobile/**'
+      - '.github/workflows/flutter-ci.yml'
 
 permissions:
   contents: write
