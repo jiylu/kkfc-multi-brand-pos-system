@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/providers/session_provider.dart';
-import '../features/auth/screens/temp_login_screen.dart';
+import '../features/auth/screens/login_screen.dart';
 import '../shared/widgets/placeholder_screen.dart';
 import 'routes.dart';
 

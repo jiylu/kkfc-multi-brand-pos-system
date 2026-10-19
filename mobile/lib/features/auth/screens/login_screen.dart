@@ -9,7 +9,7 @@ import 'package:mobile/features/auth/widgets/login_layout.dart';
 import 'package:mobile/features/auth/widgets/login_top_bar.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 
-class LoginScreenView extends StatefulWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreenView({super.key});
 
   @override
