@@ -12,27 +12,36 @@ class BrandPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final text = theme.textTheme;
+    final soft = scheme.onPrimary.withValues(alpha: LoginLayout.softAlpha);
 
     if (compact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'One kitchen. Three brands.',
-            style: text.headlineSmall?.copyWith(color: scheme.primary),
-          ),
-          const SizedBox(height: LoginLayout.gapXs),
-          Text(
-            'Sign in to your shared workspace.',
-            style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: LoginLayout.gapMd),
-          const BrandStrip(),
-        ],
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(
+          LoginLayout.gapLg,
+          LoginLayout.gapSm,
+          LoginLayout.gapLg,
+          LoginLayout.gapLg,
+        ),
+        color: scheme.primary, // full-bleed: no radius, no outer margin
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'One kitchen. Three brands.',
+              style: text.headlineMedium?.copyWith(color: scheme.onPrimary),
+            ),
+            const SizedBox(height: LoginLayout.gapXs),
+            Text(
+              'Sign in to your shared workspace.',
+              style: text.bodyMedium?.copyWith(color: soft),
+            ),
+            const SizedBox(height: LoginLayout.gapMd),
+            const BrandStrip(),
+          ],
+        ),
       );
     }
-
-    final soft = scheme.onPrimary.withValues(alpha: LoginLayout.softAlpha);
 
     return Container(
       padding: const EdgeInsets.all(LoginLayout.gapXl),

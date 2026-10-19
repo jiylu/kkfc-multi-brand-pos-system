@@ -8,6 +8,7 @@ import 'package:mobile/features/auth/widgets/login_form_card.dart';
 import 'package:mobile/features/auth/widgets/login_layout.dart';
 import 'package:mobile/features/auth/widgets/login_top_bar.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
+import 'package:mobile/app/theme/theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -67,7 +68,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final compact = LoginLayout.isCompact(context);
     final theme = Theme.of(context);
-    final padding = EdgeInsets.all(compact ? LoginLayout.gapMd : LoginLayout.gapXl);
 
     final footer = Text(
       'Shared device · Sign out after your shift.',
@@ -111,12 +111,48 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           );
 
-    return KkfcScaffold(
-      body: Column(
-        children: [
-          const LoginTopBar(),
-          Expanded(
-            child: LayoutBuilder(
+          return KkfcScaffold(
+              body: Column(
+                children: [
+                  const LoginTopBar(),
+                  Expanded(child: compact ? _buildCompact(footer) : _buildWide(footer)),
+                ],
+              ),
+            );
+          }
+
+          Widget _buildCompact(Widget footer) {
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const FadeSlideIn(child: BrandPanel(compact: true)),
+                  Padding(
+                    padding: const EdgeInsets.all(LoginLayout.gapMd),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints:
+                            const BoxConstraints(maxWidth: LoginLayout.formMaxWidth),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            FadeSlideIn(delay: LoginLayout.stagger, child: _form()),
+                            const SizedBox(height: LoginLayout.gapLg),
+                            FadeSlideIn(delay: LoginLayout.stagger * 2, child: footer),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          Widget _buildWide(Widget footer) {
+            const padding = EdgeInsets.all(LoginLayout.gapXl);
+
+            return LayoutBuilder(
               builder: (context, constraints) => SingleChildScrollView(
                 padding: padding,
                 child: ConstrainedBox(
@@ -125,20 +161,38 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: compact
-                            ? LoginLayout.formMaxWidth
-                            : LoginLayout.maxContentWidth,
+                      constraints:
+                          const BoxConstraints(maxWidth: LoginLayout.maxContentWidth),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const Expanded(
+                                  flex: 6,
+                                  child: FadeSlideIn(child: BrandPanel(compact: false)),
+                                ),
+                                const SizedBox(width: LoginLayout.gapLg),
+                                Expanded(
+                                  flex: 5,
+                                  child: FadeSlideIn(
+                                    delay: LoginLayout.stagger,
+                                    child: _form(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: LoginLayout.gapLg),
+                          FadeSlideIn(delay: LoginLayout.stagger * 2, child: footer),
+                        ],
                       ),
-                      child: body,
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+            );
+          }
 }
