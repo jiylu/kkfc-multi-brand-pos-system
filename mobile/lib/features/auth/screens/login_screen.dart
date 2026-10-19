@@ -1,7 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:mobile/features/auth/data/auth_repository.dart';
 import 'package:mobile/features/auth/domain/login_status.dart';
+import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/auth/widgets/brand_panel.dart';
 import 'package:mobile/features/auth/widgets/fade_slide_in.dart';
 import 'package:mobile/features/auth/widgets/login_form_card.dart';
@@ -10,14 +14,14 @@ import 'package:mobile/features/auth/widgets/login_top_bar.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/app/theme/theme_context.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _username = TextEditingController();
   final _password = TextEditingController();
   LoginStatus _status = LoginStatus.idle;
@@ -44,16 +48,29 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _status = LoginStatus.submitting);
 
-    // TODO(backend): replace this fake with the real sign-in call.
-    // Preview trick: username "offline" shows the network error,
-    // anything else shows the wrong-credentials error.
-    await Future<void>.delayed(const Duration(milliseconds: 1400));
-    if (!mounted) return;
-    setState(() {
-      _status = _username.text.trim().toLowerCase() == 'offline'
-          ? LoginStatus.networkError
-          : LoginStatus.invalidCredentials;
-    });
+    try {
+      final token = await ref.read(authRepositoryProvider).login(
+            username: _username.text.trim(),
+            password: _password.text,
+          );
+
+      // Holding the token flips sessionProvider, which the router watches,
+      // so the redirect to AppRoutes.orders happens on its own.
+      if (!mounted) return;
+      ref.read(sessionTokenProvider.notifier).setToken(token);
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _status = switch (e.kind) {
+          AuthFailure.invalidCredentials => LoginStatus.invalidCredentials,
+          AuthFailure.network || AuthFailure.unexpected => LoginStatus.networkError,
+        };
+      });
+    } catch (_) {
+      // Never leave the form stuck on the spinner.
+      if (!mounted) return;
+      setState(() => _status = LoginStatus.networkError);
+    }
   }
 
   Widget _form() => LoginFormCard(

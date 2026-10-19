@@ -18,7 +18,7 @@ Check your setup with `flutter doctor`.
 flutter pub get
 ```
 
-The API base URL comes from the `API_URL` define. The default is `http://localhost:3001`.
+The API base URL comes from the `API_URL` define. The default is `http://localhost:3000/api` (the NestJS global prefix, see the root README).
 
 **Chrome:**
 

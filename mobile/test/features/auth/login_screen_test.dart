@@ -1,7 +1,15 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:mobile/app/theme/theme.dart';
+import 'package:mobile/core/auth/token_store.dart';
+import 'package:mobile/features/auth/data/auth_repository.dart';
 import 'package:mobile/features/auth/domain/login_status.dart';
+import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/auth/screens/login_screen.dart';
 import 'package:mobile/features/auth/widgets/brand_panel.dart';
 import 'package:mobile/features/auth/widgets/login_form_card.dart';
@@ -13,30 +21,54 @@ import 'package:mobile/features/auth/widgets/login_text_field.dart';
 const _phone = Size(412, 1400);
 const _desktop = Size(1280, 1000);
 
-// Longer than the fake sign-in delay in LoginScreen.
-const _fakeSignInWait = Duration(milliseconds: 1500);
+/// Stands in for the real repository so widget tests never hit the network.
+class _FakeAuthRepository extends AuthRepository {
+  _FakeAuthRepository(this.onLogin) : super(Dio(), TokenStore());
 
-Future<void> _pumpLogin(
+  final Future<String> Function(String username, String password) onLogin;
+  int callCount = 0;
+
+  @override
+  Future<String> login({required String username, required String password}) {
+    callCount++;
+    return onLogin(username, password);
+  }
+}
+
+Future<ProviderContainer> _pumpLogin(
   WidgetTester tester, {
   Size size = _phone,
   double textScale = 1,
+  AuthRepository? authRepository,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
+  final container = ProviderContainer(
+    overrides: [
+      if (authRepository != null)
+        authRepositoryProvider.overrideWithValue(authRepository),
+    ],
+  );
+  addTearDown(container.dispose);
+
   await tester.pumpWidget(
-    MaterialApp(
-      theme: counterTheme,
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context)
-            .copyWith(textScaler: TextScaler.linear(textScale)),
-        child: child!,
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        theme: counterTheme,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
+        home: const LoginScreen(),
       ),
-      home: const LoginScreen(),
     ),
   );
   await tester.pumpAndSettle(); // finishes the entrance animations
+  return container;
 }
 
 Finder get _username => find.byType(TextField).first;
@@ -54,9 +86,9 @@ Future<void> _tapSignIn(WidgetTester tester) async {
   await tester.pump();
 }
 
-/// Lets the fake sign-in finish and the notice animation play out.
+/// Lets the in-flight sign-in future resolve and the notice animate in.
 Future<void> _finishSignIn(WidgetTester tester) async {
-  await tester.pump(_fakeSignInWait);
+  await tester.pump();
   await tester.pump(const Duration(milliseconds: 400));
 }
 
@@ -132,13 +164,15 @@ void main() {
     });
   });
 
-  group('LoginScreen submit (UI-only fake)', () {
-    testWidgets('shows loading, locks the form, then shows wrong credentials',
+  group('LoginScreen submit', () {
+    testWidgets('a successful sign-in stores the session token',
         (tester) async {
-      await _pumpLogin(tester);
+      final completer = Completer<String>();
+      final repo = _FakeAuthRepository((_, _) => completer.future);
+      final container = await _pumpLogin(tester, authRepository: repo);
 
-      await tester.enterText(_username, 'ana.r');
-      await tester.enterText(_password, 'secret');
+      await tester.enterText(_username, 'test_owner');
+      await tester.enterText(_password, 'Password123!');
       await _tapSignIn(tester);
 
       // While submitting
@@ -152,7 +186,25 @@ void main() {
       expect(tester.widget<TextField>(_password).enabled, isFalse);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      // After the fake call returns
+      completer.complete('token-abc');
+      await _finishSignIn(tester);
+
+      // Holding the token is what makes the router navigate to /orders.
+      expect(container.read(sessionTokenProvider), 'token-abc');
+      expect(repo.callCount, 1);
+    });
+
+    testWidgets('rejected credentials show the invalid-credentials notice',
+        (tester) async {
+      final repo = _FakeAuthRepository((_, _) async =>
+          throw const AuthException(
+              'Invalid username or password.',
+              kind: AuthFailure.invalidCredentials));
+      await _pumpLogin(tester, authRepository: repo);
+
+      await tester.enterText(_username, 'ana.r');
+      await tester.enterText(_password, 'wrong');
+      await _tapSignIn(tester);
       await _finishSignIn(tester);
 
       expect(_status(tester), LoginStatus.invalidCredentials);
@@ -160,11 +212,15 @@ void main() {
       expect(tester.widget<TextField>(_username).enabled, isTrue);
     });
 
-    testWidgets('username "offline" shows the network error', (tester) async {
-      await _pumpLogin(tester);
+    testWidgets('a network failure shows the network-error notice',
+        (tester) async {
+      final repo = _FakeAuthRepository((_, _) async =>
+          throw const AuthException('Unable to reach the server.',
+              kind: AuthFailure.network));
+      await _pumpLogin(tester, authRepository: repo);
 
-      await tester.enterText(_username, 'offline');
-      await tester.enterText(_password, 'secret');
+      await tester.enterText(_username, 'test_owner');
+      await tester.enterText(_password, 'Password123!');
       await _tapSignIn(tester);
       await _finishSignIn(tester);
 
@@ -172,17 +228,20 @@ void main() {
     });
 
     testWidgets('a second tap while submitting is ignored', (tester) async {
-      await _pumpLogin(tester);
+      final completer = Completer<String>();
+      final repo = _FakeAuthRepository((_, _) => completer.future);
+      await _pumpLogin(tester, authRepository: repo);
 
-      await tester.enterText(_username, 'ana.r');
-      await tester.enterText(_password, 'secret');
+      await tester.enterText(_username, 'test_owner');
+      await tester.enterText(_password, 'Password123!');
       await _tapSignIn(tester);
       await _tapSignIn(tester);
 
       expect(_status(tester), LoginStatus.submitting);
+      expect(repo.callCount, 1);
 
+      completer.complete('token-abc');
       await _finishSignIn(tester);
-      expect(_status(tester), LoginStatus.invalidCredentials);
     });
   });
 
