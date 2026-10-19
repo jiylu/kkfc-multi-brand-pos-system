@@ -5,7 +5,7 @@ import 'package:mobile/features/auth/widgets/login_layout.dart';
 class BrandStrip extends StatelessWidget {
   const BrandStrip({super.key});
 
-  static const _brands = ['Gamcheon', "Aurelia's Inasal", 'King Kungs Kafé'];
+  static const _brands = ['Gamcheon', "Aurelia's Inasal", 'King Kungs Kafé']; // Palitan to ng image
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class BrandStrip extends StatelessWidget {
           for (final brand in _brands)
             Text(
               brand,
-              style: theme.textTheme.titleSmall?.copyWith(color: scheme.primary),
+              style: theme.textTheme.titleSmall?.copyWith(color: scheme.primary), // PALITAB+N DIN
             ),
         ],
       ),
