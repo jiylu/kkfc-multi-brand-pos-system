@@ -19,8 +19,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = ref.read(sessionProvider);
       final onLogin = state.matchedLocation == AppRoutes.login;
 
-      if (!isLoggedIn && !onLogin) return AppRoutes.login;
-      if (isLoggedIn && onLogin) return AppRoutes.orders;
+      if (!isLoggedIn && !onLogin) {
+        return AppRoutes.login;
+      }
+      if (isLoggedIn && onLogin) {
+        return AppRoutes.orders;
+      }
       return null;
     },
     routes: [

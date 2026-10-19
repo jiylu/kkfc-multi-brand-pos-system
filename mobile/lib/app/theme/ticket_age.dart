@@ -4,10 +4,12 @@ import 'tokens.dart';
 enum TicketAgeLevel { normal, caution, overdue }
 
 TicketAgeLevel ticketAgeLevel(Duration age) {
-  if (age >= const Duration(minutes: KkfcKitchen.ageLateMin))
+  if (age >= const Duration(minutes: KkfcKitchen.ageLateMin)) {
     return TicketAgeLevel.overdue;
-  if (age >= const Duration(minutes: KkfcKitchen.ageCautionMin))
+  }
+  if (age >= const Duration(minutes: KkfcKitchen.ageCautionMin)) {
     return TicketAgeLevel.caution;
+  }
   return TicketAgeLevel.normal;
 }
 
