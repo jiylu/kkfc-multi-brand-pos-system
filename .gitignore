@@ -2,4 +2,6 @@
 .env.*
 !.env.example
 robot/results/
+server/reports/
+server/jest-html-reporters-attach/
 Master-Backend-QA-Automation-Rules.md
