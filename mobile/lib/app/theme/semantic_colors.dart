@@ -30,6 +30,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     required this.borderStrong,
     required this.borderFocus,
     required this.borderFocusInverse,
+    required this.highlights,
     required this.tag,
     required this.success,
     required this.warning,
@@ -53,6 +54,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
   final Color borderStrong;
   final Color borderFocus;
   final Color borderFocusInverse;
+  final Color highlights;
   final KkfcTone tag;
   final KkfcTone success;
   final KkfcTone warning;
@@ -77,6 +79,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     borderStrong: Color(0xFF6E7E9C), // ink.400
     borderFocus: Color(0xFF1F5FD6), // blue.600
     borderFocusInverse: Color(0xFF93B4EE), // blue.300
+    highlights: Color(0xFFFF9248),
     tag: KkfcTone(bg: Color(0xFFE3E7EF), fg: Color(0xFF283650)), // ink.100 / ink.700
     success: KkfcTone(bg: Color(0xFFD9F2EC), fg: Color(0xFF0A5C4E), border: Color(0xFF86D5C4)),
     warning: KkfcTone(bg: Color(0xFFFFF3CC), fg: Color(0xFF6E4A00), border: Color(0xFFFFD24D)),
@@ -102,6 +105,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     borderStrong: Color(0xFF6E7E9C), // ink.400
     borderFocus: Color(0xFF93B4EE), // blue.300
     borderFocusInverse: Color(0xFF1F5FD6), // blue.600
+    highlights: Color(0xFFFF9248),
     tag: KkfcTone(bg: Color(0xFF1D2940), fg: Color(0xFFE3E7EF)), // ink.800 / ink.100
     success: KkfcTone(bg: Color(0xFF052A24), fg: Color(0xFF86D5C4), border: Color(0xFF0E7A68)),
     warning: KkfcTone(bg: Color(0xFF332300), fg: Color(0xFFFFD24D), border: Color(0xFF6E4A00)),
@@ -127,6 +131,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     Color? borderStrong,
     Color? borderFocus,
     Color? borderFocusInverse,
+    Color? highlights,
     KkfcTone? tag,
     KkfcTone? success,
     KkfcTone? warning,
@@ -150,6 +155,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       borderStrong: borderStrong ?? this.borderStrong,
       borderFocus: borderFocus ?? this.borderFocus,
       borderFocusInverse: borderFocusInverse ?? this.borderFocusInverse,
+      highlights: highlights ?? this.highlights,
       tag: tag ?? this.tag,
       success: success ?? this.success,
       warning: warning ?? this.warning,
@@ -178,6 +184,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       borderStrong: Color.lerp(borderStrong, other.borderStrong, t)!,
       borderFocus: Color.lerp(borderFocus, other.borderFocus, t)!,
       borderFocusInverse: Color.lerp(borderFocusInverse, other.borderFocusInverse, t)!,
+      highlights: Color.lerp(highlights, other.highlights, t)!,
       tag: KkfcTone.lerp(tag, other.tag, t),
       success: KkfcTone.lerp(success, other.success, t),
       warning: KkfcTone.lerp(warning, other.warning, t),

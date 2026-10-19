@@ -9,6 +9,7 @@ import 'package:mobile/features/auth/widgets/login_layout.dart';
 import 'package:mobile/features/auth/widgets/login_top_bar.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/app/theme/theme.dart';
+import 'package:mobile/app/theme/theme_context.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -114,6 +115,11 @@ class _LoginScreenState extends State<LoginScreen> {
           return KkfcScaffold(
               body: Column(
                 children: [
+                  Container(
+                    width: double.infinity,
+                    height: LoginLayout.focusBorderWidth,
+                    color: context.semanticColors.highlights,
+                  ),
                   const LoginTopBar(),
                   Expanded(child: compact ? _buildCompact(footer) : _buildWide(footer)),
                 ],

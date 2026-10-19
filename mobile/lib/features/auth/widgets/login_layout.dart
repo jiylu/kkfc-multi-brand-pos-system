@@ -27,6 +27,8 @@ abstract final class LoginLayout {
   static const double radiusLg = KkfcRadius.lg;
   static const double borderWidth = KkfcBorderWidth.thin;
   static const double focusBorderWidth = KkfcBorderWidth.focus;
+  static const double accentBarWidth = 4;
+  static const double accentBarHeight = 56;
 
   // Opacity
   static const double softAlpha = KkfcOpacity.soft;
