@@ -44,6 +44,15 @@ export const TEST_USERS = [
   },
 ];
 
+// Owner intentionally left without a brand so E2E tests can create one.
+export const TEST_UNASSIGNED_OWNER = {
+  username: 'test_owner_unassigned',
+  first_name: 'Unassigned',
+  last_name: 'Owner',
+  password: 'Password123!',
+  role: UserRole.OWNER,
+};
+
 export const TEST_BRANDS = [
   {
     code: 'GC',
@@ -118,6 +127,28 @@ async function seedTestDatabase() {
         username: { in: TEST_USERS.map((u) => u.username) },
       },
       data: { brand_id: seededBrands[0].brand_id },
+    });
+
+    console.log('Seeding unassigned test owner...');
+    const unassignedHash = await argon2.hash(TEST_UNASSIGNED_OWNER.password);
+    await prisma.user.upsert({
+      where: { username: TEST_UNASSIGNED_OWNER.username },
+      update: {
+        first_name: TEST_UNASSIGNED_OWNER.first_name,
+        last_name: TEST_UNASSIGNED_OWNER.last_name,
+        role: TEST_UNASSIGNED_OWNER.role,
+        password_hash: unassignedHash,
+        brand_id: null,
+        is_active: true,
+      },
+      create: {
+        username: TEST_UNASSIGNED_OWNER.username,
+        first_name: TEST_UNASSIGNED_OWNER.first_name,
+        last_name: TEST_UNASSIGNED_OWNER.last_name,
+        role: TEST_UNASSIGNED_OWNER.role,
+        password_hash: unassignedHash,
+        is_active: true,
+      },
     });
 
     console.log('Test database seeded successfully.');
