@@ -6,6 +6,9 @@ A registered test user exists with role "${role}"
     IF    '${role}' == 'OWNER'
         Set Suite Variable    ${ACTIVE_USER}    ${TEST_OWNER_USER}
         Set Suite Variable    ${ACTIVE_PASS}    ${TEST_OWNER_PASS}
+    ELSE IF    '${role}' == 'UNASSIGNED_OWNER'
+        Set Suite Variable    ${ACTIVE_USER}    ${TEST_UNASSIGNED_OWNER_USER}
+        Set Suite Variable    ${ACTIVE_PASS}    ${TEST_UNASSIGNED_OWNER_PASS}
     ELSE
         Set Suite Variable    ${ACTIVE_USER}    ${TEST_STAFF_USER}
         Set Suite Variable    ${ACTIVE_PASS}    ${TEST_STAFF_PASS}
@@ -31,6 +34,8 @@ The response should contain an active session token
     Dictionary Should Contain Key    ${body}    token
     Dictionary Should Contain Key    ${body}    user
     Set Test Variable    ${SESSION_TOKEN}    ${body}[token]
+    ${brand_id}=    Evaluate    $body['user'].get('brand_id')
+    Set Test Variable    ${SESSION_BRAND_ID}    ${brand_id}
 
 The response should not contain a session token
     ${body}=    Set Variable    ${LAST_RESPONSE.json()}

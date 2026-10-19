@@ -44,6 +44,15 @@ export const TEST_USERS = [
   },
 ];
 
+// Owner intentionally left without a brand so E2E tests can create one.
+export const TEST_UNASSIGNED_OWNER = {
+  username: 'test_owner_unassigned',
+  first_name: 'Unassigned',
+  last_name: 'Owner',
+  password: 'Password123!',
+  role: UserRole.OWNER,
+};
+
 export const TEST_BRANDS = [
   {
     code: 'GC',
@@ -112,33 +121,35 @@ async function seedTestDatabase() {
       seededBrands.push(b);
     }
 
-    console.log('Seeding user brand assignments...');
-    const seededUsers = await prisma.user.findMany({
+    console.log('Assigning test users to the first test brand...');
+    await prisma.user.updateMany({
       where: {
         username: { in: TEST_USERS.map((u) => u.username) },
       },
+      data: { brand_id: seededBrands[0].brand_id },
     });
 
-    for (const user of seededUsers) {
-      for (const brand of seededBrands) {
-        await prisma.userBrandAssignment.upsert({
-          where: {
-            user_id_brand_id: {
-              user_id: user.user_id,
-              brand_id: brand.brand_id,
-            },
-          },
-          update: {
-            is_active: true,
-          },
-          create: {
-            user_id: user.user_id,
-            brand_id: brand.brand_id,
-            is_active: true,
-          },
-        });
-      }
-    }
+    console.log('Seeding unassigned test owner...');
+    const unassignedHash = await argon2.hash(TEST_UNASSIGNED_OWNER.password);
+    await prisma.user.upsert({
+      where: { username: TEST_UNASSIGNED_OWNER.username },
+      update: {
+        first_name: TEST_UNASSIGNED_OWNER.first_name,
+        last_name: TEST_UNASSIGNED_OWNER.last_name,
+        role: TEST_UNASSIGNED_OWNER.role,
+        password_hash: unassignedHash,
+        brand_id: null,
+        is_active: true,
+      },
+      create: {
+        username: TEST_UNASSIGNED_OWNER.username,
+        first_name: TEST_UNASSIGNED_OWNER.first_name,
+        last_name: TEST_UNASSIGNED_OWNER.last_name,
+        role: TEST_UNASSIGNED_OWNER.role,
+        password_hash: unassignedHash,
+        is_active: true,
+      },
+    });
 
     console.log('Test database seeded successfully.');
   } finally {
