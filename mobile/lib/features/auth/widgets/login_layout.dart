@@ -10,6 +10,9 @@ abstract final class LoginLayout {
   static const double minControlHeight = KkfcSizing.controlMd;
   static const double spinnerSize = 18;
   static const double iconSm = KkfcSizing.iconSm;
+  static const double iconMd = KkfcSizing.iconMd;
+  static const double iconLg = KkfcSizing.iconLg;
+  static const double iconXl = KkfcSizing.iconXl;
 
   // Spacing
   static const double gapXs = KkfcSpace.s4;

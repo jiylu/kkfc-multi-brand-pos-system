@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/features/auth/widgets/login_layout.dart';
 
-/// TODO: Palitan yung text placeholders ng image logo.
 class BrandStrip extends StatelessWidget {
   const BrandStrip({super.key});
 
-  static const _brands = ['Gamcheon', "Aurelia's Inasal", 'King Kungs Kafé']; // Palitan to ng image
-  static const _assetImages = [
-    'assets/images/gamcheon.png',
-    'assets/images/king_kungs.png',
-    'assets/images/aurelia.png',
+  static const _assets = <({String path, double height})>[
+    (path: 'assets/images/gamcheon.png', height: LoginLayout.iconXl),
+    (path: 'assets/images/king_kungs.png', height: LoginLayout.iconLg),
+    (path: 'assets/images/aurelia.png', height: LoginLayout.iconXl),
   ];
 
   @override
@@ -19,18 +17,24 @@ class BrandStrip extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(LoginLayout.gapMd),
+      padding: const EdgeInsets.symmetric(
+        horizontal: LoginLayout.gapSm,
+        vertical: LoginLayout.gapMd,
+      ),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(LoginLayout.radiusMd),
       ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceEvenly,
-        spacing: LoginLayout.gapMd,
-        runSpacing: LoginLayout.gapSm,
+      child: Row(
         children: [
-          for (final asset in _assetImages)
-            Image.asset(asset, height: 40, fit: BoxFit.contain),
+          for (final brand in _assets)
+            Expanded(
+              child: Image.asset(
+                brand.path,
+                height: brand.height,
+                fit: BoxFit.contain,
+              ),
+            ),
         ],
       ),
     );
