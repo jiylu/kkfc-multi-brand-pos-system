@@ -36,16 +36,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      final token = await ref.read(authRepositoryProvider).login(
-            username: _username.text.trim(),
-            password: _password.text,
-          );
+      final token = await ref
+          .read(authRepositoryProvider)
+          .login(username: _username.text.trim(), password: _password.text);
       // The router redirects to Orders once the token is set.
       ref.read(sessionTokenProvider.notifier).setToken(token);
     } on DioException catch (e) {
-      _fail(e.response?.statusCode == 401
-          ? 'Wrong username or password.'
-          : 'Could not reach the server. Check your connection.');
+      _fail(
+        e.response?.statusCode == 401
+            ? 'Wrong username or password.'
+            : 'Could not reach the server. Check your connection.',
+      );
     } on AuthException catch (e) {
       _fail(e.message);
     }

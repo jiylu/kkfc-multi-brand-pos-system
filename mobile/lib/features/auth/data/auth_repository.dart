@@ -16,7 +16,10 @@ class AuthRepository {
   final TokenStore _store;
 
   /// Assumed contract: POST /auth/login {username, password} -> {accessToken}.
-  Future<String> login({required String username, required String password}) async {
+  Future<String> login({
+    required String username,
+    required String password,
+  }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/auth/login',
       data: {'username': username, 'password': password},

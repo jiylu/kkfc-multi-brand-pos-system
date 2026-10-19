@@ -29,12 +29,14 @@ class SessionTokenNotifier extends Notifier<String?> {
   }
 }
 
-final sessionTokenProvider =
-    NotifierProvider<SessionTokenNotifier, String?>(SessionTokenNotifier.new);
+final sessionTokenProvider = NotifierProvider<SessionTokenNotifier, String?>(
+  SessionTokenNotifier.new,
+);
 
 /// True while a token is held. The router redirect reads this.
-final sessionProvider =
-    Provider<bool>((ref) => ref.watch(sessionTokenProvider) != null);
+final sessionProvider = Provider<bool>(
+  (ref) => ref.watch(sessionTokenProvider) != null,
+);
 
 /// True after the server rejected the token, so the login screen can say why.
 class SessionExpiredNotifier extends Notifier<bool> {
@@ -44,5 +46,6 @@ class SessionExpiredNotifier extends Notifier<bool> {
   void set(bool value) => state = value;
 }
 
-final sessionExpiredProvider =
-    NotifierProvider<SessionExpiredNotifier, bool>(SessionExpiredNotifier.new);
+final sessionExpiredProvider = NotifierProvider<SessionExpiredNotifier, bool>(
+  SessionExpiredNotifier.new,
+);

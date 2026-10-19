@@ -23,7 +23,10 @@ void main() {
 
   test('brand theme exposes the selected accent', () {
     final themed = themeForBrand(counterTheme, KkfcBrand.aurelias);
-    expect(themed.extension<KkfcBrandColors>()!.accent, const Color(0xFF9A4A1F));
+    expect(
+      themed.extension<KkfcBrandColors>()!.accent,
+      const Color(0xFF9A4A1F),
+    );
   });
 
   test('base themes carry status colors', () {

@@ -3,10 +3,7 @@ abstract final class AppConfig {
     'API_URL',
     defaultValue: 'http://localhost:3001',
   );
-  static const env = String.fromEnvironment(
-    'ENV',
-    defaultValue: 'dev',
-  );
+  static const env = String.fromEnvironment('ENV', defaultValue: 'dev');
   static String get apiBaseUrl => normalizeApiBaseUrl(rawApiUrl, env: env);
 }
 
@@ -26,8 +23,14 @@ String normalizeApiBaseUrl(String raw, {required String env}) {
     throw ArgumentError.value(raw, 'API_URL', 'must use http or https');
   }
   if (env == 'prod' && uri.scheme != 'https') {
-    throw ArgumentError.value(raw, 'API_URL', 'must use https when ENV is prod');
+    throw ArgumentError.value(
+      raw,
+      'API_URL',
+      'must use https when ENV is prod',
+    );
   }
 
-  return trimmed.endsWith('/') ? trimmed.substring(0, trimmed.length - 1) : trimmed;
+  return trimmed.endsWith('/')
+      ? trimmed.substring(0, trimmed.length - 1)
+      : trimmed;
 }

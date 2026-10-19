@@ -1,0 +1,98 @@
+name: Flutter CI
+
+on:
+  push:
+    branches:
+      - main
+      - development
+      - 'feature/**'
+    paths:
+      - 'mobile/**'
+      - 'features/mobile/**'
+      - '.github/workflows/flutter-ci.yml'
+  pull_request:
+    branches:
+      - main
+      - development
+    paths:
+      - 'mobile/**'
+      - 'features/mobile/**'
+      - '.github/workflows/flutter-ci.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  flutter-ci:
+    name: Flutter CI Pipeline
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Java 17 (for Android build)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+          cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
+
+      - name: Install dependencies (pub get)
+        run: flutter pub get
+
+      - name: Auto-format Dart files and commit if changed
+        run: |
+          dart format .
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Formatting differences found. Committing formatted files..."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "style: auto-format Dart files with dart format [skip ci]"
+            git push || echo "Unable to push formatted files automatically."
+          else
+            echo "All Dart files are cleanly formatted!"
+          fi
+
+      - name: Static code analysis (flutter analyze)
+        run: flutter analyze
+
+      - name: Run unit & widget tests (flutter test)
+        run: flutter test --coverage
+
+      - name: Upload Test Coverage Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage-report
+          path: mobile/coverage/
+          if-no-files-found: ignore
+
+      - name: Verify application build (build check)
+        run: flutter build apk --debug
+
+      - name: Upload Debug APK Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: ignore
