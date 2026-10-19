@@ -8,7 +8,6 @@ import 'package:mobile/features/auth/widgets/login_form_card.dart';
 import 'package:mobile/features/auth/widgets/login_layout.dart';
 import 'package:mobile/features/auth/widgets/login_top_bar.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
-import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/app/theme/theme_context.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -76,41 +75,6 @@ class _LoginScreenState extends State<LoginScreen> {
       style: theme.textTheme.bodySmall
           ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
     );
-
-    final body = compact
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const FadeSlideIn(child: BrandPanel(compact: true)),
-              const SizedBox(height: LoginLayout.gapMd),
-              FadeSlideIn(delay: LoginLayout.stagger, child: _form()),
-              const SizedBox(height: LoginLayout.gapLg),
-              FadeSlideIn(delay: LoginLayout.stagger * 2, child: footer),
-            ],
-          )
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Expanded(
-                      flex: 6,
-                      child: FadeSlideIn(child: BrandPanel(compact: false)),
-                    ),
-                    const SizedBox(width: LoginLayout.gapLg),
-                    Expanded(
-                      flex: 5,
-                      child: FadeSlideIn(delay: LoginLayout.stagger, child: _form()),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: LoginLayout.gapLg),
-              FadeSlideIn(delay: LoginLayout.stagger * 2, child: footer),
-            ],
-          );
 
           return KkfcScaffold(
               body: Column(
