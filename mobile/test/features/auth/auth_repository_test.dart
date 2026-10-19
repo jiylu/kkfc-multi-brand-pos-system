@@ -10,10 +10,16 @@ import 'package:mobile/features/auth/data/auth_repository.dart';
 
 class _FakeTokenStore extends TokenStore {
   String? written;
+  bool cleared = false;
 
   @override
   Future<void> write(String token) async {
     written = token;
+  }
+
+  @override
+  Future<void> clear() async {
+    cleared = true;
   }
 }
 
@@ -149,5 +155,41 @@ void main() {
       expect(e.message, 'Server response did not include a token.');
     }
     expect(store.written, isNull);
+  });
+
+  test('logout ends the server session with the token and clears the store',
+      () async {
+    final store = _FakeTokenStore();
+    final adapter = _FakeAdapter(
+      (_) async => ResponseBody.fromString('', 204),
+    );
+    final repo = _repo(adapter, store);
+
+    await repo.logout('tok-123');
+
+    final request = adapter.lastRequest!;
+    expect(request.method, 'POST');
+    expect(request.uri.toString(), 'http://localhost:3000/api/auth/logout');
+    expect(request.headers['Authorization'], 'Bearer tok-123');
+    expect(store.cleared, isTrue);
+  });
+
+  test('logout still clears the store when the server is unreachable',
+      () async {
+    final store = _FakeTokenStore();
+    final adapter = _FakeAdapter((_) async {
+      throw DioException.connectionError(
+        requestOptions: RequestOptions(
+          baseUrl: AppConfig.apiBaseUrl,
+          path: '/auth/logout',
+        ),
+        reason: 'Connection refused',
+      );
+    });
+    final repo = _repo(adapter, store);
+
+    await repo.logout('tok-123');
+
+    expect(store.cleared, isTrue);
   });
 }

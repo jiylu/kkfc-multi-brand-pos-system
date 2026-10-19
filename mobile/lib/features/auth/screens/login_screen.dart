@@ -11,6 +11,7 @@ import 'package:mobile/features/auth/widgets/fade_slide_in.dart';
 import 'package:mobile/features/auth/widgets/login_form_card.dart';
 import 'package:mobile/features/auth/widgets/login_layout.dart';
 import 'package:mobile/features/auth/widgets/login_top_bar.dart';
+import 'package:mobile/features/auth/widgets/session_expired/session_expired_dialog.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/app/theme/theme_context.dart';
 
@@ -25,6 +26,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _username = TextEditingController();
   final _password = TextEditingController();
   LoginStatus _status = LoginStatus.idle;
+  bool _expiredDialogShown = false;
 
   @override
   void dispose() {
@@ -35,6 +37,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _clearNotice() {
     if (_status.hasNotice) setState(() => _status = LoginStatus.idle);
+  }
+
+  /// The 401 interceptor flags the expiry before the router lands here, so
+  /// this runs from build (initial check) and from the listener (later flips).
+  void _maybeShowSessionExpired() {
+    if (_expiredDialogShown || !ref.read(sessionExpiredProvider)) return;
+    _expiredDialogShown = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showSessionExpiredDialog(
+        context,
+        preservedItemCount: 0,
+        onSignIn: () {
+          Navigator.of(context).pop();
+          ref.read(sessionExpiredProvider.notifier).set(false);
+        },
+      );
+    });
   }
 
   Future<void> _submit() async {
@@ -83,6 +104,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(sessionExpiredProvider, (_, expired) {
+      if (expired) _maybeShowSessionExpired();
+    });
+    _maybeShowSessionExpired();
+
     final compact = LoginLayout.isCompact(context);
     final theme = Theme.of(context);
 

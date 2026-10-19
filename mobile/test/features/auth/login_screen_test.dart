@@ -16,6 +16,8 @@ import 'package:mobile/features/auth/widgets/login_form_card.dart';
 import 'package:mobile/features/auth/widgets/login_notice.dart';
 import 'package:mobile/features/auth/widgets/login_submit_button.dart';
 import 'package:mobile/features/auth/widgets/login_text_field.dart';
+import 'package:mobile/features/auth/widgets/session_expired/session_expired_copy.dart';
+import 'package:mobile/features/auth/widgets/session_expired/session_expired_dialog.dart';
 
 // Tall surfaces so nothing needs scrolling to be tapped.
 const _phone = Size(412, 1400);
@@ -40,6 +42,7 @@ Future<ProviderContainer> _pumpLogin(
   Size size = _phone,
   double textScale = 1,
   AuthRepository? authRepository,
+  bool sessionExpired = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -52,6 +55,11 @@ Future<ProviderContainer> _pumpLogin(
     ],
   );
   addTearDown(container.dispose);
+
+  // The 401 interceptor flags the expiry before the router lands here.
+  if (sessionExpired) {
+    container.read(sessionExpiredProvider.notifier).set(true);
+  }
 
   await tester.pumpWidget(
     UncontrolledProviderScope(
@@ -91,6 +99,12 @@ Future<void> _finishSignIn(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 400));
 }
+
+/// The dialog's CTA, distinguished from the login form's submit button.
+Finder get _dialogSignIn => find.descendant(
+      of: find.byType(SessionExpiredCard),
+      matching: find.byType(FilledButton),
+    );
 
 void main() {
   group('LoginScreen layout', () {
@@ -264,6 +278,34 @@ void main() {
       await tester.tap(toggle);
       await tester.pump();
       expect(tester.widget<TextField>(_password).obscureText, isTrue);
+    });
+  });
+
+  group('LoginScreen session expired', () {
+    testWidgets('no prompt while the session is still valid', (tester) async {
+      await _pumpLogin(tester);
+
+      expect(find.byType(SessionExpiredCard), findsNothing);
+    });
+
+    testWidgets('prompts when the session was rejected', (tester) async {
+      final container = await _pumpLogin(tester, sessionExpired: true);
+
+      expect(find.byType(SessionExpiredCard), findsOneWidget);
+      // Title and CTA share the same copy.
+      expect(find.text(sessionExpiredTitle), findsNWidgets(2));
+      expect(container.read(sessionExpiredProvider), isTrue);
+    });
+
+    testWidgets('the CTA closes the prompt and clears the flag',
+        (tester) async {
+      final container = await _pumpLogin(tester, sessionExpired: true);
+
+      await tester.tap(_dialogSignIn);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SessionExpiredCard), findsNothing);
+      expect(container.read(sessionExpiredProvider), isFalse);
     });
   });
 }

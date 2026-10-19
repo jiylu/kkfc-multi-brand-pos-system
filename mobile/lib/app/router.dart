@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/providers/session_provider.dart';
 import '../features/auth/screens/login_screen.dart';
-import '../shared/widgets/placeholder_screen.dart';
+import '../features/orders/screens/orders_screen.dart';
 import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -30,7 +30,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.orders,
-        builder: (context, state) => const PlaceholderScreen(title: 'Orders'),
+        builder: (context, state) => const OrdersScreen(),
       ),
     ],
   );

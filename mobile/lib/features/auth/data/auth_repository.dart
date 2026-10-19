@@ -47,7 +47,29 @@ class AuthRepository {
     }
   }
 
-  Future<void> logout() => _store.clear();
+  /// Ends the server session (best effort) and clears the stored token.
+  ///
+  /// Contract: POST /auth/logout `Authorization: Bearer <token>` -> 204.
+  ///
+  /// [token] is passed explicitly because the session state may be cleared
+  /// while this call is still in flight. Never throws: signing out locally
+  /// must succeed even when the server is unreachable.
+  Future<void> logout(String token) async {
+    try {
+      await _dio.post<void>(
+        '/auth/logout',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+    } on DioException {
+      // Offline, or the session was already gone. Sign out locally anyway.
+    }
+
+    try {
+      await _store.clear();
+    } catch (_) {
+      // Secure storage failure must not block the sign-out flow.
+    }
+  }
 
   AuthException _mapDioException(DioException e) {
     if (e.response?.statusCode == 401) {
