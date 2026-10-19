@@ -32,7 +32,7 @@ class LoginFormCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(compact ? LoginLayout.gapLg : LoginLayout.gapXl),
       decoration: BoxDecoration(
-        color: scheme.surface,
+        color: scheme.onPrimary,
         borderRadius: BorderRadius.circular(LoginLayout.radiusLg),
         border: Border.all(
           color: scheme.outlineVariant,

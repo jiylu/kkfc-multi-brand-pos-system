@@ -6,6 +6,11 @@ class BrandStrip extends StatelessWidget {
   const BrandStrip({super.key});
 
   static const _brands = ['Gamcheon', "Aurelia's Inasal", 'King Kungs Kafé']; // Palitan to ng image
+  static const _assetImages = [
+    'assets/images/gamcheon.png',
+    'assets/images/king_kungs.png',
+    'assets/images/aurelia.png',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +29,8 @@ class BrandStrip extends StatelessWidget {
         spacing: LoginLayout.gapMd,
         runSpacing: LoginLayout.gapSm,
         children: [
-          for (final brand in _brands)
-            Text(
-              brand,
-              style: theme.textTheme.titleSmall?.copyWith(color: scheme.primary), // PALITAB+N DIN
-            ),
+          for (final asset in _assetImages)
+            Image.asset(asset, height: 40, fit: BoxFit.contain),
         ],
       ),
     );
