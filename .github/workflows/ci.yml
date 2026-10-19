@@ -38,8 +38,11 @@ jobs:
       - name: Generate Prisma client
         run: npm run prisma:generate
 
-      - name: Run ESLint
-        run: npm run lint
+      - name: Run ESLint (check only)
+        run: npm run lint:check
+
+      - name: Check formatting (Prettier)
+        run: npm run format:check
 
       - name: Run Jest Unit Tests
         run: npm run test:unit
