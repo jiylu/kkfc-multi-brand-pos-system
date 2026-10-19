@@ -28,7 +28,10 @@ describe('StorageService (UT-SHRD)', () => {
 
   it('UT-SHRD-011: generates a 5-minute presigned PutObject upload URL with normalized extension', async () => {
     const service = new StorageService(
-      createConfig({ S3_BUCKET: 'kkfc-private-bucket', AWS_REGION: 'ap-southeast-1' }),
+      createConfig({
+        S3_BUCKET: 'kkfc-private-bucket',
+        AWS_REGION: 'ap-southeast-1',
+      }),
     );
 
     const result = await service.createUploadUrl('MenuPhoto.PNG', 'image/png');

@@ -9,10 +9,10 @@ class KkfcTone {
   final Color? border;
 
   static KkfcTone lerp(KkfcTone a, KkfcTone b, double t) => KkfcTone(
-        bg: Color.lerp(a.bg, b.bg, t)!,
-        fg: Color.lerp(a.fg, b.fg, t)!,
-        border: Color.lerp(a.border, b.border, t),
-      );
+    bg: Color.lerp(a.bg, b.bg, t)!,
+    fg: Color.lerp(a.fg, b.fg, t)!,
+    border: Color.lerp(a.border, b.border, t),
+  );
 }
 
 @immutable

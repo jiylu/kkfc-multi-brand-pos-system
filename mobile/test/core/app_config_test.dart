@@ -11,13 +11,22 @@ void main() {
   });
 
   test('rejects relative and non-http URLs', () {
-    expect(() => normalizeApiBaseUrl('localhost:3001', env: 'dev'), throwsArgumentError);
-    expect(() => normalizeApiBaseUrl('ftp://example.com', env: 'dev'), throwsArgumentError);
+    expect(
+      () => normalizeApiBaseUrl('localhost:3001', env: 'dev'),
+      throwsArgumentError,
+    );
+    expect(
+      () => normalizeApiBaseUrl('ftp://example.com', env: 'dev'),
+      throwsArgumentError,
+    );
     expect(() => normalizeApiBaseUrl('', env: 'dev'), throwsArgumentError);
   });
 
   test('prod requires https', () {
-    expect(() => normalizeApiBaseUrl('http://api.example.com', env: 'prod'), throwsArgumentError);
+    expect(
+      () => normalizeApiBaseUrl('http://api.example.com', env: 'prod'),
+      throwsArgumentError,
+    );
     expect(
       normalizeApiBaseUrl('https://api.example.com/', env: 'prod'),
       'https://api.example.com',

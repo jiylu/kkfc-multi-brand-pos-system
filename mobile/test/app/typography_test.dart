@@ -8,7 +8,10 @@ import 'package:mobile/core/models/order_status.dart';
 void main() {
   test('numbers use IBM Plex with tabular figures', () {
     expect(KkfcTypography.kdsTicket.fontFamily, KkfcFonts.numeric);
-    expect(KkfcTypography.kdsTicket.fontFeatures, contains(const FontFeature.tabularFigures()));
+    expect(
+      KkfcTypography.kdsTicket.fontFeatures,
+      contains(const FontFeature.tabularFigures()),
+    );
     expect(KkfcTypography.price.fontFamily, KkfcFonts.numeric);
   });
 
