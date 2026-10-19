@@ -35,8 +35,9 @@ Finder get _signInButton => find.byType(FilledButton);
 
 void main() {
   group('SessionExpiredDialog', () {
-    testWidgets('shows the eyebrow, title, body and preserved pill',
-        (tester) async {
+    testWidgets('shows the eyebrow, title, body and preserved pill', (
+      tester,
+    ) async {
       await _pumpDialog(tester);
 
       expect(find.text(sessionEndedEyebrow), findsOneWidget);
@@ -50,8 +51,9 @@ void main() {
       expect(find.byType(SessionExpiredCard), findsOneWidget);
     });
 
-    testWidgets('reflects the preserved item count in body and pill',
-        (tester) async {
+    testWidgets('reflects the preserved item count in body and pill', (
+      tester,
+    ) async {
       await _pumpDialog(tester, preservedItemCount: 3);
 
       expect(
@@ -61,8 +63,9 @@ void main() {
       expect(find.text(cartPreservedLabel('3 items')), findsOneWidget);
     });
 
-    testWidgets('the Sign in again button runs the callback once',
-        (tester) async {
+    testWidgets('the Sign in again button runs the callback once', (
+      tester,
+    ) async {
       var taps = 0;
       await _pumpDialog(tester, onSignIn: () => taps++);
 
@@ -95,10 +98,7 @@ void main() {
             child: child!,
           ),
           home: Scaffold(
-            body: SessionExpiredDialog(
-              preservedItemCount: 5,
-              onSignIn: () {},
-            ),
+            body: SessionExpiredDialog(preservedItemCount: 5, onSignIn: () {}),
           ),
         ),
       );
@@ -109,8 +109,9 @@ void main() {
   });
 
   group('showSessionExpiredDialog', () {
-    testWidgets('opens over the current route and ignores barrier taps',
-        (tester) async {
+    testWidgets('opens over the current route and ignores barrier taps', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(412, 900);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);

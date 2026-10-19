@@ -52,8 +52,10 @@ class BrandPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('ONE SHARED WORKSPACE',
-              style: text.labelSmall?.copyWith(color: soft)),
+          Text(
+            'ONE SHARED WORKSPACE',
+            style: text.labelSmall?.copyWith(color: soft),
+          ),
           const SizedBox(height: LoginLayout.gapMd),
           Text(
             'One kitchen.\nThree brands.\nOne workspace.',
@@ -61,8 +63,9 @@ class BrandPanel extends StatelessWidget {
           ),
           const SizedBox(height: LoginLayout.gapMd),
           ConstrainedBox(
-            constraints:
-                const BoxConstraints(maxWidth: LoginLayout.panelCopyMaxWidth),
+            constraints: const BoxConstraints(
+              maxWidth: LoginLayout.panelCopyMaxWidth,
+            ),
             child: Text(
               'Confident orders, clear kitchen handoffs, and one connected team.',
               style: text.bodyLarge?.copyWith(color: soft),
@@ -105,9 +108,15 @@ class _FlowSteps extends StatelessWidget {
           children: [
             for (var i = 0; i < _steps.length; i++) ...[
               if (i > 0)
-                Icon(Icons.arrow_right_alt, size: LoginLayout.iconSm, color: soft),
-              Text(_steps[i],
-                  style: theme.textTheme.labelSmall?.copyWith(color: soft)),
+                Icon(
+                  Icons.arrow_right_alt,
+                  size: LoginLayout.iconSm,
+                  color: soft,
+                ),
+              Text(
+                _steps[i],
+                style: theme.textTheme.labelSmall?.copyWith(color: soft),
+              ),
             ],
           ],
         ),

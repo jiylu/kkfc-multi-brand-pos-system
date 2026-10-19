@@ -56,66 +56,72 @@ class _FakeAdapter implements HttpClientAdapter {
 }
 
 ResponseBody _json(Object? body, {int status = 200}) => ResponseBody.fromString(
-      jsonEncode(body),
-      status,
-      headers: {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
+  jsonEncode(body),
+  status,
+  headers: {
+    Headers.contentTypeHeader: [Headers.jsonContentType],
+  },
+);
 
 AuthRepository _repo(_FakeAdapter adapter, TokenStore store) => AuthRepository(
-      Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))
-        ..httpClientAdapter = adapter,
-      store,
-    );
+  Dio(BaseOptions(baseUrl: AppConfig.apiBaseUrl))..httpClientAdapter = adapter,
+  store,
+);
 
 void main() {
-  test('posts credentials to /api/auth/login and stores the session token',
-      () async {
-    final store = _FakeTokenStore();
-    final adapter = _FakeAdapter((_) async => _json({
+  test(
+    'posts credentials to /api/auth/login and stores the session token',
+    () async {
+      final store = _FakeTokenStore();
+      final adapter = _FakeAdapter(
+        (_) async => _json({
           'token': 'tok-123',
           'expires_at': '2026-10-21T12:00:00.000Z',
           'user': {'user_id': 'u1', 'username': 'test_owner', 'role': 'OWNER'},
-        }));
-    final repo = _repo(adapter, store);
+        }),
+      );
+      final repo = _repo(adapter, store);
 
-    final token =
-        await repo.login(username: 'test_owner', password: 'Password123!');
+      final token = await repo.login(
+        username: 'test_owner',
+        password: 'Password123!',
+      );
 
-    expect(token, 'tok-123');
-    expect(store.written, 'tok-123');
+      expect(token, 'tok-123');
+      expect(store.written, 'tok-123');
 
-    final request = adapter.lastRequest!;
-    expect(request.method, 'POST');
-    expect(request.uri.toString(), 'http://localhost:3000/api/auth/login');
-    expect(jsonDecode(adapter.lastBody!), {
-      'username': 'test_owner',
-      'password': 'Password123!',
-    });
-  });
+      final request = adapter.lastRequest!;
+      expect(request.method, 'POST');
+      expect(request.uri.toString(), 'http://localhost:3000/api/auth/login');
+      expect(jsonDecode(adapter.lastBody!), {
+        'username': 'test_owner',
+        'password': 'Password123!',
+      });
+    },
+  );
 
-  test('a 401 becomes an invalidCredentials failure with the server message',
-      () async {
-    final store = _FakeTokenStore();
-    final adapter = _FakeAdapter((_) async => _json(
-          {
-            'code': 'INVALID_CREDENTIALS',
-            'message': 'Invalid username or password.',
-          },
-          status: 401,
-        ));
-    final repo = _repo(adapter, store);
+  test(
+    'a 401 becomes an invalidCredentials failure with the server message',
+    () async {
+      final store = _FakeTokenStore();
+      final adapter = _FakeAdapter(
+        (_) async => _json({
+          'code': 'INVALID_CREDENTIALS',
+          'message': 'Invalid username or password.',
+        }, status: 401),
+      );
+      final repo = _repo(adapter, store);
 
-    try {
-      await repo.login(username: 'test_owner', password: 'wrong');
-      fail('Expected an AuthException.');
-    } on AuthException catch (e) {
-      expect(e.kind, AuthFailure.invalidCredentials);
-      expect(e.message, 'Invalid username or password.');
-    }
-    expect(store.written, isNull);
-  });
+      try {
+        await repo.login(username: 'test_owner', password: 'wrong');
+        fail('Expected an AuthException.');
+      } on AuthException catch (e) {
+        expect(e.kind, AuthFailure.invalidCredentials);
+        expect(e.message, 'Invalid username or password.');
+      }
+      expect(store.written, isNull);
+    },
+  );
 
   test('a connection failure becomes a network failure', () async {
     final store = _FakeTokenStore();
@@ -139,57 +145,63 @@ void main() {
     expect(store.written, isNull);
   });
 
-  test('a success payload without a token becomes an unexpected failure',
-      () async {
-    final store = _FakeTokenStore();
-    final adapter = _FakeAdapter((_) async => _json({
-          'expires_at': '2026-10-21T12:00:00.000Z',
-        }));
-    final repo = _repo(adapter, store);
-
-    try {
-      await repo.login(username: 'test_owner', password: 'Password123!');
-      fail('Expected an AuthException.');
-    } on AuthException catch (e) {
-      expect(e.kind, AuthFailure.unexpected);
-      expect(e.message, 'Server response did not include a token.');
-    }
-    expect(store.written, isNull);
-  });
-
-  test('logout ends the server session with the token and clears the store',
-      () async {
-    final store = _FakeTokenStore();
-    final adapter = _FakeAdapter(
-      (_) async => ResponseBody.fromString('', 204),
-    );
-    final repo = _repo(adapter, store);
-
-    await repo.logout('tok-123');
-
-    final request = adapter.lastRequest!;
-    expect(request.method, 'POST');
-    expect(request.uri.toString(), 'http://localhost:3000/api/auth/logout');
-    expect(request.headers['Authorization'], 'Bearer tok-123');
-    expect(store.cleared, isTrue);
-  });
-
-  test('logout still clears the store when the server is unreachable',
-      () async {
-    final store = _FakeTokenStore();
-    final adapter = _FakeAdapter((_) async {
-      throw DioException.connectionError(
-        requestOptions: RequestOptions(
-          baseUrl: AppConfig.apiBaseUrl,
-          path: '/auth/logout',
-        ),
-        reason: 'Connection refused',
+  test(
+    'a success payload without a token becomes an unexpected failure',
+    () async {
+      final store = _FakeTokenStore();
+      final adapter = _FakeAdapter(
+        (_) async => _json({'expires_at': '2026-10-21T12:00:00.000Z'}),
       );
-    });
-    final repo = _repo(adapter, store);
+      final repo = _repo(adapter, store);
 
-    await repo.logout('tok-123');
+      try {
+        await repo.login(username: 'test_owner', password: 'Password123!');
+        fail('Expected an AuthException.');
+      } on AuthException catch (e) {
+        expect(e.kind, AuthFailure.unexpected);
+        expect(e.message, 'Server response did not include a token.');
+      }
+      expect(store.written, isNull);
+    },
+  );
 
-    expect(store.cleared, isTrue);
-  });
+  test(
+    'logout ends the server session with the token and clears the store',
+    () async {
+      final store = _FakeTokenStore();
+      final adapter = _FakeAdapter(
+        (_) async => ResponseBody.fromString('', 204),
+      );
+      final repo = _repo(adapter, store);
+
+      await repo.logout('tok-123');
+
+      final request = adapter.lastRequest!;
+      expect(request.method, 'POST');
+      expect(request.uri.toString(), 'http://localhost:3000/api/auth/logout');
+      expect(request.headers['Authorization'], 'Bearer tok-123');
+      expect(store.cleared, isTrue);
+    },
+  );
+
+  test(
+    'logout still clears the store when the server is unreachable',
+    () async {
+      final store = _FakeTokenStore();
+      final adapter = _FakeAdapter((_) async {
+        throw DioException.connectionError(
+          requestOptions: RequestOptions(
+            baseUrl: AppConfig.apiBaseUrl,
+            path: '/auth/logout',
+          ),
+          reason: 'Connection refused',
+        );
+      });
+      final repo = _repo(adapter, store);
+
+      await repo.logout('tok-123');
+
+      expect(store.cleared, isTrue);
+    },
+  );
 }

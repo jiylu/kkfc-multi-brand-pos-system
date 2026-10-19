@@ -41,10 +41,7 @@ Future<ProviderContainer> _pumpOrders(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(
-        theme: counterTheme,
-        home: const OrdersScreen(),
-      ),
+      child: MaterialApp(theme: counterTheme, home: const OrdersScreen()),
     ),
   );
   await tester.pumpAndSettle();
@@ -52,11 +49,16 @@ Future<ProviderContainer> _pumpOrders(
 }
 
 void main() {
-  testWidgets('logout ends the server session and clears the local session',
-      (tester) async {
+  testWidgets('logout ends the server session and clears the local session', (
+    tester,
+  ) async {
     final repo = _FakeAuthRepository();
-    final container =
-        await _pumpOrders(tester, repo, token: 'tok-abc', expired: true);
+    final container = await _pumpOrders(
+      tester,
+      repo,
+      token: 'tok-abc',
+      expired: true,
+    );
 
     await tester.tap(find.text('Logout'));
     await tester.pump();

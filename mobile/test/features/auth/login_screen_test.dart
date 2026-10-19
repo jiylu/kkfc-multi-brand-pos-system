@@ -82,9 +82,9 @@ Future<ProviderContainer> _pumpLogin(
 Finder get _username => find.byType(TextField).first;
 
 Finder get _password => find.descendant(
-      of: find.byType(LoginPasswordField),
-      matching: find.byType(TextField),
-    );
+  of: find.byType(LoginPasswordField),
+  matching: find.byType(TextField),
+);
 
 LoginStatus _status(WidgetTester tester) =>
     tester.widget<LoginNotice>(find.byType(LoginNotice)).status;
@@ -102,14 +102,15 @@ Future<void> _finishSignIn(WidgetTester tester) async {
 
 /// The dialog's CTA, distinguished from the login form's submit button.
 Finder get _dialogSignIn => find.descendant(
-      of: find.byType(SessionExpiredCard),
-      matching: find.byType(FilledButton),
-    );
+  of: find.byType(SessionExpiredCard),
+  matching: find.byType(FilledButton),
+);
 
 void main() {
   group('LoginScreen layout', () {
-    testWidgets('shows both fields, the form card and the submit button',
-        (tester) async {
+    testWidgets('shows both fields, the form card and the submit button', (
+      tester,
+    ) async {
       await _pumpLogin(tester);
 
       expect(find.byType(LoginFormCard), findsOneWidget);
@@ -123,13 +124,19 @@ void main() {
     testWidgets('uses the compact brand panel on a phone', (tester) async {
       await _pumpLogin(tester, size: _phone);
 
-      expect(tester.widget<BrandPanel>(find.byType(BrandPanel)).compact, isTrue);
+      expect(
+        tester.widget<BrandPanel>(find.byType(BrandPanel)).compact,
+        isTrue,
+      );
     });
 
     testWidgets('uses the full brand panel on a wide screen', (tester) async {
       await _pumpLogin(tester, size: _desktop);
 
-      expect(tester.widget<BrandPanel>(find.byType(BrandPanel)).compact, isFalse);
+      expect(
+        tester.widget<BrandPanel>(find.byType(BrandPanel)).compact,
+        isFalse,
+      );
       expect(find.byType(LoginFormCard), findsOneWidget);
     });
 
@@ -141,8 +148,9 @@ void main() {
   });
 
   group('LoginScreen validation', () {
-    testWidgets('empty submit shows the required-fields notice',
-        (tester) async {
+    testWidgets('empty submit shows the required-fields notice', (
+      tester,
+    ) async {
       await _pumpLogin(tester);
 
       await _tapSignIn(tester);
@@ -150,13 +158,16 @@ void main() {
 
       expect(_status(tester), LoginStatus.missingFields);
       expect(
-        tester.widget<LoginSubmitButton>(find.byType(LoginSubmitButton)).isLoading,
+        tester
+            .widget<LoginSubmitButton>(find.byType(LoginSubmitButton))
+            .isLoading,
         isFalse,
       );
     });
 
-    testWidgets('username without a password is still missing fields',
-        (tester) async {
+    testWidgets('username without a password is still missing fields', (
+      tester,
+    ) async {
       await _pumpLogin(tester);
 
       await tester.enterText(_username, 'ana.r');
@@ -179,8 +190,9 @@ void main() {
   });
 
   group('LoginScreen submit', () {
-    testWidgets('a successful sign-in stores the session token',
-        (tester) async {
+    testWidgets('a successful sign-in stores the session token', (
+      tester,
+    ) async {
       final completer = Completer<String>();
       final repo = _FakeAuthRepository((_, _) => completer.future);
       final container = await _pumpLogin(tester, authRepository: repo);
@@ -192,10 +204,15 @@ void main() {
       // While submitting
       expect(_status(tester), LoginStatus.submitting);
       expect(
-        tester.widget<LoginSubmitButton>(find.byType(LoginSubmitButton)).isLoading,
+        tester
+            .widget<LoginSubmitButton>(find.byType(LoginSubmitButton))
+            .isLoading,
         isTrue,
       );
-      expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed, isNull);
+      expect(
+        tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+        isNull,
+      );
       expect(tester.widget<TextField>(_username).enabled, isFalse);
       expect(tester.widget<TextField>(_password).enabled, isFalse);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -208,12 +225,15 @@ void main() {
       expect(repo.callCount, 1);
     });
 
-    testWidgets('rejected credentials show the invalid-credentials notice',
-        (tester) async {
-      final repo = _FakeAuthRepository((_, _) async =>
-          throw const AuthException(
-              'Invalid username or password.',
-              kind: AuthFailure.invalidCredentials));
+    testWidgets('rejected credentials show the invalid-credentials notice', (
+      tester,
+    ) async {
+      final repo = _FakeAuthRepository(
+        (_, _) async => throw const AuthException(
+          'Invalid username or password.',
+          kind: AuthFailure.invalidCredentials,
+        ),
+      );
       await _pumpLogin(tester, authRepository: repo);
 
       await tester.enterText(_username, 'ana.r');
@@ -222,15 +242,22 @@ void main() {
       await _finishSignIn(tester);
 
       expect(_status(tester), LoginStatus.invalidCredentials);
-      expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed, isNotNull);
+      expect(
+        tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+        isNotNull,
+      );
       expect(tester.widget<TextField>(_username).enabled, isTrue);
     });
 
-    testWidgets('a network failure shows the network-error notice',
-        (tester) async {
-      final repo = _FakeAuthRepository((_, _) async =>
-          throw const AuthException('Unable to reach the server.',
-              kind: AuthFailure.network));
+    testWidgets('a network failure shows the network-error notice', (
+      tester,
+    ) async {
+      final repo = _FakeAuthRepository(
+        (_, _) async => throw const AuthException(
+          'Unable to reach the server.',
+          kind: AuthFailure.network,
+        ),
+      );
       await _pumpLogin(tester, authRepository: repo);
 
       await tester.enterText(_username, 'test_owner');
@@ -260,25 +287,27 @@ void main() {
   });
 
   group('LoginPasswordField', () {
-    testWidgets('is obscured by default and toggles with the Show/Hide button',
-        (tester) async {
-      await _pumpLogin(tester);
+    testWidgets(
+      'is obscured by default and toggles with the Show/Hide button',
+      (tester) async {
+        await _pumpLogin(tester);
 
-      final toggle = find.descendant(
-        of: find.byType(LoginPasswordField),
-        matching: find.byType(TextButton),
-      );
+        final toggle = find.descendant(
+          of: find.byType(LoginPasswordField),
+          matching: find.byType(TextButton),
+        );
 
-      expect(tester.widget<TextField>(_password).obscureText, isTrue);
+        expect(tester.widget<TextField>(_password).obscureText, isTrue);
 
-      await tester.tap(toggle);
-      await tester.pump();
-      expect(tester.widget<TextField>(_password).obscureText, isFalse);
+        await tester.tap(toggle);
+        await tester.pump();
+        expect(tester.widget<TextField>(_password).obscureText, isFalse);
 
-      await tester.tap(toggle);
-      await tester.pump();
-      expect(tester.widget<TextField>(_password).obscureText, isTrue);
-    });
+        await tester.tap(toggle);
+        await tester.pump();
+        expect(tester.widget<TextField>(_password).obscureText, isTrue);
+      },
+    );
   });
 
   group('LoginScreen session expired', () {
@@ -297,8 +326,9 @@ void main() {
       expect(container.read(sessionExpiredProvider), isTrue);
     });
 
-    testWidgets('the CTA closes the prompt and clears the flag',
-        (tester) async {
+    testWidgets('the CTA closes the prompt and clears the flag', (
+      tester,
+    ) async {
       final container = await _pumpLogin(tester, sessionExpired: true);
 
       await tester.tap(_dialogSignIn);

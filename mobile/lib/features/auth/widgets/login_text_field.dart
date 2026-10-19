@@ -35,9 +35,9 @@ class LoginTextField extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(LoginLayout.radiusSm),
-          borderSide: BorderSide(color: color, width: width),
-        );
+      borderRadius: BorderRadius.circular(LoginLayout.radiusSm),
+      borderSide: BorderSide(color: color, width: width),
+    );
 
     final idle = hasError ? scheme.error : scheme.outlineVariant;
     final focused = hasError ? scheme.error : scheme.primary;
@@ -64,8 +64,10 @@ class LoginTextField extends StatelessWidget {
             suffixIcon: suffix,
             border: border(idle, LoginLayout.borderWidth),
             enabledBorder: border(idle, LoginLayout.borderWidth),
-            disabledBorder:
-                border(scheme.outlineVariant, LoginLayout.borderWidth),
+            disabledBorder: border(
+              scheme.outlineVariant,
+              LoginLayout.borderWidth,
+            ),
             focusedBorder: border(focused, LoginLayout.focusBorderWidth),
           ),
         ),

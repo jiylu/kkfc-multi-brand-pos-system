@@ -20,10 +20,14 @@ class FadeSlideIn extends StatefulWidget {
 
 class _FadeSlideInState extends State<FadeSlideIn>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller =
-      AnimationController(vsync: this, duration: LoginLayout.slow);
-  late final Animation<double> _curve =
-      CurvedAnimation(parent: _controller, curve: LoginLayout.curve);
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: LoginLayout.slow,
+  );
+  late final Animation<double> _curve = CurvedAnimation(
+    parent: _controller,
+    curve: LoginLayout.curve,
+  );
   Timer? _timer;
   bool _started = false;
 
@@ -53,8 +57,10 @@ class _FadeSlideInState extends State<FadeSlideIn>
     return FadeTransition(
       opacity: _curve,
       child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero)
-            .animate(_curve),
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.04),
+          end: Offset.zero,
+        ).animate(_curve),
         child: widget.child,
       ),
     );

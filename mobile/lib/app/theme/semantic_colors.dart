@@ -80,15 +80,46 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     borderFocus: Color(0xFF1F5FD6), // blue.600
     borderFocusInverse: Color(0xFF93B4EE), // blue.300
     highlights: Color(0xFFFF9248),
-    tag: KkfcTone(bg: Color(0xFFE3E7EF), fg: Color(0xFF283650)), // ink.100 / ink.700
-    success: KkfcTone(bg: Color(0xFFD9F2EC), fg: Color(0xFF0A5C4E), border: Color(0xFF86D5C4)),
-    warning: KkfcTone(bg: Color(0xFFFFF3CC), fg: Color(0xFF6E4A00), border: Color(0xFFFFD24D)),
-    danger: KkfcTone(bg: Color(0xFFFCE4E1), fg: Color(0xFF861B10), border: Color(0xFFF4A398)),
-    info: KkfcTone(bg: Color(0xFFE1EAFB), fg: Color(0xFF173F8A), border: Color(0xFF93B4EE)),
-    actionSuccess: KkfcTone(bg: Color(0xFF0E7A68), fg: Color(0xFFFFFFFF)), // teal.700 / white
-    ageNormal: KkfcTone(bg: Color(0xFFE3E7EF), fg: Color(0xFF141D2E)), // ink.100 / ink.900
-    ageCaution: KkfcTone(bg: Color(0xFFF5B400), fg: Color(0xFF0B111D)), // amber.500 / ink.950
-    ageLate: KkfcTone(bg: Color(0xFFC62A1A), fg: Color(0xFFFFFFFF)), // red.600 / white
+    tag: KkfcTone(
+      bg: Color(0xFFE3E7EF),
+      fg: Color(0xFF283650),
+    ), // ink.100 / ink.700
+    success: KkfcTone(
+      bg: Color(0xFFD9F2EC),
+      fg: Color(0xFF0A5C4E),
+      border: Color(0xFF86D5C4),
+    ),
+    warning: KkfcTone(
+      bg: Color(0xFFFFF3CC),
+      fg: Color(0xFF6E4A00),
+      border: Color(0xFFFFD24D),
+    ),
+    danger: KkfcTone(
+      bg: Color(0xFFFCE4E1),
+      fg: Color(0xFF861B10),
+      border: Color(0xFFF4A398),
+    ),
+    info: KkfcTone(
+      bg: Color(0xFFE1EAFB),
+      fg: Color(0xFF173F8A),
+      border: Color(0xFF93B4EE),
+    ),
+    actionSuccess: KkfcTone(
+      bg: Color(0xFF0E7A68),
+      fg: Color(0xFFFFFFFF),
+    ), // teal.700 / white
+    ageNormal: KkfcTone(
+      bg: Color(0xFFE3E7EF),
+      fg: Color(0xFF141D2E),
+    ), // ink.100 / ink.900
+    ageCaution: KkfcTone(
+      bg: Color(0xFFF5B400),
+      fg: Color(0xFF0B111D),
+    ), // amber.500 / ink.950
+    ageLate: KkfcTone(
+      bg: Color(0xFFC62A1A),
+      fg: Color(0xFFFFFFFF),
+    ), // red.600 / white
   );
 
   // Dark (kitchen), from theme/dark
@@ -106,15 +137,46 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     borderFocus: Color(0xFF93B4EE), // blue.300
     borderFocusInverse: Color(0xFF1F5FD6), // blue.600
     highlights: Color(0xFFFF9248),
-    tag: KkfcTone(bg: Color(0xFF1D2940), fg: Color(0xFFE3E7EF)), // ink.800 / ink.100
-    success: KkfcTone(bg: Color(0xFF052A24), fg: Color(0xFF86D5C4), border: Color(0xFF0E7A68)),
-    warning: KkfcTone(bg: Color(0xFF332300), fg: Color(0xFFFFD24D), border: Color(0xFF6E4A00)),
-    danger: KkfcTone(bg: Color(0xFF3D0C06), fg: Color(0xFFF4A398), border: Color(0xFFC62A1A)),
-    info: KkfcTone(bg: Color(0xFF0C1D3F), fg: Color(0xFF93B4EE), border: Color(0xFF173F8A)),
-    actionSuccess: KkfcTone(bg: Color(0xFF0E7A68), fg: Color(0xFFFFFFFF)), // teal.700 / white
-    ageNormal: KkfcTone(bg: Color(0xFF1D2940), fg: Color(0xFFF2F4F8)), // ink.800 / ink.50
-    ageCaution: KkfcTone(bg: Color(0xFFF5B400), fg: Color(0xFF0B111D)), // amber.500 / ink.950
-    ageLate: KkfcTone(bg: Color(0xFFC62A1A), fg: Color(0xFFFFFFFF)), // red.600 / white
+    tag: KkfcTone(
+      bg: Color(0xFF1D2940),
+      fg: Color(0xFFE3E7EF),
+    ), // ink.800 / ink.100
+    success: KkfcTone(
+      bg: Color(0xFF052A24),
+      fg: Color(0xFF86D5C4),
+      border: Color(0xFF0E7A68),
+    ),
+    warning: KkfcTone(
+      bg: Color(0xFF332300),
+      fg: Color(0xFFFFD24D),
+      border: Color(0xFF6E4A00),
+    ),
+    danger: KkfcTone(
+      bg: Color(0xFF3D0C06),
+      fg: Color(0xFFF4A398),
+      border: Color(0xFFC62A1A),
+    ),
+    info: KkfcTone(
+      bg: Color(0xFF0C1D3F),
+      fg: Color(0xFF93B4EE),
+      border: Color(0xFF173F8A),
+    ),
+    actionSuccess: KkfcTone(
+      bg: Color(0xFF0E7A68),
+      fg: Color(0xFFFFFFFF),
+    ), // teal.700 / white
+    ageNormal: KkfcTone(
+      bg: Color(0xFF1D2940),
+      fg: Color(0xFFF2F4F8),
+    ), // ink.800 / ink.50
+    ageCaution: KkfcTone(
+      bg: Color(0xFFF5B400),
+      fg: Color(0xFF0B111D),
+    ), // amber.500 / ink.950
+    ageLate: KkfcTone(
+      bg: Color(0xFFC62A1A),
+      fg: Color(0xFFFFFFFF),
+    ), // red.600 / white
   );
 
   @override
@@ -183,7 +245,11 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       borderDefault: Color.lerp(borderDefault, other.borderDefault, t)!,
       borderStrong: Color.lerp(borderStrong, other.borderStrong, t)!,
       borderFocus: Color.lerp(borderFocus, other.borderFocus, t)!,
-      borderFocusInverse: Color.lerp(borderFocusInverse, other.borderFocusInverse, t)!,
+      borderFocusInverse: Color.lerp(
+        borderFocusInverse,
+        other.borderFocusInverse,
+        t,
+      )!,
       highlights: Color.lerp(highlights, other.highlights, t)!,
       tag: KkfcTone.lerp(tag, other.tag, t),
       success: KkfcTone.lerp(success, other.success, t),

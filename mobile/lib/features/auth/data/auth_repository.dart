@@ -28,7 +28,10 @@ class AuthRepository {
   ///
   /// Returns the session token on success. Throws [AuthException] with the
   /// matching [AuthFailure] kind otherwise.
-  Future<String> login({required String username, required String password}) async {
+  Future<String> login({
+    required String username,
+    required String password,
+  }) async {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
         '/auth/login',
@@ -88,8 +91,10 @@ class AuthRepository {
       DioExceptionType.connectionTimeout ||
       DioExceptionType.sendTimeout ||
       DioExceptionType.receiveTimeout ||
-      DioExceptionType.connectionError =>
-        const AuthException('Unable to reach the server.', kind: AuthFailure.network),
+      DioExceptionType.connectionError => const AuthException(
+        'Unable to reach the server.',
+        kind: AuthFailure.network,
+      ),
       _ => const AuthException('Unexpected sign-in failure.'),
     };
   }

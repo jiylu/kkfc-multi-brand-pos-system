@@ -20,18 +20,18 @@ extension LoginStatusX on LoginStatus {
       this == LoginStatus.invalidCredentials;
 
   String get noticeTitle => switch (this) {
-        LoginStatus.missingFields => 'Required fields',
-        LoginStatus.invalidCredentials => 'Not signed in',
-        LoginStatus.networkError => 'Unable to connect',
-        _ => '',
-      };
+    LoginStatus.missingFields => 'Required fields',
+    LoginStatus.invalidCredentials => 'Not signed in',
+    LoginStatus.networkError => 'Unable to connect',
+    _ => '',
+  };
 
   String get noticeMessage => switch (this) {
-        LoginStatus.missingFields => 'Enter both your username and password.',
-        LoginStatus.invalidCredentials =>
-          'Username or password is wrong. Check both and try again.',
-        LoginStatus.networkError =>
-          'Connection problem. Check your network and retry.',
-        _ => '',
-      };
+    LoginStatus.missingFields => 'Enter both your username and password.',
+    LoginStatus.invalidCredentials =>
+      'Username or password is wrong. Check both and try again.',
+    LoginStatus.networkError =>
+      'Connection problem. Check your network and retry.',
+    _ => '',
+  };
 }

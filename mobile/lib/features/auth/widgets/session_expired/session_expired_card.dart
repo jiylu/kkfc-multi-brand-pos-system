@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/theme_context.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+
 import 'session_expired_copy.dart';
 import 'session_expired_layout.dart';
 import 'session_expired_motion.dart';
@@ -27,7 +28,9 @@ class SessionExpiredCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final semantic = context.semanticColors;
-    final inner = compact ? SessionExpiredLayout.gapLg : SessionExpiredLayout.gapXl;
+    final inner = compact
+        ? SessionExpiredLayout.gapLg
+        : SessionExpiredLayout.gapXl;
 
     return FadeTransition(
       opacity: motion.cardIn,
@@ -64,12 +67,16 @@ class SessionExpiredCard extends StatelessWidget {
                     const SizedBox(height: SessionExpiredLayout.gapXs),
                     Semantics(
                       header: true,
-                      child: Text(sessionExpiredTitle,
-                          style: KkfcTypography.headline),
+                      child: Text(
+                        sessionExpiredTitle,
+                        style: KkfcTypography.headline,
+                      ),
                     ),
                     const SizedBox(height: SessionExpiredLayout.gapSm),
-                    Text(sessionExpiredBody(itemLabel),
-                        style: KkfcTypography.body),
+                    Text(
+                      sessionExpiredBody(itemLabel),
+                      style: KkfcTypography.body,
+                    ),
                     const SizedBox(height: SessionExpiredLayout.gapLg),
                     ScaleTransition(
                       scale: motion.pillPop,
@@ -85,13 +92,17 @@ class SessionExpiredCard extends StatelessWidget {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.check_rounded,
-                                  size: KkfcSizing.iconSm,
-                                  color: semantic.success.fg),
+                              Icon(
+                                Icons.check_rounded,
+                                size: KkfcSizing.iconSm,
+                                color: semantic.success.fg,
+                              ),
                               const SizedBox(width: SessionExpiredLayout.gapSm),
                               Expanded(
-                                child: Text(cartPreservedLabel(itemLabel),
-                                    style: KkfcTypography.label),
+                                child: Text(
+                                  cartPreservedLabel(itemLabel),
+                                  style: KkfcTypography.label,
+                                ),
                               ),
                             ],
                           ),
@@ -107,8 +118,10 @@ class SessionExpiredCard extends StatelessWidget {
                         ),
                         child: FilledButton(
                           onPressed: onSignIn,
-                          child: Text(signInAgainLabel,
-                              style: KkfcTypography.labelLg),
+                          child: Text(
+                            signInAgainLabel,
+                            style: KkfcTypography.labelLg,
+                          ),
                         ),
                       ),
                     ),

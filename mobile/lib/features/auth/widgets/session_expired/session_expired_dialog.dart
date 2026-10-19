@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:mobile/app/theme/tokens.dart';
+
 import 'session_expired_card.dart';
 import 'session_expired_copy.dart';
 import 'session_expired_layout.dart';
@@ -67,10 +68,14 @@ class _SessionExpiredDialogState extends State<SessionExpiredDialog>
           return Center(
             child: Padding(
               padding: EdgeInsets.all(
-                  compact ? SessionExpiredLayout.gapMd : SessionExpiredLayout.gapXl),
+                compact
+                    ? SessionExpiredLayout.gapMd
+                    : SessionExpiredLayout.gapXl,
+              ),
               child: ConstrainedBox(
-                constraints:
-                    BoxConstraints(maxWidth: SessionExpiredLayout.dialogMaxWidth),
+                constraints: BoxConstraints(
+                  maxWidth: SessionExpiredLayout.dialogMaxWidth,
+                ),
                 child: SingleChildScrollView(
                   child: SessionExpiredCard(
                     motion: _motion,
@@ -103,9 +108,9 @@ Future<void> showSessionExpiredDialog(
     transitionDuration: KkfcMotion.fast,
     pageBuilder: (context, animation, secondaryAnimation) =>
         SessionExpiredDialog(
-      preservedItemCount: preservedItemCount,
-      onSignIn: onSignIn,
-    ),
+          preservedItemCount: preservedItemCount,
+          onSignIn: onSignIn,
+        ),
     transitionBuilder: (context, animation, secondaryAnimation, child) =>
         FadeTransition(opacity: animation, child: child),
   );

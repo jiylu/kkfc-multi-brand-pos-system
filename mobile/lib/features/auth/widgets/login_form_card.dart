@@ -51,14 +51,18 @@ class LoginFormCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('STAFF SIGN IN',
-                    style: text.labelSmall?.copyWith(color: scheme.primary)),
+                Text(
+                  'STAFF SIGN IN',
+                  style: text.labelSmall?.copyWith(color: scheme.primary),
+                ),
                 const SizedBox(height: LoginLayout.gapXs),
                 Text('Welcome back', style: text.headlineMedium),
                 const SizedBox(height: LoginLayout.gapXs),
                 Text(
                   'Sign in with your own staff account.',
-                  style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                  style: text.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: LoginLayout.gapLg),
                 LoginTextField(
@@ -82,24 +86,36 @@ class LoginFormCard extends StatelessWidget {
                 ),
                 LoginNotice(status: status),
                 const SizedBox(height: LoginLayout.gapLg),
-                LoginSubmitButton(isLoading: status.isSubmitting, onPressed: onSubmit),
+                LoginSubmitButton(
+                  isLoading: status.isSubmitting,
+                  onPressed: onSubmit,
+                ),
                 const SizedBox(height: LoginLayout.gapMd),
                 Center(
                   child: Text(
                     'Your actions are recorded under your account.',
                     textAlign: TextAlign.center,
-                    style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    style: text.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 const SizedBox(height: LoginLayout.gapLg),
-                Divider(height: LoginLayout.borderWidth, color: scheme.outlineVariant),
+                Divider(
+                  height: LoginLayout.borderWidth,
+                  color: scheme.outlineVariant,
+                ),
                 const SizedBox(height: LoginLayout.gapMd),
-                Text('SECURE STAFF WORKSPACE',
-                    style: text.labelSmall?.copyWith(color: scheme.primary)),
+                Text(
+                  'SECURE STAFF WORKSPACE',
+                  style: text.labelSmall?.copyWith(color: scheme.primary),
+                ),
                 const SizedBox(height: LoginLayout.gapXs),
                 Text(
                   'One account per person · Sign out before switching staff.',
-                  style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                  style: text.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),

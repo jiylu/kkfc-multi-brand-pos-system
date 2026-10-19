@@ -60,7 +60,9 @@ class _NoticeBox extends StatelessWidget {
             children: [
               Text(
                 status.noticeTitle,
-                style: text.titleSmall?.copyWith(color: scheme.onErrorContainer),
+                style: text.titleSmall?.copyWith(
+                  color: scheme.onErrorContainer,
+                ),
               ),
               const SizedBox(height: LoginLayout.gapXs),
               Text(

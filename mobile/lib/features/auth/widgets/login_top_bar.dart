@@ -29,7 +29,9 @@ class LoginTopBar extends StatelessWidget {
               Text(
                 'STAFF ACCESS · GC / AI / KK',
                 style: text.labelMedium?.copyWith(
-                  color: scheme.onPrimary.withValues(alpha: LoginLayout.softAlpha),
+                  color: scheme.onPrimary.withValues(
+                    alpha: LoginLayout.softAlpha,
+                  ),
                 ),
               ),
           ],
