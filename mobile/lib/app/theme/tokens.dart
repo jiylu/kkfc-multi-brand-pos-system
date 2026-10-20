@@ -38,6 +38,7 @@ abstract final class KkfcSizing {
   static const iconSm = 20.0;
   static const iconMd = 24.0;
   static const iconLg = 32.0;
+  static const iconXl = 48.0;
   static const appBar = 64.0;
   static const navRail = 80.0;
   static const row = 56.0;
@@ -49,6 +50,8 @@ abstract final class KkfcSizing {
 abstract final class KkfcMotion {
   static const fast = Duration(milliseconds: 100);
   static const base = Duration(milliseconds: 200);
+  static const slow = Duration(milliseconds: 400);
+  static const stagger = Duration(milliseconds: 120);
   static const undo = Duration(milliseconds: 5000);
   static const toast = Duration(milliseconds: 4000);
 }
@@ -57,6 +60,8 @@ abstract final class KkfcOpacity {
   static const hover = 0.08;
   static const pressed = 0.10;
   static const scrim = 0.50;
+  static const soft = 0.72;
+  static const line = 0.20;
 }
 
 abstract final class KkfcKitchen {

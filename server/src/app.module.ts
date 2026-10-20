@@ -8,6 +8,8 @@ import { StorageModule } from './shared/storage/storage.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BrandsModule } from './modules/brands/brands.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { OrdersModule } from './modules/orders/orders.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { BrandsModule } from './modules/brands/brands.module';
     UsersModule,
     AuthModule,
     BrandsModule,
+    AuditModule,
+    OrdersModule,
   ],
   controllers: [],
   providers: [
