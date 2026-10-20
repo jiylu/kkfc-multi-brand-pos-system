@@ -1,0 +1,214 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:mobile/features/auth/data/repository/auth_repository.dart';
+import 'package:mobile/features/auth/data/models/login_status.dart';
+import 'package:mobile/features/auth/providers/session_provider.dart';
+import 'package:mobile/features/auth/presentation/widgets/brand_panel.dart';
+import 'package:mobile/features/auth/presentation/widgets/fade_slide_in.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_form_card.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_layout.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_top_bar.dart';
+import 'package:mobile/features/auth/presentation/widgets/session_expired/session_expired_dialog.dart';
+import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
+import 'package:mobile/app/theme/theme_context.dart';
+
+class LoginScreen extends ConsumerStatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _username = TextEditingController();
+  final _password = TextEditingController();
+  LoginStatus _status = LoginStatus.idle;
+  bool _expiredDialogShown = false;
+
+  @override
+  void dispose() {
+    _username.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  void _clearNotice() {
+    if (_status.hasNotice) setState(() => _status = LoginStatus.idle);
+  }
+
+  /// The 401 interceptor flags the expiry before the router lands here, so
+  /// this runs from build (initial check) and from the listener (later flips).
+  void _maybeShowSessionExpired() {
+    if (_expiredDialogShown || !ref.read(sessionExpiredProvider)) return;
+    _expiredDialogShown = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showSessionExpiredDialog(
+        context,
+        preservedItemCount: 0,
+        onSignIn: () {
+          Navigator.of(context).pop();
+          ref.read(sessionExpiredProvider.notifier).set(false);
+        },
+      );
+    });
+  }
+
+  Future<void> _submit() async {
+    if (_status.isSubmitting) return;
+    FocusScope.of(context).unfocus();
+
+    if (_username.text.trim().isEmpty || _password.text.isEmpty) {
+      setState(() => _status = LoginStatus.missingFields);
+      return;
+    }
+
+    setState(() => _status = LoginStatus.submitting);
+
+    try {
+      final token = await ref
+          .read(authRepositoryProvider)
+          .login(username: _username.text.trim(), password: _password.text);
+
+      // Holding the token flips sessionProvider, which the router watches,
+      // so the redirect to AppRoutes.orders happens on its own.
+      if (!mounted) return;
+      ref.read(sessionTokenProvider.notifier).setToken(token);
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _status = switch (e.kind) {
+          AuthFailure.invalidCredentials => LoginStatus.invalidCredentials,
+          AuthFailure.network ||
+          AuthFailure.unexpected => LoginStatus.networkError,
+        };
+      });
+    } catch (_) {
+      // Never leave the form stuck on the spinner.
+      if (!mounted) return;
+      setState(() => _status = LoginStatus.networkError);
+    }
+  }
+
+  Widget _form() => LoginFormCard(
+    usernameController: _username,
+    passwordController: _password,
+    status: _status,
+    onSubmit: _submit,
+    onEdited: _clearNotice,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<bool>(sessionExpiredProvider, (_, expired) {
+      if (expired) _maybeShowSessionExpired();
+    });
+    _maybeShowSessionExpired();
+
+    final compact = LoginLayout.isCompact(context);
+    final theme = Theme.of(context);
+
+    final footer = Text(
+      'Shared device · Sign out after your shift.',
+      textAlign: compact ? TextAlign.center : TextAlign.start,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+
+    return KkfcScaffold(
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            height: LoginLayout.focusBorderWidth,
+            color: context.semanticColors.highlights,
+          ),
+          const LoginTopBar(),
+          Expanded(child: compact ? _buildCompact(footer) : _buildWide(footer)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompact(Widget footer) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const FadeSlideIn(child: BrandPanel(compact: true)),
+          Padding(
+            padding: const EdgeInsets.all(LoginLayout.gapMd),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: LoginLayout.formMaxWidth,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FadeSlideIn(delay: LoginLayout.stagger, child: _form()),
+                    const SizedBox(height: LoginLayout.gapLg),
+                    FadeSlideIn(delay: LoginLayout.stagger * 2, child: footer),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWide(Widget footer) {
+    const padding = EdgeInsets.all(LoginLayout.gapXl);
+
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: padding,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: math.max(0.0, constraints.maxHeight - padding.vertical),
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: LoginLayout.maxContentWidth,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Expanded(
+                          flex: 6,
+                          child: FadeSlideIn(child: BrandPanel(compact: false)),
+                        ),
+                        const SizedBox(width: LoginLayout.gapLg),
+                        Expanded(
+                          flex: 5,
+                          child: FadeSlideIn(
+                            delay: LoginLayout.stagger,
+                            child: _form(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: LoginLayout.gapLg),
+                  FadeSlideIn(delay: LoginLayout.stagger * 2, child: footer),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
