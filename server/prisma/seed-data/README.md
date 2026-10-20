@@ -55,7 +55,7 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 - Rows refer to each other by `code`; the seed creates UUIDs and resolves codes.
 - Each recipe has a `brand_code`, resolved into its required `brand_id`. There are 8 GC, 9 AI and 5 KK recipes. Cooked rice and yangnyeom production recipes belong to GC; the other production recipes belong to AI. Inventory items remain shared across brands.
 - `brands.code` needs #84.
-- `logo_url` uses `images.example.invalid` on purpose: it never loads, so the app shows its missing-photo fallback.
+- Menu item `img_url` uses `images.example.invalid` on purpose: it never loads, so the app shows its missing-photo fallback.
 - `quantity_on_hand` stays 0 (no stock movements in Sprint 1).
 - Packaging items are listed for Sprint 2 receiving; recipes don't consume them yet.
 - Test users and brand assignments are maintained in `prisma/seed-test.ts`.

@@ -214,7 +214,7 @@ Table menu_items {
   menu_item_id uuid [pk]
   brand_id uuid [not null, ref: > brands.brand_id]
   recipe_id uuid [ref: > recipes.recipe_id]
-  menu_item_url varchar(2048)
+  img_url varchar(2048) [not null]
   code varchar(64) [unique, not null]
   name varchar(150) [not null]
   description varchar(2000)

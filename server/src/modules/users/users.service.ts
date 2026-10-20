@@ -15,6 +15,7 @@ import { assertExists } from '../../shared/assertions/assert-exists';
 import { assertValidPagination } from '../../shared/assertions/assert-valid-pagination';
 import { isUUID } from 'class-validator';
 
+// TODO: REFACTOR YUNG ISSUPERADMIN, GAWING ASSERTION NALANG.
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);

@@ -1181,7 +1181,7 @@
       "description": "Fried rice with kimchi and gochujang",
       "serving_description": "1 bowl",
       "base_price": 189,
-      "logo_url": "https://images.example.invalid/menu-items/gc-kimchi-fried-rice.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-kimchi-fried-rice.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1214,7 +1214,7 @@
       "description": "Rice bowl with vegetables, egg and gochujang",
       "serving_description": "1 bowl",
       "base_price": 229,
-      "logo_url": "https://images.example.invalid/menu-items/gc-bibimbap.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-bibimbap.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1247,7 +1247,7 @@
       "description": "Rice cakes in spicy gochujang sauce",
       "serving_description": "1 plate",
       "base_price": 159,
-      "logo_url": "https://images.example.invalid/menu-items/gc-tteokbokki.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-tteokbokki.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1280,7 +1280,7 @@
       "description": "Double-fried wings with yangnyeom side sauce",
       "serving_description": "6 pieces with side sauce",
       "base_price": 220,
-      "logo_url": "https://images.example.invalid/menu-items/gc-korean-fried-chicken-6-pc.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-korean-fried-chicken-6-pc.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1313,7 +1313,7 @@
       "description": "Glass noodles with vegetables",
       "serving_description": "1 plate",
       "base_price": 179,
-      "logo_url": "https://images.example.invalid/menu-items/gc-japchae.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-japchae.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1346,7 +1346,7 @@
       "description": "Shaved ice with mango (seasonal)",
       "serving_description": "1 bowl",
       "base_price": 199,
-      "logo_url": "https://images.example.invalid/menu-items/gc-mango-bingsu.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-mango-bingsu.jpg",
       "is_active": false,
       "channels": [
         {
@@ -1379,7 +1379,7 @@
       "description": "Grilled chicken leg quarter, inasal style",
       "serving_description": "1 leg quarter with rice",
       "base_price": 179,
-      "logo_url": "https://images.example.invalid/menu-items/ai-paa-inasal.jpg",
+      "img_url": "https://images.example.invalid/menu-items/ai-paa-inasal.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1412,7 +1412,7 @@
       "description": "Grilled chicken breast, inasal style",
       "serving_description": "1 breast with rice",
       "base_price": 189,
-      "logo_url": "https://images.example.invalid/menu-items/ai-pecho-inasal.jpg",
+      "img_url": "https://images.example.invalid/menu-items/ai-pecho-inasal.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1445,7 +1445,7 @@
       "description": "Grilled pork belly, inasal style",
       "serving_description": "1 serving with rice",
       "base_price": 199,
-      "logo_url": "https://images.example.invalid/menu-items/ai-pork-inasal.jpg",
+      "img_url": "https://images.example.invalid/menu-items/ai-pork-inasal.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1478,7 +1478,7 @@
       "description": "Miki noodles in pork broth with chicharon",
       "serving_description": "1 bowl",
       "base_price": 145,
-      "logo_url": "https://images.example.invalid/menu-items/ai-batchoy-special.jpg",
+      "img_url": "https://images.example.invalid/menu-items/ai-batchoy-special.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1511,7 +1511,7 @@
       "description": "Shaved ice with mixed sweets and milk",
       "serving_description": "1 glass",
       "base_price": 109,
-      "logo_url": "https://images.example.invalid/menu-items/ai-halo-halo.jpg",
+      "img_url": "https://images.example.invalid/menu-items/ai-halo-halo.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1544,7 +1544,7 @@
       "description": "Espresso with hot water",
       "serving_description": "12 oz",
       "base_price": 120,
-      "logo_url": "https://images.example.invalid/menu-items/kk-americano.jpg",
+      "img_url": "https://images.example.invalid/menu-items/kk-americano.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1577,7 +1577,7 @@
       "description": "Espresso, milk and condensed milk over ice",
       "serving_description": "16 oz",
       "base_price": 160,
-      "logo_url": "https://images.example.invalid/menu-items/kk-iced-spanish-latte.jpg",
+      "img_url": "https://images.example.invalid/menu-items/kk-iced-spanish-latte.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1610,7 +1610,7 @@
       "description": "Matcha with milk over ice",
       "serving_description": "16 oz",
       "base_price": 170,
-      "logo_url": "https://images.example.invalid/menu-items/kk-matcha-latte.jpg",
+      "img_url": "https://images.example.invalid/menu-items/kk-matcha-latte.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1643,7 +1643,7 @@
       "description": "Triple-decker with ham, egg and vegetables",
       "serving_description": "1 sandwich",
       "base_price": 195,
-      "logo_url": "https://images.example.invalid/menu-items/kk-clubhouse-sandwich.jpg",
+      "img_url": "https://images.example.invalid/menu-items/kk-clubhouse-sandwich.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1676,7 +1676,7 @@
       "description": "Ube pandesal with cheese filling",
       "serving_description": "3 pieces",
       "base_price": 95,
-      "logo_url": "https://images.example.invalid/menu-items/kk-ube-cheese-pandesal-3-pc.jpg",
+      "img_url": "https://images.example.invalid/menu-items/kk-ube-cheese-pandesal-3-pc.jpg",
       "is_active": true,
       "channels": [
         {
