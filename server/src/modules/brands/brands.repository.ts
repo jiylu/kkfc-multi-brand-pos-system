@@ -1,40 +1,23 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateBrandDTO } from './dto/create-brand.dto';
-import { Prisma, UserRole } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
 
 @Injectable()
 export class BrandsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createBrand(dto: CreateBrandDTO, ownerId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const brand = await tx.brand.create({
-        data: { name: dto.name, code: dto.code, logo_url: dto.logo_url },
-      });
-
-      const { count } = await tx.user.updateMany({
-        where: {
-          user_id: ownerId,
-          role: UserRole.OWNER,
-          brand_id: null,
-          is_active: true,
-        },
-        data: {
-          brand_id: brand.brand_id,
-          modified_at: new Date(),
-        },
-      });
-
-      if (count === 0) {
-        throw new ConflictException({
-          code: 'OWNER_CANNOT_CREATE_BRAND',
-          message: 'The user must be an active owner with no existing brand.',
-        });
-      }
-
-      return brand;
+  async createBrand(
+    dto: CreateBrandDTO,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.brand.create({
+      data: {
+        name: dto.name,
+        code: dto.code,
+        logo_url: dto.logo_url,
+      },
     });
   }
 

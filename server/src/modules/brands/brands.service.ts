@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { BrandsRepository } from './brands.repository';
 import { CreateBrandDTO } from './dto/create-brand.dto';
 import { assertExists } from '../../shared/assertions/assert-exists';
@@ -16,29 +11,9 @@ export class BrandsService {
   private readonly logger = new Logger(BrandsService.name);
   constructor(private readonly brandsRepository: BrandsRepository) {}
 
-  async create(dto: CreateBrandDTO, callerId: string, isSuperAdmin = false) {
+  async create(dto: CreateBrandDTO) {
     this.logger.log(`Creating new brand ${dto.name}`);
-
-    if (
-      !isSuperAdmin &&
-      dto.owner_id !== undefined &&
-      dto.owner_id !== callerId
-    ) {
-      throw new ForbiddenException({
-        code: 'ACCESS_DENIED',
-        message: 'You can only create a brand for yourself.',
-      });
-    }
-
-    const ownerId = isSuperAdmin ? dto.owner_id : callerId;
-    if (ownerId == null) {
-      throw new BadRequestException({
-        code: 'MISSING_OWNER_ID',
-        message: 'Owner ID is required when a superadmin creates a brand.',
-      });
-    }
-
-    const brand = await this.brandsRepository.createBrand(dto, ownerId);
+    const brand = await this.brandsRepository.createBrand(dto);
 
     this.logger.log(
       `Created new brand ${brand.name} with brand_id ${brand.brand_id}`,
