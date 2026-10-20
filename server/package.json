@@ -15,6 +15,7 @@
     "db:migrate:dev": "dotenv -e .env.development -- prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:seed:test": "ts-node prisma/seed-test.ts",
+    "db:seed:check": "ts-node -P prisma/tsconfig.seed.json prisma/seed.check.ts",
     "prebuild": "npm run prisma:generate",
     "prestart": "npm run prisma:generate",
     "prestart:dev": "npm run prisma:generate",

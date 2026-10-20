@@ -9,5 +9,10 @@
     "strictNullChecks": true,
     "types": ["node"]
   },
-  "include": ["seed.ts", "../src/database/database.config.ts"]
+  "include": [
+    "seed.ts",
+    "seed-test.ts",
+    "seed.check.ts",
+    "../src/database/database.config.ts"
+  ]
 }

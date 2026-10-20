@@ -28,10 +28,7 @@ export class UsersService {
   ) {
     this.logger.log(`Creating ${dto.role} user ${dto.first_name}`);
 
-    if (
-      !isSuperAdmin &&
-      (dto.role === UserRole.OWNER || dto.role === UserRole.SUPERADMIN)
-    ) {
+    if (!isSuperAdmin && dto.role === UserRole.SUPERADMIN) {
       throw new ForbiddenException({
         code: 'CANNOT_CREATE_PRIVILEGED_ACCOUNT',
         message: 'You are not authorized to create this role.',
@@ -52,11 +49,7 @@ export class UsersService {
       });
     }
 
-    if (
-      dto.brand_id == null &&
-      dto.role !== UserRole.OWNER &&
-      dto.role !== UserRole.SUPERADMIN
-    ) {
+    if (dto.brand_id == null && dto.role !== UserRole.SUPERADMIN) {
       this.logger.warn(`Brand ID missing for role.`);
 
       throw new BadRequestException({
@@ -179,9 +172,7 @@ export class UsersService {
     if (
       !isSuperAdmin &&
       user.user_id !== callerId &&
-      (user.role === UserRole.OWNER ||
-        user.role === UserRole.SUPERADMIN ||
-        dto.password !== undefined)
+      (user.role === UserRole.SUPERADMIN || dto.password !== undefined)
     ) {
       throw new ForbiddenException({
         code: 'ACCESS_DENIED',

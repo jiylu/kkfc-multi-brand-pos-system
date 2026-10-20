@@ -58,12 +58,14 @@ enum OrderStatus {
 }
 
 enum UserRole {
-  ORDER_STAFF
-  KITCHEN_PREPARER
-  INVENTORY_STAFF
-  KITCHEN_HEAD
-  OWNER
   SUPERADMIN
+  MANAGER
+  RECIPE_MANAGER
+  SUPERVISOR
+  KITCHEN_HEAD
+  INVENTORY_STAFF
+  KITCHEN_STAFF
+  CASHIER_STAFF
 
   @@map("user_roles")
 }
@@ -218,6 +220,7 @@ model Brand {
   users_brand      User[]     @relation("UserBrand")
   orders_brand     Order[]    @relation("OrderBrand")
   menu_items_brand MenuItem[] @relation("MenuItemBrand")
+  recipes_brand    Recipe[]   @relation("RecipeBrand")
 
   @@map("brands")
 }
@@ -533,8 +536,10 @@ model StockMovement {
 }
 
 /// MENU_ASSEMBLY: components per serving. PRODUCTION: components per standard batch, with an output inventory item and expected yield.
+/// Brand-owned; backend reads and writes must enforce the authenticated user's brand access.
 model Recipe {
   recipe_id                String     @id @default(uuid()) @db.Uuid
+  brand_id                 String     @db.Uuid
   code                     String     @db.VarChar(64)
   name                     String     @db.VarChar(150)
   type                     RecipeType
@@ -549,6 +554,7 @@ model Recipe {
   created_at               DateTime   @default(now()) @db.Timestamp(6)
   modified_at              DateTime   @default(now()) @db.Timestamp(6)
 
+  brand                      Brand             @relation("RecipeBrand", fields: [brand_id], references: [brand_id], onDelete: NoAction, onUpdate: NoAction)
   output_inventory_item      InventoryItem?    @relation("RecipeOutputInventoryItem", fields: [output_inventory_item_id], references: [inventory_item_id], onDelete: NoAction, onUpdate: NoAction)
   menu_items_recipe          MenuItem[]        @relation("MenuItemRecipe")
   recipe_components_recipe   RecipeComponent[] @relation("RecipeComponentRecipe")
@@ -556,6 +562,7 @@ model Recipe {
   order_items_applied_recipe OrderItem[]       @relation("OrderItemAppliedRecipe")
 
   @@unique([code, version])
+  @@index([brand_id, is_active])
   @@map("recipes")
 }
 
