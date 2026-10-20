@@ -18,7 +18,7 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('KKFC POS API')
     .setVersion('1.0')
-    //.addBearerAuth()
+    .addBearerAuth()
     .build();
   SwaggerModule.setup('api/docs', app, () =>
     SwaggerModule.createDocument(app, swaggerConfig),
