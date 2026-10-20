@@ -27,30 +27,6 @@ class MenuHeader extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
-    final brand = OutlinedButton.icon(
-      // TODO: open the "Choose assigned brand" dialog.
-      onPressed: () {},
-      icon: const Icon(Icons.expand_more),
-      iconAlignment: IconAlignment.end,
-      label: const Text("Aurelia's Inasal"),
-    );
-
-    final user = Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text('Ana R.', style: text.labelLarge),
-        Text('Order staff',
-            style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
-      ],
-    );
-
-    final logoutButton = IconButton(
-      tooltip: 'Logout',
-      icon: const Icon(Icons.logout),
-      onPressed: () => _signOut(ref),
-    );
-
     final themedBrand = OutlinedButton.icon(
       onPressed: () {},
       icon: Icon(Icons.expand_more, color: scheme.onInverseSurface),

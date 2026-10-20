@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/features/menu/presentation/menu_layout.dart';
 
 const _destinations = [
   (icon: Icons.add_shopping_cart_outlined, selected: Icons.add_shopping_cart, label: 'New order'),
@@ -13,17 +14,24 @@ class MenuRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final label = Theme.of(context).textTheme.labelMedium!;
+    final onDark = scheme.onInverseSurface;
 
     return NavigationRail(
       backgroundColor: scheme.inverseSurface,
+      indicatorColor: onDark,
       selectedIndex: 0,
       labelType: NavigationRailLabelType.all,
+      // Pushes the whole destination group down. The pill moves with the
+      // icons because nothing is translated or padded inside the icons.
+      leading: const SizedBox(height: MenuSpace.xxl),
       // TODO: route between tabs once Orders / Audit screens exist.
       onDestinationSelected: (_) {},
       selectedIconTheme: IconThemeData(color: scheme.inverseSurface),
-      unselectedIconTheme: IconThemeData(color: scheme.onInverseSurface),
-      selectedLabelTextStyle: TextStyle(color: scheme.onInverseSurface),
-      unselectedLabelTextStyle: TextStyle(color: scheme.onInverseSurface.withValues(alpha: 0.7)),
+      unselectedIconTheme: IconThemeData(color: onDark.withValues(alpha: 0.7)),
+      selectedLabelTextStyle: label.copyWith(color: onDark),
+      unselectedLabelTextStyle:
+          label.copyWith(color: onDark.withValues(alpha: 0.7)),
       destinations: [
         for (final d in _destinations)
           NavigationRailDestination(
@@ -42,26 +50,28 @@ class MenuBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final label = Theme.of(context).textTheme.labelMedium!;
+    final onDark = scheme.onInverseSurface;
 
     return NavigationBar(
       backgroundColor: scheme.inverseSurface,
-      indicatorColor: scheme.onInverseSurface.withValues(alpha: 0.12),
+      indicatorColor: onDark.withValues(alpha: 0.12),
       selectedIndex: 0,
       onDestinationSelected: (_) {},
       destinations: [
         for (final d in _destinations)
           NavigationDestination(
-            icon: Icon(d.icon, color: scheme.onInverseSurface.withValues(alpha: 0.7)),
-            selectedIcon: Icon(d.selected, color: scheme.onInverseSurface),
+            icon: Icon(d.icon, color: onDark.withValues(alpha: 0.7)),
+            selectedIcon: Icon(d.selected, color: onDark),
             label: d.label,
             tooltip: d.label,
           ),
       ],
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return TextStyle(color: scheme.onInverseSurface);
-        }
-        return TextStyle(color: scheme.onInverseSurface.withValues(alpha: 0.7));
+        final selected = states.contains(WidgetState.selected);
+        return label.copyWith(
+          color: selected ? onDark : onDark.withValues(alpha: 0.7),
+        );
       }),
     );
   }
