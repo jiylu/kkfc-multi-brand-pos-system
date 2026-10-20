@@ -8,6 +8,8 @@ Library           String
 ${API_BASE_URL}           %{API_BASE_URL=http://localhost:3000}
 ${TEST_OWNER_USER}        %{TEST_OWNER_USER=test_owner}
 ${TEST_OWNER_PASS}        %{TEST_OWNER_PASS=Password123!}
+${TEST_UNASSIGNED_OWNER_USER}    %{TEST_UNASSIGNED_OWNER_USER=test_owner_unassigned}
+${TEST_UNASSIGNED_OWNER_PASS}    %{TEST_UNASSIGNED_OWNER_PASS=Password123!}
 ${TEST_STAFF_USER}        %{TEST_STAFF_USER=test_order_staff}
 ${TEST_STAFF_PASS}        %{TEST_STAFF_PASS=Password123!}
 

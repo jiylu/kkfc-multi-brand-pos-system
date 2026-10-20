@@ -15,8 +15,31 @@ permissions:
   contents: read
 
 jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for backend modifications
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'server/**'
+              - 'robot/**'
+              - 'features/**'
+              - '!features/mobile/**'
+              - '.github/workflows/ci.yml'
+
   unit-tests:
     name: Stage 1 - Unit Tests (UT) & Build
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -38,18 +61,30 @@ jobs:
       - name: Generate Prisma client
         run: npm run prisma:generate
 
-      - name: Run ESLint
-        run: npm run lint
+      - name: Run ESLint (check only)
+        run: npm run lint:check
+
+      - name: Check formatting (Prettier)
+        run: npm run format:check
 
       - name: Run Jest Unit Tests
         run: npm run test:unit
+
+      - name: Upload Unit Test HTML report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: server/reports/unit/
+          if-no-files-found: warn
 
       - name: Build backend application
         run: npm run build
 
   integration-tests:
     name: Stage 2 - Integration Tests (IT)
-    needs: unit-tests
+    needs: [detect-changes, unit-tests]
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -95,9 +130,18 @@ jobs:
           DATABASE_URL: postgresql://pos_test_user:pos_test_password@localhost:5432/pos_test
         run: npm run test:integration
 
+      - name: Upload Integration Test HTML report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: server/reports/integration/
+          if-no-files-found: warn
+
   e2e-robot-tests:
     name: Stage 3 - Robot Framework E2E Tests (E2E)
-    needs: integration-tests
+    needs: [detect-changes, integration-tests]
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -177,12 +221,18 @@ jobs:
 
   ci:
     name: CI
-    needs: [unit-tests, integration-tests, e2e-robot-tests]
+    needs: [detect-changes, unit-tests, integration-tests, e2e-robot-tests]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Verify QA Automation Pipeline Completion
         run: |
+          if [ "${{ needs.detect-changes.outputs.backend }}" != "true" ]; then
+            echo "No backend or QA test files were modified. Backend pipeline skipped."
+            echo "QA Pipeline Success: Mobile-only change satisfied branch protection."
+            exit 0
+          fi
+
           if [ "${{ needs.unit-tests.result }}" != "success" ] || \
              [ "${{ needs.integration-tests.result }}" != "success" ] || \
              [ "${{ needs.e2e-robot-tests.result }}" != "success" ]; then

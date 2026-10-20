@@ -1,0 +1,13 @@
+# Set default behavior for all files
+* text=auto
+
+# Enforce LF line endings across all OS platforms (crucial for Dart/Flutter formatter and POSIX tools)
+*.dart text eol=lf
+*.ts text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.robot text eol=lf
+*.resource text eol=lf
+*.feature text eol=lf

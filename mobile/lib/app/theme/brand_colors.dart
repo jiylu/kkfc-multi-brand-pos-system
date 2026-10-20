@@ -2,10 +2,22 @@ import 'package:flutter/material.dart';
 
 enum KkfcBrand {
   gamcheon(code: 'GC', displayName: 'Gamcheon', accent: Color(0xFF3D5A80)),
-  aurelias(code: 'AI', displayName: "Aurelia's Inasal", accent: Color(0xFF9A4A1F)),
-  kingKungs(code: 'KK', displayName: 'King Kungs Kafé', accent: Color(0xFF5C4033));
+  aurelias(
+    code: 'AI',
+    displayName: "Aurelia's Inasal",
+    accent: Color(0xFF9A4A1F),
+  ),
+  kingKungs(
+    code: 'KK',
+    displayName: 'King Kungs Kafé',
+    accent: Color(0xFF5C4033),
+  );
 
-  const KkfcBrand({required this.code, required this.displayName, required this.accent});
+  const KkfcBrand({
+    required this.code,
+    required this.displayName,
+    required this.accent,
+  });
 
   final String code;
   final String displayName;
@@ -25,9 +37,9 @@ class KkfcBrandColors extends ThemeExtension<KkfcBrandColors> {
 
   @override
   KkfcBrandColors copyWith({Color? accent, Color? onAccent}) => KkfcBrandColors(
-        accent: accent ?? this.accent,
-        onAccent: onAccent ?? this.onAccent,
-      );
+    accent: accent ?? this.accent,
+    onAccent: onAccent ?? this.onAccent,
+  );
 
   @override
   KkfcBrandColors lerp(ThemeExtension<KkfcBrandColors>? other, double t) {

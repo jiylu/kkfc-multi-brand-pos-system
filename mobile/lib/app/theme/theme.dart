@@ -6,8 +6,13 @@ import 'status_colors.dart';
 import 'typography.dart';
 import 'tokens.dart';
 
-ThemeData _buildTheme(ColorScheme scheme, KkfcSemanticColors semantic, KkfcStatusColors status) {
-  OutlineInputBorder inputBorder(Color color, double width) => OutlineInputBorder(
+ThemeData _buildTheme(
+  ColorScheme scheme,
+  KkfcSemanticColors semantic,
+  KkfcStatusColors status,
+) {
+  OutlineInputBorder inputBorder(Color color, double width) =>
+      OutlineInputBorder(
         borderRadius: BorderRadius.circular(KkfcRadius.md),
         borderSide: BorderSide(color: color, width: width),
       );
@@ -28,7 +33,9 @@ ThemeData _buildTheme(ColorScheme scheme, KkfcSemanticColors semantic, KkfcStatu
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         minimumSize: const Size(0, KkfcSizing.controlMd),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KkfcRadius.md)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(KkfcRadius.md),
+        ),
       ),
     ),
   );
