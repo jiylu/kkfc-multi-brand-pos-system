@@ -136,7 +136,7 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
                         duration: context.motion(MenuMotion.fast),
                         layoutBuilder: (current, previous) => Stack(
                           alignment: Alignment.centerLeft,
-                          children: [...previous, if (current != null) current],
+                          children: [...previous, ?current],
                         ),
                         child: Text(price,
                             key: ValueKey(price),
