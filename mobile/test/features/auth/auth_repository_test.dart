@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/core/config/app_config.dart';
-import 'package:mobile/features/auth/data/auth_repository.dart';
+import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 
 class _FakeTokenStore extends TokenStore {
   String? written;

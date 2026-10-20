@@ -7,17 +7,17 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/core/auth/token_store.dart';
-import 'package:mobile/features/auth/data/auth_repository.dart';
-import 'package:mobile/features/auth/domain/login_status.dart';
+import 'package:mobile/features/auth/data/repository/auth_repository.dart';
+import 'package:mobile/features/auth/data/models/login_status.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
-import 'package:mobile/features/auth/screens/login_screen.dart';
-import 'package:mobile/features/auth/widgets/brand_panel.dart';
-import 'package:mobile/features/auth/widgets/login_form_card.dart';
-import 'package:mobile/features/auth/widgets/login_notice.dart';
-import 'package:mobile/features/auth/widgets/login_submit_button.dart';
-import 'package:mobile/features/auth/widgets/login_text_field.dart';
-import 'package:mobile/features/auth/widgets/session_expired/session_expired_copy.dart';
-import 'package:mobile/features/auth/widgets/session_expired/session_expired_dialog.dart';
+import 'package:mobile/features/auth/presentation/pages/login_screen.dart';
+import 'package:mobile/features/auth/presentation/widgets/brand_panel.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_form_card.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_notice.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_submit_button.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_text_field.dart';
+import 'package:mobile/features/auth/presentation/widgets/session_expired/session_expired_copy.dart';
+import 'package:mobile/features/auth/presentation/widgets/session_expired/session_expired_dialog.dart';
 
 // Tall surfaces so nothing needs scrolling to be tapped.
 const _phone = Size(412, 1400);

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/theme_context.dart';
-import 'package:mobile/features/auth/domain/login_status.dart';
-import 'package:mobile/features/auth/widgets/login_layout.dart';
-import 'package:mobile/features/auth/widgets/login_notice.dart';
-import 'package:mobile/features/auth/widgets/login_submit_button.dart';
-import 'package:mobile/features/auth/widgets/login_text_field.dart';
+import 'package:mobile/features/auth/data/models/login_status.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_layout.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_notice.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_submit_button.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_text_field.dart';
 
 class LoginFormCard extends StatelessWidget {
   const LoginFormCard({

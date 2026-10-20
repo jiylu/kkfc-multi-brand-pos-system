@@ -26,8 +26,7 @@ class AuthRepository {
   /// 200 `{token, expires_at, user}` |
   /// 401 `{code: 'INVALID_CREDENTIALS', message}`.
   ///
-  /// Returns the session token on success. Throws [AuthException] with the
-  /// matching [AuthFailure] kind otherwise.
+  /// Returns the session token on success. Throws [AuthException] with the matching [AuthFailure] kind otherwise.
   Future<String> login({
     required String username,
     required String password,
@@ -50,7 +49,7 @@ class AuthRepository {
     }
   }
 
-  /// Ends the server session (best effort) and clears the stored token.
+  /// Ends the server session and clears the stored token.
   ///
   /// Contract: POST /auth/logout `Authorization: Bearer <token>` -> 204.
   ///

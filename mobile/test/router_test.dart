@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/features/auth/screens/login_screen.dart';
+import 'package:mobile/features/auth/presentation/pages/login_screen.dart';
 
 import 'package:mobile/app/app.dart';
 

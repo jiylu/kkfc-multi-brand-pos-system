@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/auth/widgets/brand_strip.dart';
-import 'package:mobile/features/auth/widgets/login_layout.dart';
+import 'package:mobile/features/auth/presentation/widgets/brand_strip.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_layout.dart';
 
 class BrandPanel extends StatelessWidget {
   const BrandPanel({super.key, required this.compact});

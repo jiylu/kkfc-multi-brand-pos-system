@@ -3,15 +3,15 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:mobile/features/auth/data/auth_repository.dart';
-import 'package:mobile/features/auth/domain/login_status.dart';
+import 'package:mobile/features/auth/data/repository/auth_repository.dart';
+import 'package:mobile/features/auth/data/models/login_status.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
-import 'package:mobile/features/auth/widgets/brand_panel.dart';
-import 'package:mobile/features/auth/widgets/fade_slide_in.dart';
-import 'package:mobile/features/auth/widgets/login_form_card.dart';
-import 'package:mobile/features/auth/widgets/login_layout.dart';
-import 'package:mobile/features/auth/widgets/login_top_bar.dart';
-import 'package:mobile/features/auth/widgets/session_expired/session_expired_dialog.dart';
+import 'package:mobile/features/auth/presentation/widgets/brand_panel.dart';
+import 'package:mobile/features/auth/presentation/widgets/fade_slide_in.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_form_card.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_layout.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_top_bar.dart';
+import 'package:mobile/features/auth/presentation/widgets/session_expired/session_expired_dialog.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/app/theme/theme_context.dart';
 

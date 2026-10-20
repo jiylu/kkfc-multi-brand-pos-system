@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/auth/widgets/login_layout.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_layout.dart';
 
 class BrandStrip extends StatelessWidget {
   const BrandStrip({super.key});

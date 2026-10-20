@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mobile/app/theme/theme.dart';
-import 'package:mobile/features/auth/widgets/session_expired/session_expired_copy.dart';
-import 'package:mobile/features/auth/widgets/session_expired/session_expired_dialog.dart';
+import 'package:mobile/features/auth/presentation/widgets/session_expired/session_expired_copy.dart';
+import 'package:mobile/features/auth/presentation/widgets/session_expired/session_expired_dialog.dart';
 
 const _phone = Size(412, 900);
 

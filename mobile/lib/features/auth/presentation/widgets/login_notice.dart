@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/auth/domain/login_status.dart';
-import 'package:mobile/features/auth/widgets/login_layout.dart';
+import 'package:mobile/features/auth/data/models/login_status.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_layout.dart';
 
 /// Banner that grows in and fades between messages.
 class LoginNotice extends StatelessWidget {

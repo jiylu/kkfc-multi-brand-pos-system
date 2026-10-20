@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/features/auth/domain/login_status.dart';
+import 'package:mobile/features/auth/data/models/login_status.dart';
 
 void main() {
   group('LoginStatus', () {
