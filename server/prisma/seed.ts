@@ -29,6 +29,18 @@ interface SeedRecipe {
   components: { inventory_item_code: string; quantity: number }[];
 }
 
+interface SeedMenuItem {
+  code: string;
+  brand_code: string;
+  recipe_code: string;
+  name: string;
+  description: string | null;
+  serving_description: string | null;
+  base_price: number;
+  img_url: string;
+  is_active: boolean;
+}
+
 function loadSeedData() {
   const raw = readFileSync(
     join(__dirname, 'seed-data', 'kkfc-sprint1-seed-data.json'),
@@ -38,6 +50,7 @@ function loadSeedData() {
     brands: SeedBrand[];
     inventory_items: Prisma.InventoryItemCreateManyInput[];
     recipes: SeedRecipe[];
+    menu_items: SeedMenuItem[];
   };
 
   for (const brand of data.brands) {
@@ -57,7 +70,7 @@ function loadSeedData() {
 }
 
 export async function seedDatabase(prisma: Prisma.TransactionClient) {
-  const { brands, inventory_items, recipes } = loadSeedData();
+  const { brands, inventory_items, recipes, menu_items } = loadSeedData();
 
   const brandIds = new Map<string, string>();
   for (const brand of brands) {
@@ -82,7 +95,7 @@ export async function seedDatabase(prisma: Prisma.TransactionClient) {
   }
 
   console.log(`Seeded brands: ${brands.map((b) => b.code).join(', ')}`);
-  await seedUsers(prisma, brandIds.get(brands[0].code)!);
+  await seedUsers(prisma, brandIds);
 
   const inventoryIds = new Map<string, string>();
   for (const item of inventory_items) {
@@ -109,6 +122,10 @@ export async function seedDatabase(prisma: Prisma.TransactionClient) {
     return id;
   }
 
+  const recipeIds = new Map<
+    string,
+    { recipe_id: string; brand_id: string; type: RecipeType }
+  >();
   for (const recipe of recipes) {
     const brand_id = brandIds.get(recipe.brand_code);
     if (!brand_id) {
@@ -132,6 +149,7 @@ export async function seedDatabase(prisma: Prisma.TransactionClient) {
       update: { ...data, modified_at: new Date() },
       create: { ...data, is_active: recipe.is_active },
     });
+    recipeIds.set(recipe.code, saved);
 
     for (const component of recipe.components) {
       const inventory_item_id = inventoryId(component.inventory_item_code);
@@ -155,6 +173,41 @@ export async function seedDatabase(prisma: Prisma.TransactionClient) {
   console.log(
     `Seeded ${inventory_items.length} inventory items and ${recipes.length} recipes with their components.`,
   );
+
+  for (const item of menu_items) {
+    const brand_id = brandIds.get(item.brand_code);
+    if (!brand_id) {
+      throw new Error(
+        `Unknown brand code in menu seed data: ${item.brand_code}`,
+      );
+    }
+    const recipe = recipeIds.get(item.recipe_code);
+    if (
+      !recipe ||
+      recipe.brand_id !== brand_id ||
+      recipe.type !== RecipeType.MENU_ASSEMBLY
+    ) {
+      throw new Error(
+        `Menu item ${item.code} must reference an assembly recipe in its brand: ${item.recipe_code}`,
+      );
+    }
+    const data = {
+      code: item.code,
+      brand_id,
+      recipe_id: recipe.recipe_id,
+      name: item.name,
+      description: item.description,
+      serving_description: item.serving_description,
+      base_price: item.base_price,
+      img_url: item.img_url,
+    };
+    await prisma.menuItem.upsert({
+      where: { code: item.code },
+      update: { ...data, modified_at: new Date() },
+      create: { ...data, is_active: item.is_active },
+    });
+  }
+  console.log(`Seeded ${menu_items.length} menu items.`);
 }
 
 async function main() {

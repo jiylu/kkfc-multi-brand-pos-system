@@ -43,6 +43,24 @@ class BrandAccessController {
     return { ok: true };
   }
 
+  @Get('brand-resources/:id')
+  @BrandResource(BrandResourceType.BRAND, 'id')
+  brand() {
+    return { ok: true };
+  }
+
+  @Get('orders/:id')
+  @BrandResource(BrandResourceType.ORDER, 'id')
+  order() {
+    return { ok: true };
+  }
+
+  @Get('recipes/:id')
+  @BrandResource(BrandResourceType.RECIPE, 'id')
+  recipe() {
+    return { ok: true };
+  }
+
   @Get('missing-identifier')
   @BrandResource(BrandResourceType.MENU_ITEM, 'identifier')
   missingIdentifier() {
@@ -75,7 +93,10 @@ describe('BrandsGuard HTTP access', () => {
     'Content-Type': 'application/json',
   };
   const prisma = {
+    brand: { findUnique: jest.fn() },
     menuItem: { findUnique: jest.fn() },
+    order: { findUnique: jest.fn() },
+    recipe: { findUnique: jest.fn() },
     user: { findUnique: jest.fn() },
   };
   const auth = { validateSession: jest.fn() };
@@ -94,6 +115,9 @@ describe('BrandsGuard HTTP access', () => {
       code: 'staff',
       codeField: 'username',
     },
+    { path: 'brand-resources', model: 'brand', idField: 'brand_id' },
+    { path: 'orders', model: 'order', idField: 'order_id' },
+    { path: 'recipes', model: 'recipe', idField: 'recipe_id' },
   ] as const;
   let app: INestApplication;
   let url: string;
@@ -149,7 +173,7 @@ describe('BrandsGuard HTTP access', () => {
     },
   );
 
-  it.each(resources)(
+  it.each(resources.filter((resource) => 'code' in resource))(
     'resolves $model by its code or username',
     async ({ path, model, code, codeField }) => {
       expect((await fetch(`${url}/${path}/${code}`, { headers })).status).toBe(
@@ -210,7 +234,7 @@ describe('BrandsGuard HTTP access', () => {
     },
   );
 
-  it.each(resources)(
+  it.each(resources.filter((resource) => resource.model !== 'order'))(
     'does not filter inactive $model records',
     async ({ path, model, idField }) => {
       prisma[model].findUnique.mockResolvedValue({
@@ -226,6 +250,30 @@ describe('BrandsGuard HTTP access', () => {
       });
     },
   );
+
+  it.each(resources.filter((resource) => !('code' in resource)))(
+    'rejects invalid UUIDs for $model before querying',
+    async ({ path, model }) => {
+      expect((await fetch(`${url}/${path}/invalid`, { headers })).status).toBe(
+        400,
+      );
+      expect(prisma[model].findUnique).not.toHaveBeenCalled();
+    },
+  );
+
+  it('checks cancelled orders by brand without imposing order-status rules', async () => {
+    prisma.order.findUnique.mockResolvedValue({
+      brand_id: brandId,
+      status: 'CANCELLED',
+    });
+    expect(
+      (await fetch(`${url}/orders/${resourceId}`, { headers })).status,
+    ).toBe(200);
+    expect(prisma.order.findUnique).toHaveBeenCalledWith({
+      where: { order_id: resourceId },
+      select: { brand_id: true },
+    });
+  });
 
   it('does not treat two unassigned users as sharing a brand', async () => {
     prisma.user.findUnique.mockResolvedValue({ brand_id: null });

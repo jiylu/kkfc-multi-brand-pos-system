@@ -1,7 +1,6 @@
 import { Logger } from '@nestjs/common';
-import { Prisma, UserRole } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { BrandsRepository } from '../../../brands/brands.repository';
-import { UsersRepository } from '../../../users/users.repository';
 import { MenuItemsRepository } from '../menu-items.repository';
 import { MenuItemsService } from '../menu-items.service';
 
@@ -30,17 +29,6 @@ describe('MenuItemsService mutations', () => {
     created_at: now,
     modified_at: now,
   };
-  const user = {
-    user_id: 'caller-id',
-    username: 'staff',
-    first_name: 'Test',
-    last_name: 'Staff',
-    role: UserRole.CASHIER_STAFF,
-    brand_id: brand.brand_id,
-    is_active: true,
-    created_at: now,
-    modified_at: now,
-  };
   const dto = { name: 'Updated' };
   const methods = [
     'updateMenuItem',
@@ -57,7 +45,6 @@ describe('MenuItemsService mutations', () => {
     >
   >;
   let brands: jest.Mocked<Pick<BrandsRepository, 'findOneBrand'>>;
-  let users: jest.Mocked<Pick<UsersRepository, 'findOne'>>;
   let service: MenuItemsService;
 
   beforeEach(() => {
@@ -77,11 +64,9 @@ describe('MenuItemsService mutations', () => {
         .mockResolvedValue({ ...item, is_active: false }),
     };
     brands = { findOneBrand: jest.fn().mockResolvedValue(brand) };
-    users = { findOne: jest.fn().mockResolvedValue(user) };
     service = new MenuItemsService(
       menu as unknown as MenuItemsRepository,
       brands as unknown as BrandsRepository,
-      users as unknown as UsersRepository,
     );
   });
 
@@ -92,7 +77,7 @@ describe('MenuItemsService mutations', () => {
       return service.updateMenuItem(item.menu_item_id, dto);
     if (method === 'reactivateMenuItem')
       return service.reactivateMenuItem(item.menu_item_id);
-    return service.deleteMenuItem(item.menu_item_id, user.user_id);
+    return service.deleteMenuItem(item.menu_item_id);
   }
 
   it.each(methods)(
@@ -100,9 +85,9 @@ describe('MenuItemsService mutations', () => {
     async (method) => {
       const result = await run(method);
       expect(menu.findOneMenuItemByUID.mock.calls[0]).toEqual(
-        method === 'updateMenuItem'
-          ? [item.menu_item_id]
-          : [item.menu_item_id, method !== 'reactivateMenuItem'],
+        method === 'reactivateMenuItem'
+          ? [item.menu_item_id, false]
+          : [item.menu_item_id],
       );
       expect(menu[method].mock.calls[0]).toEqual(
         method === 'updateMenuItem'
@@ -119,20 +104,6 @@ describe('MenuItemsService mutations', () => {
     },
   );
 
-  it.each([UserRole.CASHIER_STAFF, UserRole.MANAGER])(
-    'deleteMenuItem blocks %s callers assigned to another brand',
-    async (role) => {
-      const method = 'deleteMenuItem';
-      users.findOne.mockResolvedValue({
-        ...user,
-        role,
-        brand_id: 'other-brand',
-      });
-      await expect(run(method)).rejects.toMatchObject({ status: 403 });
-      expect(menu[method]).not.toHaveBeenCalled();
-    },
-  );
-
   it.each(methods)(
     '%s rejects a missing item without writing',
     async (method) => {
@@ -145,15 +116,6 @@ describe('MenuItemsService mutations', () => {
     },
   );
 
-  it('deleteMenuItem rejects a missing brand or caller without writing', async () => {
-    const method = 'deleteMenuItem';
-    brands.findOneBrand.mockResolvedValueOnce(null);
-    await expect(run(method)).rejects.toMatchObject({ status: 404 });
-    users.findOne.mockResolvedValue(null);
-    await expect(run(method)).rejects.toMatchObject({ status: 404 });
-    expect(menu[method]).not.toHaveBeenCalled();
-  });
-
   it.each(methods)('%s preserves repository failures', async (method) => {
     const error = new Prisma.PrismaClientKnownRequestError(
       'Item state changed',
@@ -163,13 +125,14 @@ describe('MenuItemsService mutations', () => {
     await expect(run(method)).rejects.toBe(error);
   });
 
-  it('allows superadmin deletion across brands', async () => {
-    users.findOne.mockResolvedValue({
-      ...user,
-      role: UserRole.SUPERADMIN,
-      brand_id: 'other-brand',
+  it('rejects reactivating an already-active item without writing', async () => {
+    menu.findOneMenuItemByUID.mockResolvedValue(item);
+    await expect(
+      service.reactivateMenuItem(item.menu_item_id),
+    ).rejects.toMatchObject({
+      status: 409,
+      response: { code: 'MENU_ITEM_ALREADY_ACTIVE' },
     });
-    await run('deleteMenuItem');
-    expect(menu.deleteMenuItem).toHaveBeenCalledTimes(1);
+    expect(menu.reactivateMenuItem).not.toHaveBeenCalled();
   });
 });

@@ -1,12 +1,10 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { MenuItemsRepository } from './menu-items.repository';
 import { BrandsRepository } from '../../brands/brands.repository';
 import { CreateMenuItemDTO } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDTO } from './dto/update-menu-item.dto';
 import { assertExists } from '../../../shared/assertions/assert-exists';
 import { isUUID } from 'class-validator';
-import { UsersRepository } from '../../users/users.repository';
-import { MenuItem, User, UserRole } from '@prisma/client';
 import { FindAllMenuItemsDTO } from './dto/find-all-menu-items.dto';
 import { assertValidPagination } from '../../../shared/assertions/assert-valid-pagination';
 
@@ -17,7 +15,6 @@ export class MenuItemsService {
   constructor(
     private readonly menuItemsRepository: MenuItemsRepository,
     private readonly brandsRepository: BrandsRepository,
-    private readonly usersRepository: UsersRepository,
   ) {}
 
   async createMenuItem(dto: CreateMenuItemDTO) {
@@ -33,7 +30,6 @@ export class MenuItemsService {
 
   async findOneMenuItem(
     codeOrMenuId: string | { menu_item_id: string },
-    callerId: string,
     activeOnly = true,
   ) {
     const identifier =
@@ -56,23 +52,6 @@ export class MenuItemsService {
 
     const brand = await this.brandsRepository.findOneBrand(menuItem.brand_id);
     assertExists(brand, 'Brand', menuItem.brand_id, this.logger);
-
-    const user = await this.usersRepository.findOne(callerId);
-    assertExists(user, 'User', callerId, this.logger);
-
-    if (
-      !this.isSuperAdmin(user) &&
-      !this.isUserAssignedToBrand(user, menuItem)
-    ) {
-      this.logger.warn(
-        `User ${user.user_id} has no access to menu item ${menuItem.menu_item_id}`,
-      );
-
-      throw new ForbiddenException({
-        code: 'MENU_ITEM_ACCESS_FORBIDDEN',
-        message: 'You are not allowed to view this menu item.',
-      });
-    }
 
     this.logger.log(`MenuItem ${menuItem.menu_item_id} found`);
     return menuItem;
@@ -166,37 +145,37 @@ export class MenuItemsService {
       menuItemId,
       false,
     );
+
     assertExists(menuItem, 'MenuItem', menuItemId, this.logger);
+
+    if (menuItem.is_active) {
+      this.logger.debug(`Menu item ${menuItemId} is already active.`);
+
+      throw new ConflictException({
+        code: 'MENU_ITEM_ALREADY_ACTIVE',
+        message: 'Menu item is still active',
+      });
+    }
 
     const reactivated = await this.menuItemsRepository.reactivateMenuItem(
       menuItem.menu_item_id,
     );
+
     this.logger.log(`Reactivated menu item ${menuItem.menu_item_id}`);
     return reactivated;
   }
 
-  async deleteMenuItem(menuItemId: string, callerId: string) {
+  async deleteMenuItem(menuItemId: string) {
     this.logger.debug(`Deactivating menu item ${menuItemId}`);
-    const menuItem = await this.findOneMenuItem(
-      { menu_item_id: menuItemId },
-      callerId,
-    );
+    const menuItem =
+      await this.menuItemsRepository.findOneMenuItemByUID(menuItemId);
+    assertExists(menuItem, 'MenuItem', menuItemId, this.logger);
 
     const deleted = await this.menuItemsRepository.deleteMenuItem(
       menuItem.menu_item_id,
     );
+
     this.logger.log(`Deactivated menu item ${menuItem.menu_item_id}`);
     return deleted;
-  }
-
-  private isSuperAdmin(user: Omit<User, 'password_hash'>) {
-    return user.role === UserRole.SUPERADMIN;
-  }
-
-  private isUserAssignedToBrand(
-    user: Omit<User, 'password_hash'>,
-    menuItem: MenuItem,
-  ) {
-    return user.brand_id === menuItem.brand_id;
   }
 }

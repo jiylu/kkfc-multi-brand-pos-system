@@ -10,6 +10,7 @@ async function check() {
   const inventory = new Map();
   const recipes = new Map();
   const components = new Map();
+  const menuItems = new Map();
 
   function upsert(rows: Map<string, any>, key: string, args: any, id: string) {
     const previous = rows.get(key);
@@ -21,6 +22,17 @@ async function check() {
   }
 
   const database = {
+    menuItem: {
+      upsert: async (args: Prisma.MenuItemUpsertArgs) => {
+        const recipe = [...recipes.values()].find(
+          (row) => row.recipe_id === args.create.recipe_id,
+        );
+        assert(recipe);
+        assert.equal(recipe.brand_id, args.create.brand_id);
+        assert.equal(recipe.type, 'MENU_ASSEMBLY');
+        return upsert(menuItems, args.where.code!, args, 'menu_item_id');
+      },
+    },
     user: {
       upsert: async (args: Prisma.UserUpsertArgs) =>
         upsert(users, args.where.username!, args, 'user_id'),
@@ -80,22 +92,44 @@ async function check() {
 
   await seedDatabase(database);
   assert.equal(brands.size, 3);
-  assert.equal(users.size, 9);
+  assert.equal(users.size, 11);
   for (const user of [...TEST_USERS, TEST_UNASSIGNED_OWNER]) {
     const saved = users.get(user.username);
     assert.equal(saved.role, user.role);
     assert(await argon2.verify(saved.password_hash, user.password));
     assert.equal(saved.password, undefined);
+    assert.equal(saved.brand_code, undefined);
     assert.equal(
       saved.brand_id,
-      user === TEST_UNASSIGNED_OWNER || user.role === UserRole.SUPERADMIN
-        ? null
-        : brands.get('GC').brand_id,
+      user.brand_code === null ? null : brands.get(user.brand_code).brand_id,
+    );
+  }
+  for (const brand of brands.values()) {
+    assert.equal(
+      [...users.values()].filter(
+        (user) =>
+          user.role === UserRole.MANAGER && user.brand_id === brand.brand_id,
+      ).length,
+      1,
     );
   }
   assert.equal(inventory.size, 51);
   assert.equal(recipes.size, 22);
   assert.equal(components.size, 83);
+  assert.equal(menuItems.size, 25);
+  assert.equal(menuItems.get('GC-MANGO-BINGSU').is_active, false);
+  for (const [code, count] of [
+    ['GC', 9],
+    ['AI', 8],
+    ['KK', 8],
+  ] as const) {
+    assert.equal(
+      [...menuItems.values()].filter(
+        (item) => item.brand_id === brands.get(code).brand_id,
+      ).length,
+      count,
+    );
+  }
   for (const [code, count] of [
     ['GC', 8],
     ['AI', 9],
@@ -123,8 +157,16 @@ async function check() {
   const componentIds = [...components.values()].map(
     (row) => row.recipe_component_id,
   );
+  const menuIds = [...menuItems.values()].map((row) => row.menu_item_id);
+  menuItems.get('GC-KIMCHI-FRIED-RICE').is_active = false;
   await seedDatabase(database);
-  assert.equal(users.size, 9);
+  assert.equal(menuItems.size, 25);
+  assert.deepEqual(
+    [...menuItems.values()].map((row) => row.menu_item_id),
+    menuIds,
+  );
+  assert.equal(menuItems.get('GC-KIMCHI-FRIED-RICE').is_active, false);
+  assert.equal(users.size, 11);
   assert.deepEqual(
     [brands.size, inventory.size, recipes.size, components.size],
     counts,
@@ -147,7 +189,7 @@ async function check() {
   assert.equal(
     new Set([...TEST_USERS, TEST_UNASSIGNED_OWNER].map((user) => user.username))
       .size,
-    9,
+    11,
   );
   console.log(
     `Seed checks passed: ${components.size} valid component links, brand ownership, stable reruns, preserved stock, and all roles covered.`,

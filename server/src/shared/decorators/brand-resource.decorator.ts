@@ -3,7 +3,10 @@ import { SetMetadata } from '@nestjs/common';
 export const BRAND_RESOURCE_KEY = 'brand-resource';
 
 export enum BrandResourceType {
+  BRAND = 'brand',
   MENU_ITEM = 'menuItem',
+  ORDER = 'order',
+  RECIPE = 'recipe',
   USER = 'user',
 }
 

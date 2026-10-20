@@ -65,6 +65,18 @@ export class BrandsGuard implements CanActivate {
       }
 
       switch (source.resource) {
+        case BrandResourceType.BRAND: {
+          if (!isUUID(identifier)) {
+            throw new BadRequestException('Brand ID must be a valid UUID.');
+          }
+          const brand = await this.prisma.brand.findUnique({
+            where: { brand_id: identifier },
+            select: { brand_id: true },
+          });
+          assertExists(brand, 'Brand', identifier);
+          brandId = brand.brand_id;
+          break;
+        }
         case BrandResourceType.MENU_ITEM: {
           const menuItem = await this.prisma.menuItem.findUnique({
             where: isUUID(identifier)
@@ -74,6 +86,30 @@ export class BrandsGuard implements CanActivate {
           });
           assertExists(menuItem, 'MenuItem', identifier);
           brandId = menuItem.brand_id;
+          break;
+        }
+        case BrandResourceType.ORDER: {
+          if (!isUUID(identifier)) {
+            throw new BadRequestException('Order ID must be a valid UUID.');
+          }
+          const order = await this.prisma.order.findUnique({
+            where: { order_id: identifier },
+            select: { brand_id: true },
+          });
+          assertExists(order, 'Order', identifier);
+          brandId = order.brand_id;
+          break;
+        }
+        case BrandResourceType.RECIPE: {
+          if (!isUUID(identifier)) {
+            throw new BadRequestException('Recipe ID must be a valid UUID.');
+          }
+          const recipe = await this.prisma.recipe.findUnique({
+            where: { recipe_id: identifier },
+            select: { brand_id: true },
+          });
+          assertExists(recipe, 'Recipe', identifier);
+          brandId = recipe.brand_id;
           break;
         }
         case BrandResourceType.USER: {

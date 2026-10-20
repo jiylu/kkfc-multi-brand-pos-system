@@ -1,0 +1,392 @@
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
+import { Test } from '@nestjs/testing';
+import { UserRole } from '@prisma/client';
+import { Authenticated } from '../../../auth/auth.guard';
+import { AuthService } from '../../../auth/auth.service';
+import { AllExceptionsFilter } from '../../../../shared/filters/all-exceptions.filter';
+import { PrismaExceptionFilter } from '../../../../shared/filters/prisma-exception.filter';
+import { BrandsGuard } from '../../../../shared/guards/brands.guard';
+import { RolesGuard } from '../../../../shared/guards/roles.guard';
+import { PrismaService } from '../../../../shared/prisma/prisma.service';
+import { MenuItemsController } from '../menu-items.controller';
+import { MenuItemsService } from '../menu-items.service';
+
+describe('Menu items HTTP endpoints', () => {
+  const brandId = '00000000-0000-4000-8000-000000000001';
+  const otherBrandId = '00000000-0000-4000-8000-000000000002';
+  const menuId = '00000000-0000-4000-8000-000000000003';
+  const recipeId = '00000000-0000-4000-8000-000000000004';
+  const code = 'GC-KIMCHI-RICE';
+  const headers = {
+    Authorization: 'Bearer test-session',
+    'Content-Type': 'application/json',
+  };
+  const create = {
+    brand_id: brandId,
+    recipe_id: recipeId,
+    img_url: 'https://example.com/rice.jpg',
+    code,
+    name: 'Kimchi Rice',
+    base_price: 189.5,
+  };
+  const service = {
+    createMenuItem: jest.fn(),
+    findOneMenuItem: jest.fn(),
+    findAll: jest.fn(),
+    findAllByBrand: jest.fn(),
+    updateMenuItem: jest.fn(),
+    reactivateMenuItem: jest.fn(),
+    deleteMenuItem: jest.fn(),
+  };
+  const prisma = { menuItem: { findUnique: jest.fn() } };
+  const auth = { validateSession: jest.fn() };
+  const mutations = [
+    {
+      verb: 'POST',
+      path: '',
+      handler: 'createMenuItem',
+      body: create,
+      status: 201,
+    },
+    {
+      verb: 'PATCH',
+      path: `/${menuId}`,
+      handler: 'updateMenuItem',
+      body: { name: 'Updated' },
+      status: 200,
+    },
+    {
+      verb: 'PATCH',
+      path: `/reactivate/${menuId}`,
+      handler: 'reactivateMenuItem',
+      body: undefined,
+      status: 200,
+    },
+    {
+      verb: 'DELETE',
+      path: `/${menuId}`,
+      handler: 'deleteMenuItem',
+      body: undefined,
+      status: 200,
+    },
+  ] as const;
+  const reads = [
+    {
+      verb: 'GET',
+      path: `/${menuId}`,
+      handler: 'findOneMenuItem',
+      body: undefined,
+    },
+    {
+      verb: 'GET',
+      path: `/brand/${brandId}`,
+      handler: 'findAllByBrand',
+      body: undefined,
+    },
+  ] as const;
+  let app: INestApplication;
+  let url: string;
+  let role: UserRole;
+  let callerBrand: string | null;
+
+  beforeAll(async () => {
+    const module = await Test.createTestingModule({
+      controllers: [MenuItemsController],
+      providers: [
+        Authenticated,
+        RolesGuard,
+        BrandsGuard,
+        { provide: AuthService, useValue: auth },
+        { provide: PrismaService, useValue: prisma },
+        { provide: MenuItemsService, useValue: service },
+        { provide: APP_FILTER, useClass: AllExceptionsFilter },
+        { provide: APP_FILTER, useClass: PrismaExceptionFilter },
+      ],
+    }).compile();
+    app = module.createNestApplication();
+    app.useLogger(false);
+    app.setGlobalPrefix('api');
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+    await app.listen(0, '127.0.0.1');
+    url = `${await app.getUrl()}/api/menu-items`;
+  });
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    role = UserRole.MANAGER;
+    callerBrand = brandId;
+    auth.validateSession.mockImplementation(() =>
+      Promise.resolve({ user: { role, brand_id: callerBrand } }),
+    );
+    prisma.menuItem.findUnique.mockImplementation(
+      ({ where }: { where: { menu_item_id?: string; code?: string } }) =>
+        Promise.resolve(
+          where.menu_item_id === menuId || where.code === code
+            ? { brand_id: brandId }
+            : null,
+        ),
+    );
+    for (const handler of Object.values(service))
+      handler.mockResolvedValue({ ok: true });
+  });
+
+  afterAll(async () => app?.close());
+
+  it.each(mutations)(
+    'delegates $verb $path for an assigned manager',
+    async ({ verb, path, handler, body, status }) => {
+      const response = await fetch(url + path, {
+        method: verb,
+        headers,
+        body: JSON.stringify(body),
+      });
+      expect(response.status).toBe(status);
+      expect(await response.json()).toEqual({ ok: true });
+      if (handler === 'createMenuItem')
+        expect(service[handler]).toHaveBeenCalledWith(create);
+      else if (handler === 'updateMenuItem')
+        expect(service[handler]).toHaveBeenCalledWith(menuId, body);
+      else expect(service[handler]).toHaveBeenCalledWith(menuId);
+    },
+  );
+
+  it.each(mutations)(
+    'allows superadmin $verb $path without an assigned brand',
+    async ({ verb, path, handler, body, status }) => {
+      role = UserRole.SUPERADMIN;
+      callerBrand = null;
+      expect(
+        (
+          await fetch(url + path, {
+            method: verb,
+            headers,
+            body: JSON.stringify(body),
+          })
+        ).status,
+      ).toBe(status);
+      expect(service[handler]).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each([...mutations, ...reads])(
+    'requires authentication for $verb $path',
+    async ({ verb, path, handler, body }) => {
+      expect(
+        (
+          await fetch(url + path, {
+            method: verb,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          })
+        ).status,
+      ).toBe(401);
+      expect(service[handler]).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([...mutations, ...reads])(
+    'blocks other-brand and unassigned managers for $verb $path',
+    async ({ verb, path, handler, body }) => {
+      for (const brand of [otherBrandId, null]) {
+        callerBrand = brand;
+        expect(
+          (
+            await fetch(url + path, {
+              method: verb,
+              headers,
+              body: JSON.stringify(body),
+            })
+          ).status,
+        ).toBe(403);
+      }
+      expect(service[handler]).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(
+    Object.values(UserRole).filter(
+      (value) => value !== UserRole.SUPERADMIN && value !== UserRole.MANAGER,
+    ),
+  )('denies mutations to %s', async (callerRole) => {
+    role = callerRole;
+    for (const { verb, path, handler, body } of mutations) {
+      expect(
+        (
+          await fetch(url + path, {
+            method: verb,
+            headers,
+            body: JSON.stringify(body),
+          })
+        ).status,
+      ).toBe(403);
+      expect(service[handler]).not.toHaveBeenCalled();
+    }
+  });
+
+  it('accepts menu-specific update fields and nullable descriptions', async () => {
+    const dto = {
+      code: 'GC-UPDATED-RICE',
+      recipe_id: recipeId,
+      img_url: 'https://example.com/updated.jpg',
+      base_price: 199.5,
+      description: null,
+      serving_description: null,
+    };
+    expect(
+      (
+        await fetch(`${url}/${menuId}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(dto),
+        })
+      ).status,
+    ).toBe(200);
+    expect(service.updateMenuItem).toHaveBeenCalledWith(menuId, dto);
+  });
+
+  it('accepts the schema maximum menu code length', async () => {
+    const dto = { code: 'A'.repeat(64) };
+    expect(
+      (
+        await fetch(`${url}/${menuId}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(dto),
+        })
+      ).status,
+    ).toBe(200);
+    expect(service.updateMenuItem).toHaveBeenCalledWith(menuId, dto);
+  });
+
+  it.each([
+    { base_price: -1 },
+    { base_price: 1.001 },
+    { base_price: 10000000000 },
+    { base_price: null },
+    { base_price: '199.50' },
+    { logo_url: null },
+    { brand_id: brandId },
+    { is_active: false },
+    { code: 'A'.repeat(65) },
+    { name: null },
+    { img_url: 'invalid' },
+    { recipe_id: 'invalid' },
+  ])('rejects invalid or forbidden menu updates: %j', async (dto) => {
+    expect(
+      (
+        await fetch(`${url}/${menuId}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(dto),
+        })
+      ).status,
+    ).toBe(400);
+    expect(service.updateMenuItem).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { verb: 'PATCH', path: `/${code}`, handler: 'updateMenuItem' },
+    {
+      verb: 'PATCH',
+      path: `/reactivate/${code}`,
+      handler: 'reactivateMenuItem',
+    },
+    { verb: 'DELETE', path: `/${code}`, handler: 'deleteMenuItem' },
+  ] as const)(
+    'rejects existing menu codes on UUID-only $verb $path',
+    async ({ verb, path, handler }) => {
+      expect(
+        (
+          await fetch(url + path, {
+            method: verb,
+            headers,
+            body:
+              verb === 'PATCH'
+                ? JSON.stringify({ name: 'Updated' })
+                : undefined,
+          })
+        ).status,
+      ).toBe(400);
+      expect(service[handler]).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([menuId, code])(
+    'accepts %s on GET and forwards activeOnly',
+    async (identifier) => {
+      role = UserRole.CASHIER_STAFF;
+      expect((await fetch(`${url}/${identifier}`, { headers })).status).toBe(
+        200,
+      );
+      expect(service.findOneMenuItem).toHaveBeenLastCalledWith(
+        identifier,
+        true,
+      );
+      expect(
+        (await fetch(`${url}/${identifier}?activeOnly=false`, { headers }))
+          .status,
+      ).toBe(200);
+      expect(service.findOneMenuItem).toHaveBeenLastCalledWith(
+        identifier,
+        false,
+      );
+    },
+  );
+
+  it('returns 404 for a missing resource before invoking the service', async () => {
+    expect(
+      (
+        await fetch(`${url}/unknown-menu`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ name: 'Updated' }),
+        })
+      ).status,
+    ).toBe(404);
+    expect(service.updateMenuItem).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['', { page: 1, limit: 10, activeOnly: true }],
+    [
+      '?page=2&limit=5&activeOnly=false',
+      { page: 2, limit: 5, activeOnly: false },
+    ],
+  ] as const)(
+    'forwards validated pagination to both listing endpoints: %s',
+    async (query, expected) => {
+      expect(
+        (await fetch(`${url}/brand/${brandId}${query}`, { headers })).status,
+      ).toBe(200);
+      expect(service.findAllByBrand).toHaveBeenCalledWith(expected, brandId);
+      role = UserRole.SUPERADMIN;
+      callerBrand = null;
+      expect((await fetch(url + query, { headers })).status).toBe(200);
+      expect(service.findAll).toHaveBeenCalledWith(expected);
+    },
+  );
+
+  it('reserves the all-brands listing for superadmins', async () => {
+    expect((await fetch(url, { headers })).status).toBe(403);
+    expect(service.findAll).not.toHaveBeenCalled();
+    expect((await fetch(url)).status).toBe(401);
+  });
+
+  it.each(['?page=0', '?limit=101', '?activeOnly=invalid'])(
+    'rejects invalid listing filters: %s',
+    async (query) => {
+      role = UserRole.SUPERADMIN;
+      for (const path of ['', `/brand/${brandId}`])
+        expect((await fetch(url + path + query, { headers })).status).toBe(400);
+      expect(service.findAll).not.toHaveBeenCalled();
+      expect(service.findAllByBrand).not.toHaveBeenCalled();
+    },
+  );
+});

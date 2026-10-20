@@ -33,6 +33,7 @@ import { Roles } from '../../shared/decorators/roles.decorator';
 @Controller('users')
 @UsersDocs()
 @UseGuards(Authenticated, RolesGuard)
+@Roles(UserRole.SUPERADMIN)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
