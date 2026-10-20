@@ -125,7 +125,7 @@ Set `DB_HOST=localhost` and configure the remaining database variables in `serve
 
 ## Private File Storage on AWS S3
 
-`StorageService` generates random object keys and five-minute signed upload and download URLs. It does not expose AWS credentials and does not require a public bucket.
+The asset API validates and stores JPG/PNG uploads in private S3 storage. Downloads use five-minute CloudFront signed URLs when `S3_PUBLIC_BASE_URL` is set, otherwise S3 signed URLs. It does not expose AWS credentials and does not require a public bucket.
 
 ### 1. Create and configure the S3 bucket
 
@@ -146,6 +146,7 @@ Use an application role with least-privilege permissions:
 - `s3:DeleteObject`, if needed
 
 Restrict permissions to the intended bucket and the `uploads/*` prefix.
+The asset API uses `s3:PutObject` to upload and `s3:GetObject` for the `HeadObject` existence check when refreshing URLs. CloudFront's OAC permission is separate from the backend's permissions. An S3 `AccessDenied` on the existence check returns `503`; without bucket listing permission, S3 may also return `403` for nonexistent keys.
 
 Prefer an instance or task role in production. For local development, configure an AWS CLI profile and let the AWS SDK use its default credential chain.
 
@@ -162,19 +163,27 @@ S3_BUCKET=your-private-bucket-name
 
 Replace the bucket name with your actual bucket.
 
-### 4. Use signed upload and download URLs
+### 4. Upload image assets
 
-The intended file workflow is:
+`POST /api/assets` accepts `multipart/form-data` with exactly one `file` field and the existing bearer session token. All authenticated users can upload their own assets.
 
-1. The client requests an upload URL from the backend.
-2. The client uploads the file directly to the signed URL using the matching `Content-Type`.
-3. The backend verifies the uploaded object and stores its object key in PostgreSQL.
-4. When a file is requested, the backend checks whether the caller is authorized to access it.
-5. The backend generates a short-lived download URL.
+```powershell
+curl.exe -X POST http://localhost:3000/api/assets `
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" `
+  -F "file=@C:/images/photo.png;type=image/png"
+```
 
-Before exposing endpoints that call `StorageService`, enforce user authorization, file size and type limits, and ownership checks.
+For JPG/JPEG, use `type=image/jpeg`. The API accepts `.jpg`, `.jpeg`, and `.png` only, with matching MIME type and decoded image format. The limit is 5 MiB and 20 megapixels; empty, corrupt, animated, mismatched and unsupported images are rejected. Images are decoded and re-encoded with orientation applied and metadata removed before upload. Processed output is also limited to 5 MiB.
 
-Persist S3 object keys in PostgreSQL. **Do not persist signed URLs**, because they expire.
+A successful `201` response contains `key`, `contentType`, `size` (stored bytes), `width`, `height`, `downloadUrl`, and `expiresIn: 300`. Keys are generated as `uploads/<authenticated-user-id>/<random-uuid>.jpg` (or `.png`); clients cannot choose keys or overwrite assets.
+
+To refresh an expired URL, call `GET /api/assets/download-url?key=<URL-encoded-key>` with the same user's bearer token. The API checks ownership and object existence before returning `{ key, downloadUrl, expiresIn: 300 }`. Other users' assets return `404`. Responses containing signed URLs have `Cache-Control: no-store`.
+
+The S3 object key carries the owner scope, so this standalone asset API does not need a database migration. When associating an asset with a brand, menu item, or another record, persist its key in PostgreSQL and add the appropriate sharing/authorization rules. **Do not persist signed URLs**, because they expire. Assets are owner-only for now; the endpoint does not automatically attach images to business records.
+
+Upload errors: `400` missing file/malformed multipart, `401` missing/invalid session, `413` oversized image, `415` invalid image type/content, `503` storage/signing failure. Swagger documentation is available at `/api/docs`.
+
+The older `createUploadUrl` helper remains internal and is not exposed by this API: uploads pass through backend validation before reaching S3.
 
 ## Optional Custom File Domain
 
@@ -186,13 +195,28 @@ For branded file delivery through `files.accela.moe`, configure CloudFront in fr
 4. Attach an ACM certificate issued in `us-east-1`.
 5. Create the DNS record required by your DNS provider, typically a CNAME pointing to the CloudFront distribution.
 
-Set the following only when implementing CloudFront URL signing or signed cookies:
+6. Create a CloudFront signing key pair. Add the public key to a CloudFront key group, then select that trusted key group under the distribution behavior's **Restrict viewer access** setting. OAC controls origin access; requiring signed URLs also controls viewer access.
+7. Keep the matching private PEM key outside the repository, available only to the backend.
+
+Set the following in `server/.env.development` for local development (or the backend's runtime environment in production):
 
 ```env
+AWS_REGION=ap-southeast-1
+S3_BUCKET=kkfc-db-file-storage
 S3_PUBLIC_BASE_URL=https://files.accela.moe
+CLOUDFRONT_KEY_PAIR_ID=your-cloudfront-public-key-id
+CLOUDFRONT_PRIVATE_KEY_FILE=C:/secure/cloudfront-private.pem
 ```
 
-The included storage service currently returns S3 presigned URLs and does not yet use this setting. Configuring the domain alone will not automatically change its behavior.
+You can use `https://YOUR-DISTRIBUTION.cloudfront.net` instead of a custom domain. Use an HTTPS origin without a path or query string, and leave the CloudFront S3 origin path empty so stored object keys map directly to S3. `CLOUDFRONT_KEY_PAIR_ID` is the CloudFront **public key ID**, not the distribution ID, key group ID, or IAM access key ID. The signing key is separate from your AWS CLI credentials.
+
+Alternatively, supply PEM content through `CLOUDFRONT_PRIVATE_KEY` in your deployment's secret environment; literal `\n` sequences are accepted. This takes precedence over the file setting. Restart the backend after changing configuration. Docker deployments must pass these variables into the container and mount the PEM file read-only at the configured container path.
+
+With `S3_PUBLIC_BASE_URL` set, `createDownloadUrl(key)` returns a five-minute CloudFront signed URL. Missing or invalid signing configuration returns an error and never falls back to S3. The asset API uploads validated images to S3 using backend AWS credentials. Without a CloudFront URL, the existing S3 download behavior is retained.
+
+The storage service is available through `StorageModule` and used by `AssetsModule`. Verify a signed URL downloads an uploaded object, and that removing its signing parameters produces a CloudFront 403. Local signing tests do not verify your distribution's OAC, bucket policy, or trusted key group.
+
+If `files.accela.moe` does not resolve, create its DNS record pointing to your distribution domain and ensure the alternate domain and certificate are configured in CloudFront. Until then, use the distribution's `https://...cloudfront.net` origin. Inline PEM text belongs in `CLOUDFRONT_PRIVATE_KEY`; `CLOUDFRONT_PRIVATE_KEY_FILE` accepts a filesystem path only.
 
 Keep files private unless a deliberate product requirement calls for public access.
 
