@@ -227,6 +227,7 @@ model Brand {
 
 model Order {
   order_id                 String         @id @default(uuid()) @db.Uuid
+  create_request_hash      String?        @db.VarChar(64)
   brand_id                 String         @db.Uuid
   created_by_id            String         @db.Uuid
   order_channel            OrderChannel
@@ -267,6 +268,8 @@ model OrderItem {
   menu_item_id      String  @db.Uuid
   /// Snapshots active recipe version at confirmation for historical BOM integrity
   applied_recipe_id String? @db.Uuid
+  /// Immutable confirmation contents; restricted instructions are not returned by the Order API.
+  recipe_snapshot   Json?   @db.JsonB
   item_name         String  @db.VarChar(150)
   quantity          Int
   unit_price        Decimal @db.Decimal(12, 2)
@@ -646,6 +649,7 @@ model ProductionBatchInput {
 model KitchenTicket {
   kitchen_ticket_id      String              @id @default(uuid()) @db.Uuid
   order_id               String              @unique @db.Uuid
+  /// T- plus a running number, minimum 3 digits; may grow beyond T-99999 (64 characters maximum).
   ticket_number          String              @unique @db.VarChar(64)
   status                 KitchenTicketStatus @default(QUEUED)
   preparer_id            String?             @db.Uuid

@@ -1,7 +1,7 @@
 abstract final class AppConfig {
   static const rawApiUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://localhost:3001',
+    defaultValue: 'http://localhost:3000/api',
   );
   static const env = String.fromEnvironment('ENV', defaultValue: 'dev');
   static String get apiBaseUrl => normalizeApiBaseUrl(rawApiUrl, env: env);
@@ -16,7 +16,7 @@ String normalizeApiBaseUrl(String raw, {required String env}) {
     throw ArgumentError.value(
       raw,
       'API_URL',
-      'must be an absolute URL such as http://localhost:3001',
+      'must be an absolute URL such as http://localhost:3000/api',
     );
   }
   if (uri.scheme != 'http' && uri.scheme != 'https') {
