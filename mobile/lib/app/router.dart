@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/providers/session_provider.dart';
 import '../features/auth/presentation/pages/login_screen.dart';
+import '../features/menu/presentation/pages/menu_screen.dart';
 import '../features/orders/screens/orders_screen.dart';
 import 'routes.dart';
 
@@ -23,6 +24,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         return AppRoutes.login;
       }
       if (isLoggedIn && onLogin) {
+        return AppRoutes.menu;
+      }
+      if (isLoggedIn && onLogin) {
         return AppRoutes.orders;
       }
       return null;
@@ -31,6 +35,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.menu,
+        builder: (context, state) => const MenuScreen(),
       ),
       GoRoute(
         path: AppRoutes.orders,
