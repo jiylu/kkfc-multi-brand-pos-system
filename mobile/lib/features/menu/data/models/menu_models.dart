@@ -1,3 +1,5 @@
+// TODO: PALITA NG ACTUAL PARAMETERS FROM BACKEND
+
 enum MenuChannel {
   dineIn('Dine-in', 'Table reference'),
   takeaway('Takeaway', 'Pickup reference'),
