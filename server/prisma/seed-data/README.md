@@ -62,7 +62,7 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 
 ## Running the seeds
 
-Apply the pending migrations to the intended database, then run `npm run prisma:generate`. The role migration preserves users by mapping OWNER to MANAGER, KITCHEN_PREPARER to KITCHEN_STAFF and ORDER_STAFF to CASHIER_STAFF. The recipe migration backfills brands from menu items only when ownership is unambiguous; existing recipes without an unambiguous menu brand need explicit backfill mappings in that migration before it can succeed.
+Apply the pending migrations to the intended database, then run `npm run prisma:generate`. The role migration preserves users by mapping OWNER to SUPERADMIN, KITCHEN_PREPARER to KITCHEN_STAFF and ORDER_STAFF to CASHIER_STAFF. The recipe migration backfills brands from menu items only when ownership is unambiguous; existing recipes without an unambiguous menu brand need explicit backfill mappings in that migration before it can succeed.
 
 - `npm run db:seed` upserts 3 brands, 9 users covering all 8 roles, 51 inventory items, 22 recipes and their recipe components in one transaction. Codes (and recipe versions) keep IDs stable on reruns. Existing stock balances and inactive catalog records stay unchanged. Seed users use `Password123!`; reruns reset their passwords and activate their accounts. Use this seed only in development or test databases.
 - `npm run db:seed:test` creates or updates one user for each of the 8 roles, plus an unassigned manager. Test users use `Password123!`; this script resets their passwords and activates their accounts on reruns. Use it only in a development or test database.
