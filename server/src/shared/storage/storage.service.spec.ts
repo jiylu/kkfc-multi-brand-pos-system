@@ -34,6 +34,8 @@ describe('StorageService (UT-SHRD)', () => {
     mockedGetSignedUrl.mockResolvedValue('https://signed.example.com/object');
   });
 
+  afterEach(() => jest.restoreAllMocks());
+
   it('UT-SHRD-011: generates a 5-minute presigned PutObject upload URL with normalized extension', async () => {
     const service = new StorageService(
       createConfig({
@@ -89,47 +91,50 @@ describe('StorageService (UT-SHRD)', () => {
     expect(mockedGetSignedUrl).not.toHaveBeenCalled();
   });
 
-  it('signs a five-minute CloudFront download with the configured key and encoded object path', async () => {
-    const service = new StorageService(
-      createConfig({
-        S3_PUBLIC_BASE_URL: 'https://files.example.com/',
-        CLOUDFRONT_KEY_PAIR_ID: 'KEXAMPLE',
-        CLOUDFRONT_PRIVATE_KEY: privateKey.replace(/\n/g, '\\n'),
-      }),
-    );
-    const before = Math.floor(Date.now() / 1000);
-    const url = new URL(
-      await service.createDownloadUrl('uploads/menu photo#1?.png'),
-    );
-    expect(url.origin).toBe('https://files.example.com');
-    expect(url.pathname).toBe('/uploads/menu%20photo%231%3F.png');
-    expect(url.searchParams.get('Key-Pair-Id')).toBe('KEXAMPLE');
-    const expires = Number(url.searchParams.get('Expires'));
-    expect(expires).toBeGreaterThanOrEqual(before + 300);
-    expect(expires).toBeLessThanOrEqual(Math.floor(Date.now() / 1000) + 300);
-    const policy = JSON.stringify({
-      Statement: [
-        {
-          Resource: `${url.origin}${url.pathname}`,
-          Condition: { DateLessThan: { 'AWS:EpochTime': expires } },
-        },
-      ],
-    });
-    const signature = url.searchParams
-      .get('Signature')!
-      .replace(/-/g, '+')
-      .replace(/_/g, '=')
-      .replace(/~/g, '/');
-    expect(
-      verify(
-        'RSA-SHA1',
-        Buffer.from(policy),
-        publicKey,
-        Buffer.from(signature, 'base64'),
-      ),
-    ).toBe(true);
-    expect(mockedGetSignedUrl).not.toHaveBeenCalled();
-  });
+  it.each([0, 750])(
+    'signs a five-minute CloudFront download with the configured key and encoded object path (offset: %i ms)',
+    async (offset) => {
+      const now = 1_700_000_000_000 + offset;
+      jest.spyOn(Date, 'now').mockReturnValue(now);
+      const service = new StorageService(
+        createConfig({
+          S3_PUBLIC_BASE_URL: 'https://files.example.com/',
+          CLOUDFRONT_KEY_PAIR_ID: 'KEXAMPLE',
+          CLOUDFRONT_PRIVATE_KEY: privateKey.replace(/\n/g, '\\n'),
+        }),
+      );
+      const url = new URL(
+        await service.createDownloadUrl('uploads/menu photo#1?.png'),
+      );
+      expect(url.origin).toBe('https://files.example.com');
+      expect(url.pathname).toBe('/uploads/menu%20photo%231%3F.png');
+      expect(url.searchParams.get('Key-Pair-Id')).toBe('KEXAMPLE');
+      const expires = Number(url.searchParams.get('Expires'));
+      expect(expires).toBe(Math.round((now + 300_000) / 1000));
+      const policy = JSON.stringify({
+        Statement: [
+          {
+            Resource: `${url.origin}${url.pathname}`,
+            Condition: { DateLessThan: { 'AWS:EpochTime': expires } },
+          },
+        ],
+      });
+      const signature = url.searchParams
+        .get('Signature')!
+        .replace(/-/g, '+')
+        .replace(/_/g, '=')
+        .replace(/~/g, '/');
+      expect(
+        verify(
+          'RSA-SHA1',
+          Buffer.from(policy),
+          publicKey,
+          Buffer.from(signature, 'base64'),
+        ),
+      ).toBe(true);
+      expect(mockedGetSignedUrl).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     { S3_PUBLIC_BASE_URL: 'https://files.example.com' },
