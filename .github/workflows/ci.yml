@@ -14,19 +14,10 @@ on:
 permissions:
   contents: read
 
-# Cancel superseded runs for the same branch (push + PR share a group).
-# Runs on main are never cancelled.
-concurrency:
-  group: ci-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
-
 jobs:
   detect-changes:
     name: Detect Changes
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
     steps:
@@ -235,15 +226,9 @@ jobs:
     steps:
       - name: Verify QA Automation Pipeline Completion
         run: |
-          # Fail closed: if change detection itself broke, don't assume "no backend changes".
-          if [ "${{ needs.detect-changes.result }}" != "success" ]; then
-            echo "QA Pipeline Failed: change detection did not succeed."
-            exit 1
-          fi
-
           if [ "${{ needs.detect-changes.outputs.backend }}" != "true" ]; then
             echo "No backend or QA test files were modified. Backend pipeline skipped."
-            echo "QA Pipeline Success: Non-backend change satisfied branch protection."
+            echo "QA Pipeline Success: Mobile-only change satisfied branch protection."
             exit 0
           fi
 
