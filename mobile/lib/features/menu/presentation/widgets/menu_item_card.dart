@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/features/menu/data/models/menu_models.dart';
 import 'package:mobile/features/menu/presentation/menu_layout.dart';
 import 'package:mobile/features/menu/providers/menu_providers.dart';
@@ -18,14 +19,20 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
   bool _pressed = false;
 
   ({String title, String detail})? _note(MenuAvailability a) => switch (a) {
-        MenuAvailability.available => null,
-        MenuAvailability.stockout =>
-          (title: 'Out of stock', detail: 'Shared inventory'),
-        MenuAvailability.manualOff =>
-          (title: 'Manual unavailable', detail: 'On ${widget.channel.label}'),
-        MenuAvailability.inactive =>
-          (title: 'Inactive item', detail: 'Not on sale'),
-      };
+    MenuAvailability.available => null,
+    MenuAvailability.stockout => (
+      title: 'Out of stock',
+      detail: 'Shared inventory',
+    ),
+    MenuAvailability.manualOff => (
+      title: 'Manual unavailable',
+      detail: 'On ${widget.channel.label}',
+    ),
+    MenuAvailability.inactive => (
+      title: 'Inactive item',
+      detail: 'Not on sale',
+    ),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +44,13 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
     final note = _note(availability);
     final price = formatPeso(item.priceFor(widget.channel));
 
-    final qty = ref.watch(cartProvider.select((lines) => lines
-        .where((l) => l.item.id == item.id)
-        .fold(0, (sum, l) => sum + l.quantity)));
+    final qty = ref.watch(
+      cartProvider.select(
+        (lines) => lines
+            .where((l) => l.item.id == item.id)
+            .fold(0, (sum, l) => sum + l.quantity),
+      ),
+    );
     final selected = qty > 0;
 
     return Semantics(
@@ -55,7 +66,7 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
           duration: context.motion(MenuMotion.medium),
           curve: MenuMotion.curve,
           decoration: BoxDecoration(
-            color: selected ? scheme.primaryContainer : scheme.surface,
+            color: selected ? scheme.primary : scheme.surface,
             borderRadius: BorderRadius.circular(MenuRadius.md),
             border: Border.all(
               color: selected ? scheme.primary : scheme.outlineVariant,
@@ -84,12 +95,15 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 color: scheme.surfaceContainerHighest,
-                                borderRadius:
-                                    BorderRadius.circular(MenuRadius.sm),
+                                borderRadius: BorderRadius.circular(
+                                  MenuRadius.sm,
+                                ),
                               ),
                               child: Center(
-                                child: Icon(Icons.restaurant,
-                                    color: scheme.onSurfaceVariant),
+                                child: Icon(
+                                  Icons.restaurant,
+                                  color: scheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ),
@@ -107,28 +121,67 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
                               transitionBuilder: (child, anim) =>
                                   ScaleTransition(scale: anim, child: child),
                               child: qty > 0
-                                  ? _QtyBadge(key: ValueKey(qty), qty: qty)
+                                  ? _QtyBadge(
+                                      key: ValueKey(qty),
+                                      qty: qty,
+                                      selected: selected,
+                                    )
                                   : const SizedBox.shrink(key: ValueKey(0)),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: MenuSpace.sm),
-                      Text(item.name,
-                          style: text.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w700)),
+                      AnimatedDefaultTextStyle(
+                        duration: context.motion(MenuMotion.fast),
+                        curve: MenuMotion.curve,
+                        style: (text.titleSmall ?? const TextStyle()).copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: selected ? scheme.onPrimary : scheme.onSurface,
+                        ),
+                        child: Text(item.name),
+                      ),
                       const SizedBox(height: MenuSpace.xs),
                       if (note == null)
-                        Text(item.description,
+                        AnimatedDefaultTextStyle(
+                          duration: context.motion(MenuMotion.fast),
+                          curve: MenuMotion.curve,
+                          style: (text.bodySmall ?? const TextStyle()).copyWith(
+                            color: selected
+                                ? scheme.onPrimary.withValues(
+                                    alpha: KkfcOpacity.soft,
+                                  )
+                                : scheme.onSurfaceVariant,
+                          ),
+                          child: Text(
+                            item.description,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: text.bodySmall
-                                ?.copyWith(color: scheme.onSurfaceVariant))
+                          ),
+                        )
                       else ...[
-                        Text(note.title, style: text.bodySmall),
-                        Text(note.detail,
-                            style: text.bodySmall
-                                ?.copyWith(color: scheme.onSurfaceVariant)),
+                        AnimatedDefaultTextStyle(
+                          duration: context.motion(MenuMotion.fast),
+                          curve: MenuMotion.curve,
+                          style: (text.bodySmall ?? const TextStyle()).copyWith(
+                            color: selected
+                                ? scheme.onPrimary
+                                : scheme.onSurface,
+                          ),
+                          child: Text(note.title),
+                        ),
+                        AnimatedDefaultTextStyle(
+                          duration: context.motion(MenuMotion.fast),
+                          curve: MenuMotion.curve,
+                          style: (text.bodySmall ?? const TextStyle()).copyWith(
+                            color: selected
+                                ? scheme.onPrimary.withValues(
+                                    alpha: KkfcOpacity.soft,
+                                  )
+                                : scheme.onSurfaceVariant,
+                          ),
+                          child: Text(note.detail),
+                        ),
                       ],
                       const SizedBox(height: MenuSpace.sm),
                       // No maxLines/ellipsis on prices.
@@ -138,10 +191,18 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
                           alignment: Alignment.centerLeft,
                           children: [...previous, ?current],
                         ),
-                        child: Text(price,
-                            key: ValueKey(price),
-                            style: text.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w700)),
+                        child: AnimatedDefaultTextStyle(
+                          duration: context.motion(MenuMotion.fast),
+                          curve: MenuMotion.curve,
+                          style: (text.titleMedium ?? const TextStyle())
+                              .copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: selected
+                                    ? scheme.onPrimary
+                                    : scheme.onSurface,
+                              ),
+                          child: Text(price, key: ValueKey(price)),
+                        ),
                       ),
                     ],
                   ),
@@ -156,8 +217,9 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
 }
 
 class _QtyBadge extends StatelessWidget {
-  const _QtyBadge({super.key, required this.qty});
+  const _QtyBadge({super.key, required this.qty, required this.selected});
   final int qty;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -165,15 +227,19 @@ class _QtyBadge extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
       child: DecoratedBox(
-        decoration: BoxDecoration(color: scheme.primary, shape: BoxShape.circle),
+        decoration: BoxDecoration(
+          color: selected ? scheme.onPrimary : scheme.primary,
+          shape: BoxShape.circle,
+        ),
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(MenuSpace.xs),
-            child: Text('$qty',
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(color: scheme.onPrimary)),
+            child: Text(
+              '$qty',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: selected ? scheme.primary : scheme.onPrimary,
+              ),
+            ),
           ),
         ),
       ),
@@ -190,10 +256,26 @@ class _AvailabilityBadge extends StatelessWidget {
     final s = Theme.of(context).colorScheme;
     // TODO: swap for context.semanticColors tones (warning / neutral).
     final (bg, fg, label) = switch (availability) {
-      MenuAvailability.stockout => (s.errorContainer, s.onErrorContainer, 'STOCKOUT'),
-      MenuAvailability.manualOff => (s.errorContainer, s.onErrorContainer, 'MANUAL OFF'),
-      MenuAvailability.inactive => (s.surfaceContainerHighest, s.onSurfaceVariant, 'INACTIVE'),
-      MenuAvailability.available => (s.primaryContainer, s.onPrimaryContainer, ''),
+      MenuAvailability.stockout => (
+        s.errorContainer,
+        s.onErrorContainer,
+        'STOCKOUT',
+      ),
+      MenuAvailability.manualOff => (
+        s.errorContainer,
+        s.onErrorContainer,
+        'MANUAL OFF',
+      ),
+      MenuAvailability.inactive => (
+        s.surfaceContainerHighest,
+        s.onSurfaceVariant,
+        'INACTIVE',
+      ),
+      MenuAvailability.available => (
+        s.primaryContainer,
+        s.onPrimaryContainer,
+        '',
+      ),
     };
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -202,9 +284,13 @@ class _AvailabilityBadge extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: MenuSpace.sm, vertical: MenuSpace.xs),
-        child: Text(label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: fg)),
+          horizontal: MenuSpace.sm,
+          vertical: MenuSpace.xs,
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: fg),
+        ),
       ),
     );
   }
