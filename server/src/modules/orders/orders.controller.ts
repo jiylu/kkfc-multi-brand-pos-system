@@ -18,7 +18,7 @@ import { OrdersService } from './orders.service';
 
 @Controller('brands/:brandId/orders')
 @UseGuards(Authenticated, RolesGuard, BrandsGuard)
-@Roles(UserRole.ORDER_STAFF, UserRole.OWNER)
+@Roles(UserRole.CASHIER_STAFF, UserRole.MANAGER, UserRole.SUPERADMIN)
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 

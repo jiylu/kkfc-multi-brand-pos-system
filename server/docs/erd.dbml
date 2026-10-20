@@ -41,12 +41,14 @@ Enum order_statuses {
 }
 
 Enum user_roles {
-  ORDER_STAFF
-  KITCHEN_PREPARER
-  INVENTORY_STAFF
-  KITCHEN_HEAD
-  OWNER
   SUPERADMIN
+  MANAGER
+  RECIPE_MANAGER
+  SUPERVISOR
+  KITCHEN_HEAD
+  INVENTORY_STAFF
+  KITCHEN_STAFF
+  CASHIER_STAFF
 }
 
 Enum recipe_types {
@@ -172,6 +174,7 @@ Table brands {
 // Isolates confidential cooking instructions from standard BOM quantities so method details are never exposed to unauthorized roles (FR-004, FR-020, BR-03).
 Table recipes {
   recipe_id uuid [pk]
+  brand_id uuid [not null, ref: > brands.brand_id]
   code varchar(64) [not null]
   name varchar(150) [not null]
   type recipe_types [not null]
@@ -186,6 +189,7 @@ Table recipes {
   modified_at timestamp [not null, default: `now()`]
   indexes {
     (code, version) [unique]
+    (brand_id, is_active)
   }
   Note: 'MENU_ASSEMBLY: components per serving. PRODUCTION: components per standard batch, with an output inventory item and expected yield.'
 }

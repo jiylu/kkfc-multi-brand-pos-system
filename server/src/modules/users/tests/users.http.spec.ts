@@ -18,7 +18,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   let app: INestApplication;
   let url: string;
   let authenticated = true;
-  let currentRole: UserRole = UserRole.OWNER;
+  let currentRole: UserRole = UserRole.SUPERADMIN;
   const userId = '00000000-0000-4000-8000-000000000010';
   const brandId = '00000000-0000-4000-8000-000000000020';
 
@@ -83,7 +83,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
 
   beforeEach(() => {
     authenticated = true;
-    currentRole = UserRole.OWNER;
+    currentRole = UserRole.SUPERADMIN;
     for (const method of Object.values(service)) {
       method.mockReset().mockResolvedValue({ ok: true });
     }
@@ -93,13 +93,13 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     await app?.close();
   });
 
-  it('IT-USER-001: creates a user when requested by an OWNER with valid payload', async () => {
+  it('IT-USER-001: creates a user when requested by a SUPERADMIN with valid payload', async () => {
     const payload = {
       username: 'new_cashier',
       first_name: 'Maria',
       last_name: 'Santos',
       password: 'Password123!',
-      role: UserRole.ORDER_STAFF,
+      role: UserRole.CASHIER_STAFF,
       brand_id: brandId,
     };
 
@@ -111,7 +111,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
 
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ ok: true });
-    expect(service.createUser).toHaveBeenCalledWith(payload, false, brandId);
+    expect(service.createUser).toHaveBeenCalledWith(payload, true, null);
   });
 
   it.each([
@@ -121,14 +121,14 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       first_name: 'Maria',
       last_name: 'Santos',
       password: 'Password123!',
-      role: UserRole.ORDER_STAFF,
+      role: UserRole.CASHIER_STAFF,
     },
     {
       username: 'new_cashier',
       first_name: 'Maria',
       last_name: 'Santos',
       password: 'short',
-      role: UserRole.ORDER_STAFF,
+      role: UserRole.CASHIER_STAFF,
     },
     {
       username: 'new_cashier',
@@ -142,7 +142,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       first_name: 'Maria',
       last_name: 'Santos',
       password: 'Password123!',
-      role: UserRole.ORDER_STAFF,
+      role: UserRole.CASHIER_STAFF,
       extra_field: 'forbidden',
     },
   ])(
@@ -168,8 +168,8 @@ describe('Users HTTP endpoints (IT-USER)', () => {
         limit: 10,
         activeOnly: true,
       },
-      brandId,
-      false,
+      null,
+      true,
     );
 
     const filteredResp = await fetch(`${url}?page=2&limit=5&activeOnly=false`);
@@ -180,8 +180,8 @@ describe('Users HTTP endpoints (IT-USER)', () => {
         limit: 5,
         activeOnly: false,
       },
-      brandId,
-      false,
+      null,
+      true,
     );
   });
 
@@ -201,7 +201,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       userId,
       '00000000-0000-4000-8000-000000000001',
       true,
-      false,
+      true,
     );
 
     const inactiveResp = await fetch(`${url}/${userId}?activeOnly=false`);
@@ -210,7 +210,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       userId,
       '00000000-0000-4000-8000-000000000001',
       false,
-      false,
+      true,
     );
   });
 
@@ -227,7 +227,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       userId,
       dto,
       '00000000-0000-4000-8000-000000000001',
-      false,
+      true,
     );
   });
 
@@ -245,7 +245,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
         userId,
         { username },
         '00000000-0000-4000-8000-000000000001',
-        false,
+        true,
       );
     },
   );
@@ -293,7 +293,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     { username: 'a'.repeat(65) },
     { first_name: '' },
     { password: '123' },
-    { role: UserRole.OWNER },
+    { role: UserRole.MANAGER },
     { is_active: false },
   ])(
     'IT-USER-007: rejects invalid or non-whitelisted UpdateUserDTO fields: %j',
@@ -315,7 +315,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     expect(service.deleteUser).toHaveBeenCalledWith(
       userId,
       '00000000-0000-4000-8000-000000000001',
-      false,
+      true,
     );
   });
 
@@ -335,7 +335,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
 
   it.each(
     Object.values(UserRole).filter(
-      (role) => role !== UserRole.OWNER && role !== UserRole.SUPERADMIN,
+      (role) => role !== UserRole.MANAGER && role !== UserRole.SUPERADMIN,
     ),
   )(
     'IT-USER-010: denies staff role %s across all user endpoints',
@@ -361,7 +361,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       'owner',
       '00000000-0000-4000-8000-000000000001',
       true,
-      false,
+      true,
     );
   });
 
@@ -369,11 +369,12 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     currentRole = UserRole.SUPERADMIN;
     const callerId = '00000000-0000-4000-8000-000000000001';
     const payload = {
-      username: 'new_owner',
+      username: 'new_manager',
       first_name: 'Test',
-      last_name: 'Owner',
+      last_name: 'Manager',
       password: 'Password123!',
-      role: UserRole.OWNER,
+      role: UserRole.MANAGER,
+      brand_id: brandId,
     };
     expect(
       (

@@ -533,6 +533,7 @@
   "recipes": [
     {
       "code": "RCP-PROD-COOKED-RICE",
+      "brand_code": "GC",
       "name": "Cooked rice (batch)",
       "type": "PRODUCTION",
       "version": 1,
@@ -550,6 +551,7 @@
     },
     {
       "code": "RCP-PROD-INASAL-LEG",
+      "brand_code": "AI",
       "name": "Inasal chicken leg marinade (batch of 10)",
       "type": "PRODUCTION",
       "version": 1,
@@ -583,6 +585,7 @@
     },
     {
       "code": "RCP-PROD-INASAL-BREAST",
+      "brand_code": "AI",
       "name": "Inasal chicken breast marinade (batch of 10)",
       "type": "PRODUCTION",
       "version": 1,
@@ -616,6 +619,7 @@
     },
     {
       "code": "RCP-PROD-CHICKEN-OIL",
+      "brand_code": "AI",
       "name": "Chicken oil (batch)",
       "type": "PRODUCTION",
       "version": 1,
@@ -641,6 +645,7 @@
     },
     {
       "code": "RCP-PROD-BATCHOY-BROTH",
+      "brand_code": "AI",
       "name": "Batchoy broth (batch)",
       "type": "PRODUCTION",
       "version": 1,
@@ -666,6 +671,7 @@
     },
     {
       "code": "RCP-PROD-YANGNYEOM",
+      "brand_code": "GC",
       "name": "Yangnyeom sauce (batch)",
       "type": "PRODUCTION",
       "version": 1,
@@ -695,6 +701,7 @@
     },
     {
       "code": "RCP-GC-KIMCHI-FRIED-RICE",
+      "brand_code": "GC",
       "name": "Kimchi Fried Rice",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -728,6 +735,7 @@
     },
     {
       "code": "RCP-GC-BIBIMBAP",
+      "brand_code": "GC",
       "name": "Bibimbap",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -761,6 +769,7 @@
     },
     {
       "code": "RCP-GC-TTEOKBOKKI",
+      "brand_code": "GC",
       "name": "Tteokbokki",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -786,6 +795,7 @@
     },
     {
       "code": "RCP-GC-KOREAN-FRIED-CHICKEN-6-PC",
+      "brand_code": "GC",
       "name": "Korean Fried Chicken (6 pc)",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -811,6 +821,7 @@
     },
     {
       "code": "RCP-GC-JAPCHAE",
+      "brand_code": "GC",
       "name": "Japchae",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -844,6 +855,7 @@
     },
     {
       "code": "RCP-GC-MANGO-BINGSU",
+      "brand_code": "GC",
       "name": "Mango Bingsu",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -869,6 +881,7 @@
     },
     {
       "code": "RCP-AI-PAA-INASAL",
+      "brand_code": "AI",
       "name": "Paa Inasal",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -902,6 +915,7 @@
     },
     {
       "code": "RCP-AI-PECHO-INASAL",
+      "brand_code": "AI",
       "name": "Pecho Inasal",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -935,6 +949,7 @@
     },
     {
       "code": "RCP-AI-PORK-INASAL",
+      "brand_code": "AI",
       "name": "Pork Inasal",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -964,6 +979,7 @@
     },
     {
       "code": "RCP-AI-BATCHOY-SPECIAL",
+      "brand_code": "AI",
       "name": "Batchoy Special",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1001,6 +1017,7 @@
     },
     {
       "code": "RCP-AI-HALO-HALO",
+      "brand_code": "AI",
       "name": "Halo-halo",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1026,6 +1043,7 @@
     },
     {
       "code": "RCP-KK-AMERICANO",
+      "brand_code": "KK",
       "name": "Americano",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1043,6 +1061,7 @@
     },
     {
       "code": "RCP-KK-ICED-SPANISH-LATTE",
+      "brand_code": "KK",
       "name": "Iced Spanish Latte",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1072,6 +1091,7 @@
     },
     {
       "code": "RCP-KK-MATCHA-LATTE",
+      "brand_code": "KK",
       "name": "Matcha Latte",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1097,6 +1117,7 @@
     },
     {
       "code": "RCP-KK-CLUBHOUSE-SANDWICH",
+      "brand_code": "KK",
       "name": "Clubhouse Sandwich",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1134,6 +1155,7 @@
     },
     {
       "code": "RCP-KK-UBE-CHEESE-PANDESAL-3-PC",
+      "brand_code": "KK",
       "name": "Ube Cheese Pandesal (3 pc)",
       "type": "MENU_ASSEMBLY",
       "version": 1,

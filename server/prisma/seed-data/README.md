@@ -53,8 +53,33 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 ## For the seed script (#31)
 
 - Rows refer to each other by `code`; the seed creates UUIDs and resolves codes.
+- Each recipe has a `brand_code`, resolved into its required `brand_id`. There are 8 GC, 9 AI and 5 KK recipes. Cooked rice and yangnyeom production recipes belong to GC; the other production recipes belong to AI. Inventory items remain shared across brands.
 - `brands.code` needs #84.
 - `logo_url` uses `images.example.invalid` on purpose: it never loads, so the app shows its missing-photo fallback.
 - `quantity_on_hand` stays 0 (no stock movements in Sprint 1).
 - Packaging items are listed for Sprint 2 receiving; recipes don't consume them yet.
-- Test users (all 5 roles) and brand assignments are in #31, not here.
+- Test users and brand assignments are maintained in `prisma/seed-test.ts`.
+
+## Running the seeds
+
+Apply the pending migrations to the intended database, then run `npm run prisma:generate`. The role migration preserves users by mapping OWNER to MANAGER, KITCHEN_PREPARER to KITCHEN_STAFF and ORDER_STAFF to CASHIER_STAFF. The recipe migration backfills brands from menu items only when ownership is unambiguous; existing recipes without an unambiguous menu brand need explicit backfill mappings in that migration before it can succeed.
+
+- `npm run db:seed` upserts 3 brands, 9 users covering all 8 roles, 51 inventory items, 22 recipes and their recipe components in one transaction. Codes (and recipe versions) keep IDs stable on reruns. Existing stock balances and inactive catalog records stay unchanged. Seed users use `Password123!`; reruns reset their passwords and activate their accounts. Use this seed only in development or test databases.
+- `npm run db:seed:test` creates or updates one user for each of the 8 roles, plus an unassigned manager. Test users use `Password123!`; this script resets their passwords and activates their accounts on reruns. Use it only in a development or test database.
+
+| Role | Username |
+|---|---|
+| SUPERADMIN | `test_superadmin` |
+| MANAGER | `test_owner` |
+| RECIPE_MANAGER | `test_recipe_manager` |
+| SUPERVISOR | `test_supervisor` |
+| KITCHEN_HEAD | `test_kitchen_head` |
+| INVENTORY_STAFF | `test_inventory_staff` |
+| KITCHEN_STAFF | `test_kitchen_preparer` |
+| CASHIER_STAFF | `test_order_staff` |
+
+Existing usernames are retained for login fixtures. The superadmin has no brand; other test users are assigned to the first test brand. `test_owner_unassigned` remains a manager without a brand.
+
+`npm run db:seed:check` checks ingredient and output links, brand ownership, rerun behavior, stock preservation and role coverage without connecting to a database.
+
+Recipe ownership is required in the schema. There is currently no recipe viewing endpoint; when one is added, it must scope queries by the authenticated user's brand and validate any requested brand with the existing `BrandsGuard`. A foreign key alone does not restrict visibility.
