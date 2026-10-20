@@ -22,6 +22,7 @@ class CartPanel extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: scheme.surface,
+        borderRadius: BorderRadius.circular(MenuRadius.sm),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.12),
@@ -30,6 +31,7 @@ class CartPanel extends ConsumerWidget {
           ),
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
         child: Column(

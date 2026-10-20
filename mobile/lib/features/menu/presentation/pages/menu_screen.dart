@@ -117,7 +117,15 @@ class _MenuBodyState extends ConsumerState<_MenuBody> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
-              MenuSpace.lg, MenuSpace.lg, MenuSpace.lg, MenuSpace.sm),
+              MenuSpace.lg, MenuSpace.lg, MenuSpace.lg, MenuSpace.xs),
+          child: Text(
+            'New order',
+            style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              MenuSpace.lg, 0, MenuSpace.lg, MenuSpace.sm),
           child: SearchBar(
             controller: _search,
             hintText: 'Search menu',
