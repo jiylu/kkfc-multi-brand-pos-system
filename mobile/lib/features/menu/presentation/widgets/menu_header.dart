@@ -1,15 +1,29 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/auth/data/repository/auth_repository.dart';
+import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/menu/presentation/menu_layout.dart';
 import 'package:mobile/features/menu/presentation/widgets/channel_tabs.dart';
 
-class MenuHeader extends StatelessWidget {
+class MenuHeader extends ConsumerWidget {
   const MenuHeader({super.key, required this.compact});
 
   /// True on phones: brand and user on one row, tabs on a second row.
   final bool compact;
 
+  void _signOut(WidgetRef ref) {
+    final token = ref.read(sessionTokenProvider);
+    if (token == null) return;
+
+    unawaited(ref.read(authRepositoryProvider).logout(token));
+    ref.read(sessionExpiredProvider.notifier).set(false);
+    ref.read(sessionTokenProvider.notifier).setToken(null);
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
@@ -31,6 +45,12 @@ class MenuHeader extends StatelessWidget {
       ],
     );
 
+    final logoutButton = IconButton(
+      tooltip: 'Logout',
+      icon: const Icon(Icons.logout),
+      onPressed: () => _signOut(ref),
+    );
+
     return Material(
       color: scheme.surface,
       child: DecoratedBox(
@@ -43,7 +63,7 @@ class MenuHeader extends StatelessWidget {
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [brand, const Spacer(), user]),
+                    Row(children: [brand, const Spacer(), user, logoutButton]),
                     const SizedBox(height: MenuSpace.md),
                     const ChannelTabs(),
                   ],
@@ -60,6 +80,8 @@ class MenuHeader extends StatelessWidget {
                     ),
                     const SizedBox(width: MenuSpace.lg),
                     user,
+                    const SizedBox(width: MenuSpace.sm),
+                    logoutButton,
                   ],
                 ),
         ),

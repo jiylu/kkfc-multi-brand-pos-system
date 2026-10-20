@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/tokens.dart';
+import 'package:mobile/app/theme/theme_context.dart';
 import 'package:mobile/features/menu/data/models/menu_models.dart';
 import 'package:mobile/features/menu/presentation/menu_layout.dart';
 import 'package:mobile/features/menu/providers/menu_providers.dart';
@@ -66,10 +67,10 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
           duration: context.motion(MenuMotion.medium),
           curve: MenuMotion.curve,
           decoration: BoxDecoration(
-            color: selected ? scheme.primary : scheme.surface,
+            color: selected ? context.semanticColors.highlightsSecondary : scheme.surface,
             borderRadius: BorderRadius.circular(MenuRadius.md),
             border: Border.all(
-              color: selected ? scheme.primary : scheme.outlineVariant,
+              color: selected ? context.semanticColors.highlights : scheme.outlineVariant,
               width: selected ? MenuBorder.thick : MenuBorder.thin,
             ),
           ),
@@ -137,7 +138,7 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
                         curve: MenuMotion.curve,
                         style: (text.titleSmall ?? const TextStyle()).copyWith(
                           fontWeight: FontWeight.w700,
-                          color: selected ? scheme.onPrimary : scheme.onSurface,
+                          color: selected ? scheme.primary : scheme.onSurface,
                         ),
                         child: Text(item.name),
                       ),
@@ -148,7 +149,7 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
                           curve: MenuMotion.curve,
                           style: (text.bodySmall ?? const TextStyle()).copyWith(
                             color: selected
-                                ? scheme.onPrimary.withValues(
+                                ? scheme.primary.withValues(
                                     alpha: KkfcOpacity.soft,
                                   )
                                 : scheme.onSurfaceVariant,
@@ -165,7 +166,7 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
                           curve: MenuMotion.curve,
                           style: (text.bodySmall ?? const TextStyle()).copyWith(
                             color: selected
-                                ? scheme.onPrimary
+                                ? scheme.primary
                                 : scheme.onSurface,
                           ),
                           child: Text(note.title),
@@ -198,7 +199,7 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
                               .copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: selected
-                                    ? scheme.onPrimary
+                                    ? scheme.primary
                                     : scheme.onSurface,
                               ),
                           child: Text(price, key: ValueKey(price)),
