@@ -14,24 +14,24 @@ describe('Auth HTTP endpoints', () => {
   let app: INestApplication;
   let url: string;
   let passwordHash: string;
-  const owner = {
+  const admin = {
     user_id: randomUUID(),
-    username: 'owner',
+    username: 'admin',
     first_name: 'Test',
-    last_name: 'Owner',
-    role: UserRole.OWNER,
+    last_name: 'Admin',
+    role: UserRole.SUPERADMIN,
     is_active: true,
     created_at: new Date(),
     modified_at: new Date(),
     brand_id: randomUUID() as string | null,
   };
   const staff = {
-    ...owner,
+    ...admin,
     user_id: randomUUID(),
     username: 'staff',
-    role: UserRole.KITCHEN_PREPARER,
+    role: UserRole.KITCHEN_STAFF,
   };
-  const users = new Map<string, typeof owner | typeof staff>();
+  const users = new Map<string, ReturnType<AuthService['getUserProfile']>>();
   type Session = CreateSessionDTO & {
     session_id: string;
     created_at: Date;
@@ -171,7 +171,7 @@ describe('Auth HTTP endpoints', () => {
   beforeEach(() => {
     sessions.clear();
     users.clear();
-    users.set(owner.user_id, { ...owner });
+    users.set(admin.user_id, { ...admin });
     users.set(staff.user_id, { ...staff });
   });
 
@@ -179,7 +179,7 @@ describe('Auth HTTP endpoints', () => {
     await app?.close();
   });
 
-  async function login(username = 'owner') {
+  async function login(username = 'admin') {
     const response = await fetch(`${url}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -194,7 +194,7 @@ describe('Auth HTTP endpoints', () => {
     };
   }
 
-  it('IT-AUTH-014: hides unrelated users from listings and individual lookups', async () => {
+  it('IT-AUTH-014: allows superadmins to list and look up users across brands', async () => {
     const unrelated = {
       ...staff,
       user_id: randomUUID(),
@@ -212,34 +212,35 @@ describe('Auth HTTP endpoints', () => {
         meta: { total: number };
       };
       expect(body.data.map((user) => user.user_id).sort()).toEqual(
-        [owner.user_id, staff.user_id].sort(),
+        [admin.user_id, staff.user_id, unrelated.user_id].sort(),
       );
-      expect(body.meta.total).toBe(2);
+      expect(body.meta.total).toBe(3);
     }
     const lookup = await fetch(`${url}/api/users/${unrelated.user_id}`, {
       headers,
     });
-    expect(lookup.status).toBe(403);
+    expect(lookup.status).toBe(200);
   });
 
-  it('IT-AUTH-015: blocks edits to another owner, password resets, and global staff deactivation', async () => {
-    const otherOwner = {
-      ...owner,
+  it('IT-AUTH-015: blocks managers from editing or deactivating other users', async () => {
+    users.set(admin.user_id, { ...admin, role: UserRole.MANAGER });
+    const otherAdmin = {
+      ...admin,
       user_id: randomUUID(),
-      username: 'other-owner',
+      username: 'other-admin',
     };
-    users.set(otherOwner.user_id, otherOwner);
+    users.set(otherAdmin.user_id, otherAdmin);
     const { token } = await login();
     const headers = {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
-    const ownerUpdate = await fetch(`${url}/api/users/${otherOwner.user_id}`, {
+    const adminUpdate = await fetch(`${url}/api/users/${otherAdmin.user_id}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ first_name: 'Changed' }),
     });
-    expect(ownerUpdate.status).toBe(403);
+    expect(adminUpdate.status).toBe(403);
     const passwordReset = await fetch(`${url}/api/users/${staff.user_id}`, {
       method: 'PATCH',
       headers,
@@ -260,15 +261,15 @@ describe('Auth HTTP endpoints', () => {
       Math.abs(new Date(body.expires_at).getTime() - Date.now() - 86400000),
     ).toBeLessThan(5000);
     expect(body.user).toEqual({
-      user_id: owner.user_id,
-      username: 'owner',
+      user_id: admin.user_id,
+      username: 'admin',
       first_name: 'Test',
-      last_name: 'Owner',
-      role: UserRole.OWNER,
-      brand_id: owner.brand_id,
-      is_active: owner.is_active,
-      created_at: owner.created_at.toISOString(),
-      modified_at: owner.modified_at.toISOString(),
+      last_name: 'Admin',
+      role: UserRole.SUPERADMIN,
+      brand_id: admin.brand_id,
+      is_active: admin.is_active,
+      created_at: admin.created_at.toISOString(),
+      modified_at: admin.modified_at.toISOString(),
     });
     expect(body.user).not.toHaveProperty('password_hash');
     expect(body).not.toHaveProperty('token_hash');
@@ -279,7 +280,7 @@ describe('Auth HTTP endpoints', () => {
 
   it.each([
     { username: 'unknown', password: 'correct-password' },
-    { username: 'owner', password: 'wrong-password' },
+    { username: 'admin', password: 'wrong-password' },
   ])(
     'IT-AUTH-002: rejects invalid credentials without creating a session',
     async (credentials) => {
@@ -301,9 +302,9 @@ describe('Auth HTTP endpoints', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: 'owner',
+        username: 'admin',
         password: 'correct-password',
-        user_id: owner.user_id,
+        user_id: admin.user_id,
       }),
     });
     expect(response.status).toBe(400);
@@ -332,7 +333,7 @@ describe('Auth HTTP endpoints', () => {
   });
 
   it('IT-AUTH-006: returns a null brand when no brand is assigned', async () => {
-    users.set(owner.user_id, { ...owner, brand_id: null });
+    users.set(admin.user_id, { ...admin, brand_id: null });
     const { token, user } = await login();
     expect(user.brand_id).toBeNull();
     const response = await fetch(`${url}/api/auth/me`, {
@@ -403,7 +404,7 @@ describe('Auth HTTP endpoints', () => {
 
   it('IT-AUTH-010: rejects sessions after account deactivation', async () => {
     const { token } = await login();
-    users.get(owner.user_id)!.is_active = false;
+    users.get(admin.user_id)!.is_active = false;
     expect(
       (
         await fetch(`${url}/api/auth/me`, {
@@ -414,7 +415,7 @@ describe('Auth HTTP endpoints', () => {
     const response = await fetch(`${url}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'owner', password: 'correct-password' }),
+      body: JSON.stringify({ username: 'admin', password: 'correct-password' }),
     });
     expect(response.status).toBe(401);
   });
@@ -472,7 +473,7 @@ describe('Auth HTTP endpoints', () => {
     },
   );
 
-  it('IT-AUTH-013: requires owner access for user management', async () => {
+  it('IT-AUTH-013: requires superadmin access for user management', async () => {
     expect((await fetch(`${url}/api/users`)).status).toBe(401);
     const member = await login('staff');
     expect(

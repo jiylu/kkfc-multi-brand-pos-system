@@ -16,7 +16,7 @@ describe('Brands HTTP endpoints', () => {
   let currentRole: UserRole;
   let currentBrandId: string | null;
   const brandId = '00000000-0000-4000-8000-000000000001';
-  const ownerId = '00000000-0000-4000-8000-000000000004';
+  const callerId = '00000000-0000-4000-8000-000000000004';
   const otherBrandId = '00000000-0000-4000-8000-000000000099';
   const service = {
     create: jest.fn(),
@@ -46,7 +46,7 @@ describe('Brands HTTP endpoints', () => {
           }>();
           request.session = {
             user: {
-              user_id: ownerId,
+              user_id: callerId,
               role: currentRole,
               brand_id: currentBrandId,
             },
@@ -70,7 +70,7 @@ describe('Brands HTTP endpoints', () => {
   });
 
   beforeEach(() => {
-    currentRole = UserRole.OWNER;
+    currentRole = UserRole.SUPERADMIN;
     currentBrandId = brandId;
     for (const method of Object.values(service))
       method.mockReset().mockResolvedValue({ ok: true });
@@ -91,7 +91,7 @@ describe('Brands HTTP endpoints', () => {
   });
 
   it.each(['GET', 'DELETE'])(
-    'delegates %s for the owner brand',
+    'delegates %s for the superadmin',
     async (method) => {
       expect((await fetch(url + '/' + brandId, { method })).status).toBe(200);
       expect(
@@ -131,8 +131,9 @@ describe('Brands HTTP endpoints', () => {
   );
 
   it.each(['GET', 'PATCH', 'DELETE'])(
-    'blocks owners from another brand: %s',
+    'blocks managers from another brand: %s',
     async (method) => {
+      currentRole = UserRole.MANAGER;
       expect((await fetch(url + '/' + otherBrandId, { method })).status).toBe(
         403,
       );
@@ -142,15 +143,22 @@ describe('Brands HTTP endpoints', () => {
   );
 
   it('blocks users without a brand', async () => {
+    currentRole = UserRole.MANAGER;
     currentBrandId = null;
     expect((await fetch(url + '/' + brandId)).status).toBe(403);
     expect(service.findOne).not.toHaveBeenCalled();
   });
 
-  it.each(['PATCH', 'DELETE'])(
-    'keeps %s owner-only for assigned staff',
-    async (method) => {
-      currentRole = UserRole.ORDER_STAFF;
+  it.each(
+    Object.values(UserRole)
+      .filter((role) => role !== UserRole.SUPERADMIN)
+      .flatMap((role) =>
+        ['PATCH', 'DELETE'].map((method) => ({ role, method })),
+      ),
+  )(
+    'keeps $method superadmin-only for assigned $role',
+    async ({ role, method }) => {
+      currentRole = role;
       expect((await fetch(url + '/' + brandId, { method })).status).toBe(403);
       for (const handler of Object.values(service))
         expect(handler).not.toHaveBeenCalled();
@@ -170,7 +178,7 @@ describe('Brands HTTP endpoints', () => {
   it.each([
     { name: 'King Kungs Kafé', code: 'KKFC', logo_url: null },
     { name: 'King Kungs Kafé', code: 'KK' },
-  ])('creates a brand for the authenticated owner: %j', async (dto) => {
+  ])('creates a brand for the authenticated superadmin: %j', async (dto) => {
     currentBrandId = null;
     const response = await fetch(url, {
       method: 'POST',
@@ -178,7 +186,7 @@ describe('Brands HTTP endpoints', () => {
       body: JSON.stringify(dto),
     });
     expect(response.status).toBe(201);
-    expect(service.create).toHaveBeenCalledWith(dto, ownerId, false);
+    expect(service.create).toHaveBeenCalledWith(dto);
   });
 
   it.each([
@@ -206,17 +214,17 @@ describe('Brands HTTP endpoints', () => {
     expect(service.create).not.toHaveBeenCalled();
   });
 
-  it('passes the selected owner and authenticated superadmin flag on creation', async () => {
+  it('creates a brand without requiring a user assignment', async () => {
     currentRole = UserRole.SUPERADMIN;
     currentBrandId = null;
-    const dto = { name: 'Brand', code: 'BRND', owner_id: ownerId };
+    const dto = { name: 'Brand', code: 'BRND' };
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(dto),
     });
     expect(response.status).toBe(201);
-    expect(service.create).toHaveBeenCalledWith(dto, ownerId, true);
+    expect(service.create).toHaveBeenCalledWith(dto);
   });
 
   it.each(
@@ -228,9 +236,7 @@ describe('Brands HTTP endpoints', () => {
   });
 
   it.each(
-    Object.values(UserRole).filter(
-      (role) => role !== UserRole.OWNER && role !== UserRole.SUPERADMIN,
-    ),
+    Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
   )('rejects brand creation for %s', async (role) => {
     currentRole = role;
     const response = await fetch(url, {
@@ -248,7 +254,7 @@ describe('Brands HTTP endpoints', () => {
     { code: null },
     { code: 123 },
     { code: 'ABCDE' },
-    { owner_id: ownerId },
+    { owner_id: callerId },
   ])('rejects invalid update bodies: %j', async (body) => {
     const response = await fetch(url + '/' + brandId, {
       method: 'PATCH',
@@ -280,10 +286,10 @@ describe('Brands HTTP endpoints', () => {
   it.each([
     ['POST', '/assign'],
     ['GET', '/' + brandId + '/users'],
-    ['GET', '/assignments/users/' + ownerId],
-    ['GET', '/' + brandId + '/assignments/' + ownerId],
-    ['DELETE', '/' + brandId + '/assignments/' + ownerId],
-    ['PATCH', '/' + brandId + '/assignments/' + ownerId + '/reactivate'],
+    ['GET', '/assignments/users/' + callerId],
+    ['GET', '/' + brandId + '/assignments/' + callerId],
+    ['DELETE', '/' + brandId + '/assignments/' + callerId],
+    ['PATCH', '/' + brandId + '/assignments/' + callerId + '/reactivate'],
   ])('removes assignment routes: %s %s', async (method, path) => {
     expect((await fetch(url + path, { method })).status).toBe(404);
     for (const handler of Object.values(service))

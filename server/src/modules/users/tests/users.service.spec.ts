@@ -8,14 +8,14 @@ import { UsersService } from '../users.service';
 describe('UsersService', () => {
   const user = {
     user_id: '00000000-0000-4000-8000-000000000001',
-    username: 'owner',
+    username: 'manager',
     first_name: 'Test',
-    last_name: 'Owner',
-    role: UserRole.OWNER,
+    last_name: 'Manager',
+    role: UserRole.MANAGER,
     is_active: true,
     created_at: new Date('2030-01-01T00:00:00Z'),
     modified_at: new Date('2030-01-01T00:00:00Z'),
-    brand_id: null,
+    brand_id: 'brand',
   };
   const createDTO: CreateUserDTO = {
     username: user.username,
@@ -23,6 +23,7 @@ describe('UsersService', () => {
     last_name: user.last_name,
     role: user.role,
     password: 'test-password',
+    brand_id: user.brand_id,
   };
   let repository: jest.Mocked<
     Pick<
@@ -57,44 +58,48 @@ describe('UsersService', () => {
   afterEach(() => jest.restoreAllMocks());
 
   describe('creation permissions', () => {
-    it.each([UserRole.OWNER, UserRole.SUPERADMIN])(
-      'allows superadmins to create %s accounts without a brand',
-      async (role) => {
-        const dto = { ...createDTO, role };
+    it.each([undefined, null])(
+      'allows superadmins to create superadmin accounts with brand_id=%s',
+      async (brand_id) => {
+        const dto = { ...createDTO, role: UserRole.SUPERADMIN, brand_id };
         await service.createUser(dto, true);
         expect(repository.create).toHaveBeenCalledWith(dto);
       },
     );
 
-    it.each([UserRole.OWNER, UserRole.SUPERADMIN])(
-      'blocks owners from creating %s accounts',
-      async (role) => {
-        await expect(
-          service.createUser({ ...createDTO, role }, false, 'brand'),
-        ).rejects.toMatchObject({ status: 403 });
-        expect(repository.create).not.toHaveBeenCalled();
-      },
-    );
+    it('blocks non-superadmins from creating superadmin accounts', async () => {
+      await expect(
+        service.createUser(
+          { ...createDTO, role: UserRole.SUPERADMIN },
+          false,
+          'brand',
+        ),
+      ).rejects.toMatchObject({ status: 403 });
+      expect(repository.create).not.toHaveBeenCalled();
+    });
 
-    it.each([undefined, null])(
-      'requires a staff brand even for superadmins: %s',
-      async (brand_id) => {
+    it.each(
+      Object.values(UserRole)
+        .filter((role) => role !== UserRole.SUPERADMIN)
+        .flatMap((role) =>
+          [undefined, null].map((brand_id) => ({ role, brand_id })),
+        ),
+    )(
+      'requires a brand for $role even for superadmins: $brand_id',
+      async ({ role, brand_id }) => {
         await expect(
-          service.createUser(
-            { ...createDTO, role: UserRole.ORDER_STAFF, brand_id },
-            true,
-          ),
+          service.createUser({ ...createDTO, role, brand_id }, true),
         ).rejects.toMatchObject({ status: 400 });
         expect(repository.create).not.toHaveBeenCalled();
       },
     );
 
     it.each(['other-brand', null])(
-      'blocks owners with a different or missing caller brand: %s',
+      'blocks managers with a different or missing caller brand: %s',
       async (callerBrandId) => {
         await expect(
           service.createUser(
-            { ...createDTO, role: UserRole.ORDER_STAFF, brand_id: 'brand' },
+            { ...createDTO, role: UserRole.CASHIER_STAFF, brand_id: 'brand' },
             false,
             callerBrandId,
           ),
@@ -103,10 +108,10 @@ describe('UsersService', () => {
       },
     );
 
-    it('allows owners to create staff in their own brand', async () => {
+    it('allows managers to create staff in their own brand', async () => {
       const dto = {
         ...createDTO,
-        role: UserRole.ORDER_STAFF,
+        role: UserRole.CASHIER_STAFF,
         brand_id: 'brand',
       };
       await service.createUser(dto, false, 'brand');
@@ -116,7 +121,7 @@ describe('UsersService', () => {
     it('allows superadmins to create staff in another brand', async () => {
       const dto = {
         ...createDTO,
-        role: UserRole.ORDER_STAFF,
+        role: UserRole.CASHIER_STAFF,
         brand_id: 'brand',
       };
       await service.createUser(dto, true);
@@ -134,7 +139,7 @@ describe('UsersService', () => {
       expect(repository.findAll).toHaveBeenCalledWith(0, 10, null, false, true);
     });
 
-    it('allows editing another owner and resetting their password', async () => {
+    it('allows editing another manager and resetting their password', async () => {
       const dto = { password: 'new-password' };
       await service.updateUser(user.user_id, dto, 'superadmin', true);
       expect(repository.update).toHaveBeenCalledWith(user.user_id, dto);
@@ -154,7 +159,7 @@ describe('UsersService', () => {
     const staff = {
       ...user,
       user_id: '00000000-0000-4000-8000-000000000002',
-      role: UserRole.ORDER_STAFF,
+      role: UserRole.CASHIER_STAFF,
       brand_id: 'shared-brand',
     };
 
@@ -203,22 +208,34 @@ describe('UsersService', () => {
       },
     );
 
-    it.each([UserRole.OWNER, UserRole.SUPERADMIN])(
-      'denies owner edits to another %s even in a shared brand',
-      async (role) => {
-        repository.findOne.mockImplementation((id) =>
-          Promise.resolve(id === caller.user_id ? caller : { ...staff, role }),
-        );
-        await expect(
-          service.updateUser(
-            staff.user_id,
-            { first_name: 'Updated' },
-            caller.user_id,
-          ),
-        ).rejects.toMatchObject({ status: 403 });
-        expect(repository.update).not.toHaveBeenCalled();
-      },
-    );
+    it('denies manager edits to a superadmin even in a shared brand', async () => {
+      repository.findOne.mockImplementation((id) =>
+        Promise.resolve(
+          id === caller.user_id
+            ? caller
+            : { ...staff, role: UserRole.SUPERADMIN },
+        ),
+      );
+      await expect(
+        service.updateUser(
+          staff.user_id,
+          { first_name: 'Updated' },
+          caller.user_id,
+        ),
+      ).rejects.toMatchObject({ status: 403 });
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('allows profile edits to another manager in the same brand', async () => {
+      repository.findOne.mockImplementation((id) =>
+        Promise.resolve(
+          id === caller.user_id ? caller : { ...staff, role: UserRole.MANAGER },
+        ),
+      );
+      const dto = { first_name: 'Updated' };
+      await service.updateUser(staff.user_id, dto, caller.user_id);
+      expect(repository.update).toHaveBeenCalledWith(staff.user_id, dto);
+    });
 
     it('denies password resets for shared staff without partially updating their profile', async () => {
       await expect(
