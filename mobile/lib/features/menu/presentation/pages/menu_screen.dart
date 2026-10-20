@@ -85,7 +85,7 @@ class _MenuBodyState extends ConsumerState<_MenuBody> {
 
     final Widget body = visible.when(
       loading: () => const MenuGridSkeleton(key: ValueKey('loading')),
-      error: (_, __) => MenuMessageCard(
+      error: (_, _) => MenuMessageCard(
         key: const ValueKey('error'),
         icon: Icons.wifi_off,
         title: "Couldn't load the menu",
