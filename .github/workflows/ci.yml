@@ -32,8 +32,7 @@ jobs:
             backend:
               - 'server/**'
               - 'robot/**'
-              - 'features/**'
-              - '!features/mobile/**'
+              - 'features/!(mobile)/**'
               - '.github/workflows/ci.yml'
 
   unit-tests:
