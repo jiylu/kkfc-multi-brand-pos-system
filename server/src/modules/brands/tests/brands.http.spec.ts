@@ -151,12 +151,14 @@ describe('Brands HTTP endpoints', () => {
 
   it.each(
     Object.values(UserRole)
-      .filter((role) => role !== UserRole.SUPERADMIN)
+      .filter(
+        (role) => role !== UserRole.MANAGER && role !== UserRole.SUPERADMIN,
+      )
       .flatMap((role) =>
         ['PATCH', 'DELETE'].map((method) => ({ role, method })),
       ),
   )(
-    'keeps $method superadmin-only for assigned $role',
+    'keeps $method manager-or-superadmin only for assigned $role',
     async ({ role, method }) => {
       currentRole = role;
       expect((await fetch(url + '/' + brandId, { method })).status).toBe(403);
@@ -236,7 +238,9 @@ describe('Brands HTTP endpoints', () => {
   });
 
   it.each(
-    Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
+    Object.values(UserRole).filter(
+      (role) => role !== UserRole.MANAGER && role !== UserRole.SUPERADMIN,
+    ),
   )('rejects brand creation for %s', async (role) => {
     currentRole = role;
     const response = await fetch(url, {

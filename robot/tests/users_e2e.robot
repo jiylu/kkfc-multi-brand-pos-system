@@ -18,10 +18,10 @@ E2E-USER-001: Owner creates a new staff account
     Given the backend server is running against the test database
     And An authenticated session exists for role "OWNER"
     ${random_suffix}=  Generate Random String    6    [NUMBERS]
-    When The client submits a new user payload with username "e2e_cashier_${random_suffix}" and role "ORDER_STAFF"
+    When The client submits a new user payload with username "e2e_cashier_${random_suffix}" and role "CASHIER_STAFF"
     Then the HTTP response status should be 201
     And The response JSON should contain key "user_id"
-    And The response JSON key "role" should be equal to "ORDER_STAFF"
+    And The response JSON key "role" should be equal to "CASHIER_STAFF"
 
 E2E-USER-002: Owner retrieves paginated user list
     [Documentation]    Verify that user accounts can be listed with pagination metadata.
@@ -48,7 +48,7 @@ E2E-USER-004: Non-owner staff is denied access to user management
     [Documentation]    Verify that non-owner staff cannot access user administration.
     [Tags]             E2E    USERS    E2E-USER-004    FR-USER-001
     Given the backend server is running against the test database
-    And An authenticated session exists for role "ORDER_STAFF"
+    And An authenticated session exists for role "CASHIER_STAFF"
     When The client lists users with limit "5"
     Then the HTTP response status should be 403
 

@@ -334,9 +334,11 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   );
 
   it.each(
-    Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
+    Object.values(UserRole).filter(
+      (role) => role !== UserRole.MANAGER && role !== UserRole.SUPERADMIN,
+    ),
   )(
-    'IT-USER-010: denies non-superadmin role %s across all user endpoints',
+    'IT-USER-010: denies staff role %s across all user endpoints',
     async (role) => {
       currentRole = role;
 
