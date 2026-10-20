@@ -12,6 +12,10 @@ ${TEST_UNASSIGNED_OWNER_USER}    %{TEST_UNASSIGNED_OWNER_USER=test_owner_unassig
 ${TEST_UNASSIGNED_OWNER_PASS}    %{TEST_UNASSIGNED_OWNER_PASS=Password123!}
 ${TEST_STAFF_USER}        %{TEST_STAFF_USER=test_order_staff}
 ${TEST_STAFF_PASS}        %{TEST_STAFF_PASS=Password123!}
+${TEST_DEACT_USER}        %{TEST_DEACT_USER=test_deact_owner}
+${TEST_DEACT_PASS}        %{TEST_DEACT_PASS=Password123!}
+${TEST_INACTIVE_USER}     %{TEST_INACTIVE_USER=test_inactive_staff}
+${TEST_INACTIVE_PASS}     %{TEST_INACTIVE_PASS=Password123!}
 
 *** Keywords ***
 Initialize API Session

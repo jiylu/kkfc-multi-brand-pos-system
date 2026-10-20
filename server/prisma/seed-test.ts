@@ -42,6 +42,21 @@ export const TEST_USERS = [
     password: 'Password123!',
     role: UserRole.INVENTORY_STAFF,
   },
+  {
+    username: 'test_deact_owner',
+    first_name: 'Deact',
+    last_name: 'Owner',
+    password: 'Password123!',
+    role: UserRole.OWNER,
+  },
+  {
+    username: 'test_inactive_staff',
+    first_name: 'Inactive',
+    last_name: 'Staff',
+    password: 'Password123!',
+    role: UserRole.ORDER_STAFF,
+    is_active: false,
+  },
 ];
 
 // Owner intentionally left without a brand so E2E tests can create one.
@@ -88,7 +103,7 @@ async function seedTestDatabase() {
           last_name: user.last_name,
           role: user.role,
           password_hash: passwordHash,
-          is_active: true,
+          is_active: user.is_active ?? true,
         },
         create: {
           username: user.username,
@@ -96,7 +111,7 @@ async function seedTestDatabase() {
           last_name: user.last_name,
           role: user.role,
           password_hash: passwordHash,
-          is_active: true,
+          is_active: user.is_active ?? true,
         },
       });
     }

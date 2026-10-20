@@ -49,3 +49,27 @@ E2E-AUTH-004: User logout and session invalidation
     Then the HTTP response status should be 204
     When the client requests the protected profile endpoint with the session token
     Then the HTTP response status should be 401
+
+E2E-AUTH-005: Login with a deactivated account
+    [Documentation]    Verify that deactivated accounts are rejected during authentication.
+    [Tags]             E2E    AUTH    E2E-AUTH-005    FR-AUTH-001
+    Given the backend server is running against the test database
+    And a registered test user exists with role "INACTIVE"
+    When the client submits valid login credentials to "/api/auth/login"
+    Then the HTTP response status should be 401
+    And the response should not contain a session token
+
+E2E-AUTH-006: Session revocation after user deactivation
+    [Documentation]    Verify that deactivating an account revokes active session tokens.
+    [Tags]             E2E    AUTH    E2E-AUTH-006    FR-AUTH-001
+    Given the backend server is running against the test database
+    And a registered test user exists with role "DEACT_OWNER"
+    When the client submits valid login credentials to "/api/auth/login"
+    Then the HTTP response status should be 200
+    And the response should contain an active session token
+    When the client deactivates their own user account
+    Then the HTTP response status should be 200
+    When the client requests the protected profile endpoint with the session token
+    Then the HTTP response status should be 401
+    When the client submits valid login credentials to "/api/auth/login"
+    Then the HTTP response status should be 401
