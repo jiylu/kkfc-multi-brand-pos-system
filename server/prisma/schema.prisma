@@ -303,7 +303,7 @@ model MenuItem {
   menu_item_id        String   @id @default(uuid()) @db.Uuid
   brand_id            String   @db.Uuid
   recipe_id           String   @db.Uuid
-  logo_url            String   @db.VarChar(2048)
+  img_url             String   @db.VarChar(2048)
   code                String   @unique @db.VarChar(64)
   name                String   @db.VarChar(150)
   description         String?  @db.VarChar(2000)

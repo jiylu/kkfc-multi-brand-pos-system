@@ -2,7 +2,9 @@
 
 **Synthetic test data, not the client's real menu, prices or recipes.** Codes, names and prices are placeholders until the client confirms (D-02).
 
-3 brands · 16 menu items · 14 modifiers · 22 recipes (6 production) · 51 inventory items
+3 brands · 25 menu items · 14 modifiers · 22 recipes (6 production) · 51 inventory items
+
+The main seed inserts menu items and resolves their brand and recipe codes. Channel overrides and modifier assignments remain fixture-only.
 
 Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-in.
 
@@ -16,6 +18,9 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 | Korean Fried Chicken (6 pc) | ₱220.00 | ₱250.00 | Extra side sauce +₱15.00, Extra rice +₱25.00 |  |
 | Japchae | ₱179.00 | ₱205.00 | No onions |  |
 | Mango Bingsu | ₱199.00 | ₱229.00 | — | Inactive (not orderable) |
+| Seoul Comfort Bowl | ₱175.00 | ₱205.00 | — | Draft sample; reuses kimchi fried rice recipe |
+| Rainbow Bibimbap | ₱215.00 | ₱245.00 | — | Draft sample; reuses bibimbap recipe |
+| K-Pop Chicken Box | ₱235.00 | ₱265.00 | — | Draft sample; reuses 6-piece chicken recipe |
 
 ## AI · Aurelia's Inasal
 
@@ -26,6 +31,9 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 | Pork Inasal | ₱199.00 | ₱229.00 | Extra rice +₱25.00, Garlic rice +₱15.00, Chicken oil +₱10.00 |  |
 | Batchoy Special | ₱145.00 | ₱165.00 | Add egg +₱20.00, Extra chicharon +₱15.00, No onions | Unavailable on GRABFOOD |
 | Halo-halo | ₱109.00 | ₱125.00 | — |  |
+| Sunset Paa Plate | ₱185.00 | ₱215.00 | — | Draft sample; reuses paa inasal recipe |
+| Smoky Pecho Plate | ₱205.00 | ₱235.00 | — | Draft sample; reuses pecho inasal recipe |
+| Grillhouse Pork Plate | ₱225.00 | ₱255.00 | — | Draft sample; reuses pork inasal recipe |
 
 ## KK · King Kungs Kafé
 
@@ -36,6 +44,9 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 | Matcha Latte | ₱170.00 | ₱195.00 | Oat milk +₱35.00, Less ice, Less sweet |  |
 | Clubhouse Sandwich | ₱195.00 | ₱225.00 | No mayonnaise |  |
 | Ube Cheese Pandesal (3 pc) | ₱95.00 | ₱110.00 | — |  |
+| Morning Kick Americano | ₱115.00 | ₱145.00 | — | Draft sample; reuses americano recipe |
+| Midday Spanish Latte | ₱165.00 | ₱195.00 | — | Draft sample; reuses Spanish latte recipe |
+| Green Velvet Matcha | ₱175.00 | ₱205.00 | — | Draft sample; reuses matcha latte recipe |
 
 ## Test and demo cases
 
@@ -55,22 +66,24 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 - Rows refer to each other by `code`; the seed creates UUIDs and resolves codes.
 - Each recipe has a `brand_code`, resolved into its required `brand_id`. There are 8 GC, 9 AI and 5 KK recipes. Cooked rice and yangnyeom production recipes belong to GC; the other production recipes belong to AI. Inventory items remain shared across brands.
 - `brands.code` needs #84.
-- `logo_url` uses `images.example.invalid` on purpose: it never loads, so the app shows its missing-photo fallback.
+- Menu item `img_url` uses `images.example.invalid` on purpose: it never loads, so the app shows its missing-photo fallback.
 - `quantity_on_hand` stays 0 (no stock movements in Sprint 1).
 - Packaging items are listed for Sprint 2 receiving; recipes don't consume them yet.
 - Test users and brand assignments are maintained in `prisma/seed-test.ts`.
 
 ## Running the seeds
 
-Apply the pending migrations to the intended database, then run `npm run prisma:generate`. The role migration preserves users by mapping OWNER to MANAGER, KITCHEN_PREPARER to KITCHEN_STAFF and ORDER_STAFF to CASHIER_STAFF. The recipe migration backfills brands from menu items only when ownership is unambiguous; existing recipes without an unambiguous menu brand need explicit backfill mappings in that migration before it can succeed.
+Apply the pending migrations to the intended database, then run `npm run prisma:generate`. The role migration preserves users by mapping OWNER to SUPERADMIN, KITCHEN_PREPARER to KITCHEN_STAFF and ORDER_STAFF to CASHIER_STAFF. The recipe migration backfills brands from menu items only when ownership is unambiguous; existing recipes without an unambiguous menu brand need explicit backfill mappings in that migration before it can succeed.
 
-- `npm run db:seed` upserts 3 brands, 9 users covering all 8 roles, 51 inventory items, 22 recipes and their recipe components in one transaction. Codes (and recipe versions) keep IDs stable on reruns. Existing stock balances and inactive catalog records stay unchanged. Seed users use `Password123!`; reruns reset their passwords and activate their accounts. Use this seed only in development or test databases.
-- `npm run db:seed:test` creates or updates one user for each of the 8 roles, plus an unassigned manager. Test users use `Password123!`; this script resets their passwords and activates their accounts on reruns. Use it only in a development or test database.
+- `npm run db:seed` upserts 3 brands, 11 users covering all 8 roles, 51 inventory items, 22 recipes and their recipe components, and 25 menu items in one transaction. Codes (and recipe versions) keep IDs stable on reruns. Existing stock balances and inactive catalog records stay unchanged. Seed users use `Password123!`; reruns reset their passwords and activate their accounts. Use this seed only in development or test databases.
+- `npm run db:seed:test` creates or updates users for all 8 roles, with one assigned manager per brand and an additional unassigned manager. Test users use `Password123!`; this script resets their passwords and activates their accounts on reruns. Use it only in a development or test database.
 
 | Role | Username |
 |---|---|
 | SUPERADMIN | `test_superadmin` |
-| MANAGER | `test_owner` |
+| MANAGER (GC) | `test_owner` |
+| MANAGER (AI) | `test_manager_ai` |
+| MANAGER (KK) | `test_manager_kk` |
 | RECIPE_MANAGER | `test_recipe_manager` |
 | SUPERVISOR | `test_supervisor` |
 | KITCHEN_HEAD | `test_kitchen_head` |
@@ -78,7 +91,7 @@ Apply the pending migrations to the intended database, then run `npm run prisma:
 | KITCHEN_STAFF | `test_kitchen_preparer` |
 | CASHIER_STAFF | `test_order_staff` |
 
-Existing usernames are retained for login fixtures. The superadmin has no brand; other test users are assigned to the first test brand. `test_owner_unassigned` remains a manager without a brand.
+Existing usernames are retained for login fixtures. Each seed brand has one assigned manager. Other staff are assigned to GC; the superadmin and `test_owner_unassigned` have no brand. Assignments resolve by brand code rather than seed order.
 
 `npm run db:seed:check` checks ingredient and output links, brand ownership, rerun behavior, stock preservation and role coverage without connecting to a database.
 

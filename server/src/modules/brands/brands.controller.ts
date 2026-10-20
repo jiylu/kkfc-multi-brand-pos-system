@@ -36,7 +36,7 @@ export class BrandsController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.MANAGER, UserRole.SUPERADMIN)
+  @Roles(UserRole.SUPERADMIN)
   @CreateBrandDocs()
   async create(@Body() dto: CreateBrandDTO) {
     return this.brandsService.create(dto);
@@ -59,7 +59,7 @@ export class BrandsController {
 
   @Patch(':brandId')
   @UseGuards(RolesGuard, BrandsGuard)
-  @Roles(UserRole.MANAGER, UserRole.SUPERADMIN)
+  @Roles(UserRole.SUPERADMIN)
   @UpdateBrandDocs()
   async update(
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -70,7 +70,7 @@ export class BrandsController {
 
   @Delete(':brandId')
   @UseGuards(RolesGuard, BrandsGuard)
-  @Roles(UserRole.MANAGER, UserRole.SUPERADMIN)
+  @Roles(UserRole.SUPERADMIN)
   @DeleteBrandDocs()
   async delete(@Param('brandId', ParseUUIDPipe) brandId: string) {
     return this.brandsService.delete(brandId);
