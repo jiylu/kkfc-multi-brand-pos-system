@@ -103,7 +103,7 @@ describe('Auth HTTP endpoints', () => {
             take: number,
             callerBrandId: string | null,
             activeOnly: boolean = true,
-            isSuperAdmin = false,
+            isSuperAdmin: boolean = false,
           ) =>
             listingRepository.findAll(
               skip,
