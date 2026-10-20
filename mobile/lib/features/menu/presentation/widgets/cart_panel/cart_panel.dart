@@ -19,53 +19,65 @@ class CartPanel extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
-    return Material(
-      color: scheme.surface,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          CartPanelHeader(
-            referenceLabel: channel.referenceLabel,
-            canClear: lines.isNotEmpty,
-            onClear: () => ref.read(cartProvider.notifier).clear(),
-          ),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: context.motion(MenuMotion.medium),
-              child: lines.isEmpty
-                  ? Center(
-                      key: const ValueKey('empty'),
-                      child: Padding(
-                        padding: const EdgeInsets.all(MenuSpace.xl),
-                        child: Text('No items yet. Tap a menu item to add it.',
-                            textAlign: TextAlign.center,
-                            style: text.bodyMedium
-                                ?.copyWith(color: scheme.onSurfaceVariant)),
-                      ),
-                    )
-                  : ListView(
-                      key: const ValueKey('lines'),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: MenuSpace.lg),
-                      children: [
-                        for (final line in lines)
-                          FadeSlideIn(
-                            key: ValueKey(line.item.id),
-                            child:
-                                CartLineTile(line: line, channel: channel),
-                          ),
-                      ],
-                    ),
-            ),
-          ),
-          const Divider(height: 1),
-          CartPanelFooter(
-            count: count,
-            total: total,
-            canSend: lines.isNotEmpty,
-            onSend: () {},
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 12,
+            offset: const Offset(-4, 0),
           ),
         ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CartPanelHeader(
+              referenceLabel: channel.referenceLabel,
+              canClear: lines.isNotEmpty,
+              onClear: () => ref.read(cartProvider.notifier).clear(),
+            ),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: context.motion(MenuMotion.medium),
+                child: lines.isEmpty
+                    ? Center(
+                        key: const ValueKey('empty'),
+                        child: Padding(
+                          padding: const EdgeInsets.all(MenuSpace.xl),
+                          child: Text('No items yet. Tap a menu item to add it.',
+                              textAlign: TextAlign.center,
+                              style: text.bodyMedium
+                                  ?.copyWith(color: scheme.onSurfaceVariant)),
+                        ),
+                      )
+                    : ListView(
+                        key: const ValueKey('lines'),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: MenuSpace.lg),
+                        children: [
+                          for (final line in lines)
+                            FadeSlideIn(
+                              key: ValueKey(line.item.id),
+                              child:
+                                  CartLineTile(line: line, channel: channel),
+                            ),
+                        ],
+                      ),
+              ),
+            ),
+            const Divider(height: 1),
+            CartPanelFooter(
+              count: count,
+              total: total,
+              canSend: lines.isNotEmpty,
+              onSend: () {},
+            ),
+          ],
+        ),
       ),
     );
   }

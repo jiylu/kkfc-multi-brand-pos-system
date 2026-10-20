@@ -51,11 +51,37 @@ class MenuHeader extends ConsumerWidget {
       onPressed: () => _signOut(ref),
     );
 
+    final themedBrand = OutlinedButton.icon(
+      onPressed: () {},
+      icon: Icon(Icons.expand_more, color: scheme.onInverseSurface),
+      iconAlignment: IconAlignment.end,
+      label: Text("Aurelia's Inasal", style: TextStyle(color: scheme.onInverseSurface)),
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: scheme.onInverseSurface.withValues(alpha: 0.5)),
+      ),
+    );
+
+    final themedUser = Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('Ana R.', style: text.labelLarge?.copyWith(color: scheme.onInverseSurface)),
+        Text('Order staff',
+            style: text.labelSmall?.copyWith(color: scheme.onInverseSurface.withValues(alpha: 0.7))),
+      ],
+    );
+
+    final themedLogout = IconButton(
+      tooltip: 'Logout',
+      icon: Icon(Icons.logout, color: scheme.onInverseSurface),
+      onPressed: () => _signOut(ref),
+    );
+
     return Material(
-      color: scheme.surface,
+      color: scheme.inverseSurface,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: scheme.outlineVariant)),
+          border: Border(bottom: BorderSide(color: scheme.onInverseSurface.withValues(alpha: 0.2))),
         ),
         child: Padding(
           padding: const EdgeInsets.all(MenuSpace.md),
@@ -63,25 +89,25 @@ class MenuHeader extends ConsumerWidget {
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [brand, const Spacer(), user, logoutButton]),
+                    Row(children: [themedBrand, const Spacer(), themedUser, themedLogout]),
                     const SizedBox(height: MenuSpace.md),
-                    const ChannelTabs(),
+                    const ChannelTabs(inverted: true),
                   ],
                 )
               : Row(
                   children: [
-                    brand,
+                    themedBrand,
                     const SizedBox(width: MenuSpace.lg),
                     const Flexible(
                       child: Align(
                         alignment: Alignment.centerLeft,
-                        child: ChannelTabs(),
+                        child: ChannelTabs(inverted: true),
                       ),
                     ),
                     const SizedBox(width: MenuSpace.lg),
-                    user,
+                    themedUser,
                     const SizedBox(width: MenuSpace.sm),
-                    logoutButton,
+                    themedLogout,
                   ],
                 ),
         ),
