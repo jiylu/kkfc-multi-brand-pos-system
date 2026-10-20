@@ -162,8 +162,10 @@ export class MenuItemsService {
   async reactivateMenuItem(menuItemId: string) {
     this.logger.debug(`Reactivating menu item ${menuItemId}`);
 
-    const menuItem =
-      await this.menuItemsRepository.findOneMenuItemByUID(menuItemId);
+    const menuItem = await this.menuItemsRepository.findOneMenuItemByUID(
+      menuItemId,
+      false,
+    );
     assertExists(menuItem, 'MenuItem', menuItemId, this.logger);
 
     const reactivated = await this.menuItemsRepository.reactivateMenuItem(
