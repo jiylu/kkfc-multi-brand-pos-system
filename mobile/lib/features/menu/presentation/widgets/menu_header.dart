@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/menu/presentation/menu_layout.dart';
+import 'package:mobile/features/menu/presentation/widgets/brands/brand_logo.dart';
 import 'package:mobile/features/menu/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/features/menu/presentation/brand_switch_flow.dart';
 import 'package:mobile/features/menu/providers/brand_providers.dart';
@@ -23,15 +24,43 @@ class MenuHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final brandName = ref.watch(activeBrandProvider.select((b) => b.name));
+    final brand = ref.watch(activeBrandProvider);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
-    final themedBrand = OutlinedButton.icon(
+    final themedBrand = OutlinedButton(
       onPressed: () => startBrandSwitch(context, ref),
-      icon: const Icon(Icons.expand_more),
-      iconAlignment: IconAlignment.end,
-      label: Text(brandName),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: scheme.onInverseSurface,
+        padding: const EdgeInsets.symmetric(
+          horizontal: MenuSpace.md,
+          vertical: MenuSpace.sm,
+        ),
+        side: BorderSide(color: scheme.onInverseSurface.withValues(alpha: 0.5)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MenuRadius.md),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: MenuSpace.sm,
+                vertical: MenuSpace.xs,
+              ),
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.circular(MenuRadius.sm),
+              ),
+              child: BrandLogo(brand: brand),
+            ),
+          ),
+          const SizedBox(width: MenuSpace.sm),
+          const Icon(Icons.expand_more),
+        ],
+      ),
     );
 
     final themedUser = Column(

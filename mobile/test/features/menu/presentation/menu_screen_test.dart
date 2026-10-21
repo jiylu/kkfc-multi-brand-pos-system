@@ -47,6 +47,21 @@ void main() {
       );
     });
 
+    testWidgets('the header shows the active brand logo', (tester) async {
+      await _pumpMenu(tester, _desktop);
+
+      final logo = find.descendant(
+        of: find.byType(MenuHeader),
+        matching: find.byType(Image),
+      );
+
+      expect(logo, findsOneWidget);
+      expect(
+        (tester.widget<Image>(logo).image as AssetImage).assetName,
+        'assets/images/aurelia.png',
+      );
+    });
+
     testWidgets('the menu bar shares the header row on a wide screen', (
       tester,
     ) async {

@@ -13,7 +13,7 @@ Future<T?> showMenuDialog<T>(
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: scheme.scrim.withValues(alpha: 0.5),
     transitionDuration: context.motion(MenuMotion.medium),
-    pageBuilder: (context, _, __) => SafeArea(
+    pageBuilder: (context, _, _) => SafeArea(
       child: Center(child: MenuDialogSurface(child: builder(context))),
     ),
     transitionBuilder: (context, animation, _, child) {
