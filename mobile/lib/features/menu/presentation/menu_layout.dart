@@ -25,6 +25,7 @@ abstract final class MenuLayout {
   static const double compactMax = 600; // below: phone layout
   static const double wideMin = 1000; // from here: cart panel on the right
   static const double cartPanelWidth = 380;
+  static const double railWidth = KkfcSizing.navRail;
   static const double minCardWidth = 168;
   static const double disabledOpacity = 0.6;
 }

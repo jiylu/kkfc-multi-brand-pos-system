@@ -24,11 +24,11 @@ class MenuRail extends StatelessWidget {
     return Material(
       color: scheme.inverseSurface,
       child: SizedBox(
-        width: 80,
+        width: MenuLayout.railWidth,
         child: SingleChildScrollView(
           child: Column(
             children: [
-              const SizedBox(height: 75),
+              const SizedBox(height: MenuSpace.sm),
               for (var i = 0; i < _destinations.length; i++)
                 _NavItem(
                   destination: _destinations[i],
@@ -58,7 +58,8 @@ class MenuBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          // No stretch: the bar sits in a Column, which hands its
+          // non-flexible children an unbounded height.
           children: [
             for (var i = 0; i < _destinations.length; i++)
               Expanded(

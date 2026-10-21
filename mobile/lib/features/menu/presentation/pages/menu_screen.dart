@@ -18,7 +18,6 @@ class MenuScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Confirm KkfcScaffold's real constructor; I assumed a `body:` parameter.
     return KkfcScaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -26,27 +25,33 @@ class MenuScreen extends StatelessWidget {
           final showRail = width >= MenuLayout.compactMax;
           final showCartPanel = width >= MenuLayout.wideMin;
 
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          return Column(
             children: [
-              if (showRail) const MenuRail(),
+              const MenuHeader(),
               Expanded(
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    MenuHeader(compact: !showRail),
-                    const Expanded(child: _MenuBody()),
-                    if (!showCartPanel) const CartBar(),
-                    if (!showRail) const MenuBottomNav(),
+                    if (showRail) const MenuRail(),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          const Expanded(child: _MenuBody()),
+                          if (!showCartPanel) const CartBar(),
+                          if (!showRail) const MenuBottomNav(),
+                        ],
+                      ),
+                    ),
+                    if (showCartPanel) ...[
+                      const VerticalDivider(width: 1),
+                      const SizedBox(
+                        width: MenuLayout.cartPanelWidth,
+                        child: CartPanel(),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              if (showCartPanel) ...[
-                const VerticalDivider(width: 1),
-                const SizedBox(
-                  width: MenuLayout.cartPanelWidth,
-                  child: CartPanel(),
-                ),
-              ],
             ],
           );
         },
