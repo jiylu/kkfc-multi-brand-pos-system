@@ -94,6 +94,10 @@ async function check() {
   assert.equal(brands.size, 3);
   assert.equal(users.size, 11);
   for (const user of [...TEST_USERS, TEST_UNASSIGNED_OWNER]) {
+    assert(
+      user.username.length <= 16,
+      `Seed username exceeds 16 characters: ${user.username}`,
+    );
     const saved = users.get(user.username);
     assert.equal(saved.role, user.role);
     assert(await argon2.verify(saved.password_hash, user.password));

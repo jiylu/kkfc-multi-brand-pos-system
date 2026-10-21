@@ -24,7 +24,7 @@
 ## Description
 
 Backend API for the KKFC multi-brand POS system, built with NestJS and Prisma.
-Implemented modules are authentication, users, and brands.
+Implemented modules are authentication, users, brands, menu items, orders, audit logs, and assets.
 
 ## Project setup
 
@@ -104,28 +104,46 @@ Password hashes are excluded from API responses.
 | `GET /api/auth/me` | Any authenticated user; returns their current profile. |
 | `POST /api/auth/logout` | Revokes the current session; returns 204. |
 | `POST /api/auth/logout-all` | Revokes all sessions for the current user; returns 204. |
-| `POST /api/users` | Owners create staff in their brand. Superadmins can create any role. Staff require an active `brand_id`; owners and superadmins may be unassigned. |
-| `GET /api/users` | Owners list users in their brand. Superadmins list users across all brands. |
-| `GET /api/users/:id` | Accepts username or user ID. Owners can read themselves and users in their brand; superadmins can read across brands. |
-| `PATCH /api/users/:id` | Requires a user UUID. Owners edit themselves or staff in their brand; they cannot edit another owner/superadmin or reset another user's password. Superadmins can edit any active user. |
-| `DELETE /api/users/:id` | Requires a user UUID. Owners deactivate themselves; superadmins can deactivate any active user. |
-| `POST /api/brands` | Owners create a brand for themselves. Superadmins must provide `owner_id` for an active owner without a brand. `code` is required and supplied by the client, with one to four characters. |
+| `POST /api/users` | Any authenticated user can create a non-superadmin account in their assigned brand. Superadmins can create any role across brands. All roles except SUPERADMIN require an active `brand_id`. |
+| `GET /api/users` | Superadmins only; lists users across all brands, including unassigned users. |
+| `GET /api/users/brand/:brandId` | Managers list users in their own active brand; superadmins list users in any active brand. |
+| `GET /api/users/:id` | Accepts username or user UUID. Any authenticated user can read users in their assigned brand; superadmins can read across brands. |
+| `PATCH /api/users/:id` | Requires a user UUID. Managers update active users in their brand, including password resets and other managers; superadmins update across brands. Supports username, first_name, last_name, and password. Role and brand_id are not accepted. |
+| `DELETE /api/users/:id` | Requires a user UUID. Managers deactivate active users in their brand; superadmins deactivate active users across brands. |
+| `POST /api/brands` | Superadmins only. Creates a brand without assigning users. A unique client-supplied code of one to four characters is required; owner_id is not accepted. |
 | `GET /api/brands` | Superadmins only; lists all brands. |
 | `GET /api/brands/:brandId` | Any authenticated user can read their assigned brand; superadmins can read any active brand. |
-| `PATCH /api/brands/:brandId` | Owners update their brand; superadmins can update any active brand. `code` is optional and is not generated on rename. |
-| `DELETE /api/brands/:brandId` | Owners deactivate their brand; superadmins can deactivate any active brand. The brand and its active users are deactivated together. |
+| `PATCH /api/brands/:brandId` | Superadmins only; updates any active brand. Code is optional and is not generated on rename. |
+| `DELETE /api/brands/:brandId` | Superadmins only; deactivates the brand and its active users together. |
+
+Menu endpoints are documented in Swagger under **Menu items**:
+
+| Endpoint | Access and behavior |
+| --- | --- |
+| `POST /api/menu-items` | Managers create items in their assigned active brand; superadmins create across brands. |
+| `GET /api/menu-items` | Superadmins only; paginated items across brands. |
+| `GET /api/menu-items/brand/:brandId` | Any authenticated user in the requested active brand; superadmins across brands. |
+| `GET /api/menu-items/:id` | Accepts a code or UUID; same-brand users and superadmins. The item's brand must be active. |
+| `PATCH /api/menu-items/:id` | Managers in the item's brand and superadmins; active items only, UUID required. Accepts partial create fields except brand_id. |
+| `PATCH /api/menu-items/reactivate/:id` | Managers in the item's brand and superadmins; UUID required. Returns 409 if already active. |
+| `DELETE /api/menu-items/:id` | Managers in the item's brand and superadmins; deactivates an active item by UUID. |
+
+Menu creation requires brand_id, recipe_id, img_url, code, name, and base_price.
+Optional description and serving_description accept null. Updates preserve omitted
+fields; null clears those two descriptions, while other fields reject null.
+Menu codes are unique, and prices allow at most two decimal places.
 
 Listings accept `page` (default 1), `limit` (default 10, maximum 100), and
 `activeOnly` (default true). `activeOnly=false` includes both active and inactive
 records. Listings return `{ data, meta: { page, limit, total, totalPages } }`.
-The single-user lookup also accepts `activeOnly`; the single-brand lookup
-returns active brands only. User UUIDs take priority over usernames for profile
-searches. Session validation and user update/delete operations use strict user-ID lookups.
+Single-user and single-menu-item lookups also accept `activeOnly`; the single-brand lookup
+returns active brands only. Usernames are limited to 16 characters. User UUIDs
+take priority over usernames for profile searches. Session validation and user update/delete operations use strict user-ID lookups.
 
 Brand codes are unique and manually supplied. Setting `logo_url` to null clears
 the logo on update; omitted update fields keep their existing values. The old
 brand-assignment endpoints have been removed. A user is linked directly to a
-brand through `brand_id` during user creation or the brand's owner-linking transaction.
+brand through `brand_id` during user creation. Brand creation does not link users.
 
 ## Run tests
 

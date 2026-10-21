@@ -156,7 +156,7 @@ enum PaymentStatus {
 
 model User {
   user_id       String   @id @default(uuid()) @db.Uuid
-  username      String   @unique @db.VarChar(64)
+  username      String   @unique @db.VarChar(16)
   first_name    String   @db.VarChar(100)
   last_name     String   @db.VarChar(100)
   password_hash String   @db.VarChar(255)

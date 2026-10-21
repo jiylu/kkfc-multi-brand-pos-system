@@ -59,7 +59,7 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 | Removal modifiers shown as NO in the kitchen | `{"modifier_codes":["MOD-NO-ONIONS","MOD-NO-MAYO"]}` |
 | Demo step 1 and 2 (#GF-1001, duplicate) | `{"brand_code":"GC","order_channel":"GRABFOOD","merchant_store_reference":"GC-GRAB-JARO","external_order_reference":"GF-1001","lines":[{"menu_item_code":"GC-KOREAN-FRIED-CHICKEN-6-PC","quantity":1,"modifier_codes":["MOD-EXTRA-SIDE-SAUCE"]}],"payment_method":"PLATFORM_SETTLED","payment_status":"PAID"}` |
 | Demo step 3 QC fail | `{"reason":"Missing side sauce","menu_item_code":"GC-KOREAN-FRIED-CHICKEN-6-PC","note":"The recipe includes yangnyeom side sauce"}` |
-| Demo step 4 recipe access | `{"recipe_code":"RCP-AI-PAA-INASAL","note":"STAFF gets 403 on instructions; OWNER sees them"}` |
+| Demo step 4 recipe access | `{"recipe_code":"RCP-AI-PAA-INASAL","note":"No recipe viewing endpoint is implemented; order responses omit recipe snapshots"}` |
 
 ## For the seed script (#31)
 
@@ -84,14 +84,14 @@ Apply the pending migrations to the intended database, then run `npm run prisma:
 | MANAGER (GC) | `test_owner` |
 | MANAGER (AI) | `test_manager_ai` |
 | MANAGER (KK) | `test_manager_kk` |
-| RECIPE_MANAGER | `test_recipe_manager` |
+| RECIPE_MANAGER | `test_recipe_mgr` |
 | SUPERVISOR | `test_supervisor` |
-| KITCHEN_HEAD | `test_kitchen_head` |
-| INVENTORY_STAFF | `test_inventory_staff` |
-| KITCHEN_STAFF | `test_kitchen_preparer` |
+| KITCHEN_HEAD | `test_chef` |
+| INVENTORY_STAFF | `test_inventory` |
+| KITCHEN_STAFF | `test_kitchen` |
 | CASHIER_STAFF | `test_order_staff` |
 
-Existing usernames are retained for login fixtures. Each seed brand has one assigned manager. Other staff are assigned to GC; the superadmin and `test_owner_unassigned` have no brand. Assignments resolve by brand code rather than seed order.
+All seed usernames fit the 16-character limit. Longer legacy usernames have been shortened for login fixtures. Each seed brand has one assigned manager. Other staff are assigned to GC; the superadmin and `test_unassigned` have no brand. Assignments resolve by brand code rather than seed order.
 
 `npm run db:seed:check` checks ingredient and output links, brand ownership, rerun behavior, stock preservation and role coverage without connecting to a database.
 

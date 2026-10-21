@@ -25,13 +25,25 @@ import {
 } from '../../../shared/decorators/brand-resource.decorator';
 import { FindAllMenuItemsDTO } from './dto/find-all-menu-items.dto';
 import { UpdateMenuItemDTO } from './dto/update-menu-item.dto';
+import {
+  MenuItemsDocs,
+  CreateMenuItemDocs,
+  FindOneMenuItemDocs,
+  FindAllMenuItemsDocs,
+  FindMenuItemsByBrandDocs,
+  UpdateMenuItemDocs,
+  ReactivateMenuItemDocs,
+  DeleteMenuItemDocs,
+} from './docs/menu-items.docs';
 
 @Controller('menu-items')
+@MenuItemsDocs()
 @UseGuards(Authenticated, RolesGuard)
 export class MenuItemsController {
   constructor(private readonly menuItemsService: MenuItemsService) {}
 
   @Post()
+  @CreateMenuItemDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseGuards(BrandsGuard)
   async create(@Body() dto: CreateMenuItemDTO) {
@@ -39,6 +51,7 @@ export class MenuItemsController {
   }
 
   @Get(':id')
+  @FindOneMenuItemDocs()
   @UseGuards(BrandsGuard)
   @BrandResource(BrandResourceType.MENU_ITEM, 'id')
   async findOne(
@@ -50,12 +63,14 @@ export class MenuItemsController {
   }
 
   @Get()
+  @FindAllMenuItemsDocs()
   @Roles(UserRole.SUPERADMIN)
   async findAll(@Query() query: FindAllMenuItemsDTO) {
     return this.menuItemsService.findAll(query);
   }
 
   @Get('brand/:brandId')
+  @FindMenuItemsByBrandDocs()
   @UseGuards(BrandsGuard)
   async findAllByBrand(
     @Param('brandId') brandId: string,
@@ -65,6 +80,7 @@ export class MenuItemsController {
   }
 
   @Patch(':id')
+  @UpdateMenuItemDocs()
   @UseGuards(BrandsGuard)
   @BrandResource(BrandResourceType.MENU_ITEM, 'id')
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
@@ -76,6 +92,7 @@ export class MenuItemsController {
   }
 
   @Patch('reactivate/:id')
+  @ReactivateMenuItemDocs()
   @UseGuards(BrandsGuard)
   @BrandResource(BrandResourceType.MENU_ITEM, 'id')
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
@@ -84,6 +101,7 @@ export class MenuItemsController {
   }
 
   @Delete(':id')
+  @DeleteMenuItemDocs()
   @UseGuards(BrandsGuard)
   @BrandResource(BrandResourceType.MENU_ITEM, 'id')
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)

@@ -21,9 +21,9 @@ export function UsersDocs() {
 export function CreateUserDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Create a user (owner or superadmin).',
+      summary: 'Create a user.',
       description:
-        'Owners can create staff only in their assigned brand. Only superadmins can create OWNER or SUPERADMIN accounts. Staff require brand_id; owners and superadmins may omit it or use null. Any supplied brand must exist and be active. Responses omit password_hash.',
+        'Any authenticated user can create a non-superadmin account in their assigned brand. Only superadmins can create SUPERADMIN accounts or users in other brands. Every role except SUPERADMIN requires brand_id; SUPERADMIN accounts may be unassigned. Any supplied brand must exist and be active. Responses omit password_hash.',
     }),
     ApiResponse({
       status: 201,
@@ -44,9 +44,9 @@ export function CreateUserDocs() {
 export function UpdateUserDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Update a user (owner or superadmin).',
+      summary: 'Update a user (manager or superadmin).',
       description:
-        "Accepts a user ID, not a username. Owners can edit themselves or staff in their brand; they cannot edit another owner or superadmin, or change another user's password. Superadmins can edit active users across brands and reset passwords. Supports username, first_name, last_name, and password; role and brand_id cannot be changed here.",
+        'Accepts a user UUID, not a username. Managers can edit active users in their assigned brand, including other managers, and reset their passwords. There is no additional restriction on the target user role. Superadmins can edit active users across brands. Supports username, first_name, last_name, and password; role and brand_id cannot be changed here. Omitted fields are unchanged; null is invalid.',
     }),
     ApiParam({
       name: 'id',
@@ -65,9 +65,9 @@ export function UpdateUserDocs() {
 export function FindAllUsersDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'List users in your brand, or all users as a superadmin.',
+      summary: 'List all users (superadmin).',
       description:
-        'Owners receive users in their assigned brand, or an empty list if unassigned. Superadmins receive users across all brands, including unassigned users. activeOnly defaults to true; false includes active and inactive users. Responses omit password_hash.',
+        'Superadmins receive users across all brands, including unassigned users. Managers must use GET /users/brand/:brandId to list users in their assigned brand. That brand listing is also available to superadmins. activeOnly defaults to true; false includes active and inactive users. Responses omit password_hash.',
     }),
     ApiResponse({
       status: 200,
@@ -80,9 +80,9 @@ export function FindAllUsersDocs() {
 export function FindOneUserDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Get a user by username or user ID (owner or superadmin).',
+      summary: 'Get a user by username or user ID.',
       description:
-        'Owners can access themselves and users in their assigned brand. Superadmins can access users across brands. UUID-shaped identifiers are tried as user IDs before usernames. activeOnly defaults to true; false also permits inactive users. Responses omit password_hash.',
+        'Any authenticated user can access users in their assigned brand. Superadmins can access users across brands, including unassigned users. UUID-shaped identifiers are treated as user IDs; other identifiers are usernames. activeOnly defaults to true; false also permits inactive users. Responses omit password_hash.',
     }),
     ApiParam({
       name: 'id',
@@ -111,9 +111,9 @@ export function FindOneUserDocs() {
 export function DeleteUserDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Deactivate yourself, or any user as a superadmin.',
+      summary: 'Deactivate a user (manager or superadmin).',
       description:
-        'Accepts a user ID, not a username. Owners can deactivate only themselves. Superadmins can deactivate any active user. The record is preserved, and the user can no longer authenticate.',
+        'Accepts a user UUID, not a username. Managers can deactivate active users in their assigned brand. Superadmins can deactivate active users across brands. There is no additional restriction on the target user role. The record is preserved, and the user can no longer authenticate.',
     }),
     ApiParam({
       name: 'id',

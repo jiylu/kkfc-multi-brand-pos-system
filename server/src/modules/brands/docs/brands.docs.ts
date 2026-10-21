@@ -20,9 +20,9 @@ export function BrandsDocs() {
 export function CreateBrandDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Create a brand (owner or superadmin).',
+      summary: 'Create a brand (superadmin).',
       description:
-        'Provide a unique code of one to four characters; the server does not generate it. Owners create brands for themselves. Superadmins must supply owner_id. The selected user must be an active OWNER without a brand. Creation and owner linking happen in one transaction.',
+        'Provide a name, a unique code of one to four characters, and an optional logo_url. The server does not generate the code. Brand creation does not assign users; owner_id is not accepted.',
     }),
     ApiResponse({
       status: 201,
@@ -30,8 +30,7 @@ export function CreateBrandDocs() {
     }),
     ApiResponse({
       status: 409,
-      description:
-        'The code is already taken, or the selected user is not an active owner without a brand.',
+      description: 'The brand code is already taken.',
     }),
   );
 }
@@ -41,7 +40,7 @@ export function FindAllBrandsDocs() {
     ApiOperation({
       summary: 'List all brands (superadmin).',
       description:
-        'Returns brands across all owners. Supports page, limit, and activeOnly. activeOnly defaults to true; false includes both active and inactive brands.',
+        'Returns all brands. Supports page, limit, and activeOnly. activeOnly defaults to true; false includes both active and inactive brands.',
     }),
     ApiResponse({
       status: 200,
@@ -71,9 +70,9 @@ export function FindOneBrandDocs() {
 export function UpdateBrandDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Update an active brand (owner or superadmin).',
+      summary: 'Update an active brand (superadmin).',
       description:
-        'Owners can update their assigned brand; superadmins can update any active brand. Update the name, manually supplied code, or logo_url. Omitted fields are unchanged; null clears logo_url. Renaming does not generate a code.',
+        'Superadmins can update any active brand. Update the name, manually supplied code, or logo_url. Omitted fields are unchanged; null clears logo_url. Renaming does not generate a code.',
     }),
     ApiParam({
       name: 'brandId',
@@ -89,9 +88,9 @@ export function UpdateBrandDocs() {
 export function DeleteBrandDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'Deactivate a brand (owner or superadmin).',
+      summary: 'Deactivate a brand (superadmin).',
       description:
-        'Owners can deactivate their assigned brand; superadmins can deactivate any active brand. The brand and its active users are deactivated in one transaction. Records are preserved, and affected users can no longer authenticate.',
+        'Superadmins can deactivate any active brand. The brand and its active users are deactivated in one transaction. Records are preserved, and affected users can no longer authenticate.',
     }),
     ApiParam({
       name: 'brandId',
