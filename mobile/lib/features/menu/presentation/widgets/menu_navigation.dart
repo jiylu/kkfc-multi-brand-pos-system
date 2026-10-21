@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/features/menu/presentation/menu_layout.dart';
 
-const _destinations = [
+typedef _Destination = ({IconData icon, IconData selected, String label});
+
+const List<_Destination> _destinations = [
   (icon: Icons.add_shopping_cart_outlined, selected: Icons.add_shopping_cart, label: 'New order'),
   (icon: Icons.receipt_long_outlined, selected: Icons.receipt_long, label: 'Orders'),
   (icon: Icons.restaurant_menu_outlined, selected: Icons.restaurant_menu, label: 'Menu'),
@@ -9,70 +11,137 @@ const _destinations = [
 ];
 
 class MenuRail extends StatelessWidget {
-  const MenuRail({super.key});
+  const MenuRail({super.key, this.selectedIndex = 0, this.onSelected});
+
+  final int selectedIndex;
+  // TODO: route between tabs once Orders / Audit screens exist.
+  final ValueChanged<int>? onSelected;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final label = Theme.of(context).textTheme.labelMedium!;
-    final onDark = scheme.onInverseSurface;
 
-    return NavigationRail(
-      backgroundColor: scheme.inverseSurface,
-      indicatorColor: onDark,
-      selectedIndex: 0,
-      labelType: NavigationRailLabelType.all,
-      // Pushes the whole destination group down. The pill moves with the
-      // icons because nothing is translated or padded inside the icons.
-      leading: const SizedBox(height: MenuSpace.xxl),
-      // TODO: route between tabs once Orders / Audit screens exist.
-      onDestinationSelected: (_) {},
-      selectedIconTheme: IconThemeData(color: scheme.inverseSurface),
-      unselectedIconTheme: IconThemeData(color: onDark.withValues(alpha: 0.7)),
-      selectedLabelTextStyle: label.copyWith(color: onDark),
-      unselectedLabelTextStyle:
-          label.copyWith(color: onDark.withValues(alpha: 0.7)),
-      destinations: [
-        for (final d in _destinations)
-          NavigationRailDestination(
-            icon: Icon(d.icon),
-            selectedIcon: Icon(d.selected),
-            label: Text(d.label),
+    return Material(
+      color: scheme.inverseSurface,
+      child: SizedBox(
+        width: 80,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const SizedBox(height: 75),
+              for (var i = 0; i < _destinations.length; i++)
+                _NavItem(
+                  destination: _destinations[i],
+                  selected: i == selectedIndex,
+                  onTap: () => onSelected?.call(i),
+                ),
+            ],
           ),
-      ],
+        ),
+      ),
     );
   }
 }
 
 class MenuBottomNav extends StatelessWidget {
-  const MenuBottomNav({super.key});
+  const MenuBottomNav({super.key, this.selectedIndex = 0, this.onSelected});
+
+  final int selectedIndex;
+  final ValueChanged<int>? onSelected;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final label = Theme.of(context).textTheme.labelMedium!;
-    final onDark = scheme.onInverseSurface;
 
-    return NavigationBar(
-      backgroundColor: scheme.inverseSurface,
-      indicatorColor: onDark.withValues(alpha: 0.12),
-      selectedIndex: 0,
-      onDestinationSelected: (_) {},
-      destinations: [
-        for (final d in _destinations)
-          NavigationDestination(
-            icon: Icon(d.icon, color: onDark.withValues(alpha: 0.7)),
-            selectedIcon: Icon(d.selected, color: onDark),
-            label: d.label,
-            tooltip: d.label,
+    return Material(
+      color: scheme.inverseSurface,
+      child: SafeArea(
+        top: false,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < _destinations.length; i++)
+              Expanded(
+                child: _NavItem(
+                  destination: _destinations[i],
+                  selected: i == selectedIndex,
+                  onTap: () => onSelected?.call(i),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.destination,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _Destination destination;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final onDark = scheme.onInverseSurface;
+    final labelStyle = Theme.of(context).textTheme.labelMedium!;
+
+    // Edit these three lines to change the look.
+    final highlight = selected ? onDark : Colors.transparent;
+    final fg = selected ? scheme.inverseSurface : onDark.withValues(alpha: 0.7);
+    // For rounded corners, add borderRadius to a BoxDecoration instead of `color:`.
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: destination.label,
+      child: AnimatedContainer(
+        duration: context.motion(MenuMotion.fast),
+        curve: MenuMotion.curve,
+        color: highlight, // square, no radius
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 64),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: MenuSpace.sm,
+                  horizontal: MenuSpace.xs,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TweenAnimationBuilder<Color?>(
+                      tween: ColorTween(end: fg),
+                      duration: context.motion(MenuMotion.fast),
+                      builder: (context, color, _) => Icon(
+                        selected ? destination.selected : destination.icon,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: MenuSpace.xs),
+                    AnimatedDefaultTextStyle(
+                      duration: context.motion(MenuMotion.fast),
+                      style: labelStyle.copyWith(color: fg),
+                      textAlign: TextAlign.center,
+                      child: Text(destination.label, textAlign: TextAlign.center),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-      ],
-      labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        final selected = states.contains(WidgetState.selected);
-        return label.copyWith(
-          color: selected ? onDark : onDark.withValues(alpha: 0.7),
-        );
-      }),
+        ),
+      ),
     );
   }
 }
