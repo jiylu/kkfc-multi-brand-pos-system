@@ -11,8 +11,8 @@ export class UpdateUserDTO {
   @ValidateIf((_object: unknown, value: unknown) => value !== undefined)
   @IsString({ message: 'Username must be a string.' })
   @IsNotEmpty({ message: 'Username is required and cannot be empty.' })
-  @MaxLength(64, { message: 'Username must be at most 64 characters long.' })
-  @ApiPropertyOptional({ maxLength: 64 })
+  @MaxLength(16, { message: 'Username must be at most 16 characters long.' })
+  @ApiPropertyOptional({ maxLength: 16 })
   username?: string;
 
   @ValidateIf((_object: unknown, value: unknown) => value !== undefined)
@@ -41,7 +41,7 @@ export class UpdateUserDTO {
     maxLength: 32,
     format: 'password',
     description:
-      "Owners may change only their own password. Superadmins may reset another active user's password.",
+      'Managers may change passwords for active users in their own brand. Superadmins may change passwords across brands.',
   })
   password?: string;
 }

@@ -31,6 +31,8 @@ services:
       AWS_REGION: ${AWS_REGION:-ap-southeast-1}
       S3_BUCKET: ${S3_BUCKET:-}
       S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-}
+      CLOUDFRONT_KEY_PAIR_ID: ${CLOUDFRONT_KEY_PAIR_ID:-}
+      CLOUDFRONT_PRIVATE_KEY: ${CLOUDFRONT_PRIVATE_KEY:-}
     depends_on:
       db:
         condition: service_healthy

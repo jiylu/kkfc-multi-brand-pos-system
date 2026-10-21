@@ -4,9 +4,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
-  IsUUID,
   MaxLength,
-  ValidateIf,
 } from 'class-validator';
 
 export class CreateBrandDTO {
@@ -26,15 +24,6 @@ export class CreateBrandDTO {
       'Unique code supplied by the client; not generated from the name.',
   })
   code!: string;
-
-  @ValidateIf((_object: unknown, value: unknown) => value !== undefined)
-  @IsUUID('all', { message: 'Owner ID must be a valid UUID.' })
-  @ApiPropertyOptional({
-    format: 'uuid',
-    description:
-      'Required for superadmins. Must identify an active OWNER without a brand. Owners may omit this field or provide their own user ID.',
-  })
-  owner_id?: string;
 
   @IsOptional()
   @IsUrl({}, { message: 'Logo URL must be a valid URL.' })

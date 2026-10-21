@@ -533,6 +533,7 @@
   "recipes": [
     {
       "code": "RCP-PROD-COOKED-RICE",
+      "brand_code": "GC",
       "name": "Cooked rice (batch)",
       "type": "PRODUCTION",
       "version": 1,
@@ -550,6 +551,7 @@
     },
     {
       "code": "RCP-PROD-INASAL-LEG",
+      "brand_code": "AI",
       "name": "Inasal chicken leg marinade (batch of 10)",
       "type": "PRODUCTION",
       "version": 1,
@@ -583,6 +585,7 @@
     },
     {
       "code": "RCP-PROD-INASAL-BREAST",
+      "brand_code": "AI",
       "name": "Inasal chicken breast marinade (batch of 10)",
       "type": "PRODUCTION",
       "version": 1,
@@ -616,6 +619,7 @@
     },
     {
       "code": "RCP-PROD-CHICKEN-OIL",
+      "brand_code": "AI",
       "name": "Chicken oil (batch)",
       "type": "PRODUCTION",
       "version": 1,
@@ -641,6 +645,7 @@
     },
     {
       "code": "RCP-PROD-BATCHOY-BROTH",
+      "brand_code": "AI",
       "name": "Batchoy broth (batch)",
       "type": "PRODUCTION",
       "version": 1,
@@ -666,6 +671,7 @@
     },
     {
       "code": "RCP-PROD-YANGNYEOM",
+      "brand_code": "GC",
       "name": "Yangnyeom sauce (batch)",
       "type": "PRODUCTION",
       "version": 1,
@@ -695,6 +701,7 @@
     },
     {
       "code": "RCP-GC-KIMCHI-FRIED-RICE",
+      "brand_code": "GC",
       "name": "Kimchi Fried Rice",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -728,6 +735,7 @@
     },
     {
       "code": "RCP-GC-BIBIMBAP",
+      "brand_code": "GC",
       "name": "Bibimbap",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -761,6 +769,7 @@
     },
     {
       "code": "RCP-GC-TTEOKBOKKI",
+      "brand_code": "GC",
       "name": "Tteokbokki",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -786,6 +795,7 @@
     },
     {
       "code": "RCP-GC-KOREAN-FRIED-CHICKEN-6-PC",
+      "brand_code": "GC",
       "name": "Korean Fried Chicken (6 pc)",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -811,6 +821,7 @@
     },
     {
       "code": "RCP-GC-JAPCHAE",
+      "brand_code": "GC",
       "name": "Japchae",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -844,6 +855,7 @@
     },
     {
       "code": "RCP-GC-MANGO-BINGSU",
+      "brand_code": "GC",
       "name": "Mango Bingsu",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -869,6 +881,7 @@
     },
     {
       "code": "RCP-AI-PAA-INASAL",
+      "brand_code": "AI",
       "name": "Paa Inasal",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -902,6 +915,7 @@
     },
     {
       "code": "RCP-AI-PECHO-INASAL",
+      "brand_code": "AI",
       "name": "Pecho Inasal",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -935,6 +949,7 @@
     },
     {
       "code": "RCP-AI-PORK-INASAL",
+      "brand_code": "AI",
       "name": "Pork Inasal",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -964,6 +979,7 @@
     },
     {
       "code": "RCP-AI-BATCHOY-SPECIAL",
+      "brand_code": "AI",
       "name": "Batchoy Special",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1001,6 +1017,7 @@
     },
     {
       "code": "RCP-AI-HALO-HALO",
+      "brand_code": "AI",
       "name": "Halo-halo",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1026,6 +1043,7 @@
     },
     {
       "code": "RCP-KK-AMERICANO",
+      "brand_code": "KK",
       "name": "Americano",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1043,6 +1061,7 @@
     },
     {
       "code": "RCP-KK-ICED-SPANISH-LATTE",
+      "brand_code": "KK",
       "name": "Iced Spanish Latte",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1072,6 +1091,7 @@
     },
     {
       "code": "RCP-KK-MATCHA-LATTE",
+      "brand_code": "KK",
       "name": "Matcha Latte",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1097,6 +1117,7 @@
     },
     {
       "code": "RCP-KK-CLUBHOUSE-SANDWICH",
+      "brand_code": "KK",
       "name": "Clubhouse Sandwich",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1134,6 +1155,7 @@
     },
     {
       "code": "RCP-KK-UBE-CHEESE-PANDESAL-3-PC",
+      "brand_code": "KK",
       "name": "Ube Cheese Pandesal (3 pc)",
       "type": "MENU_ASSEMBLY",
       "version": 1,
@@ -1159,7 +1181,7 @@
       "description": "Fried rice with kimchi and gochujang",
       "serving_description": "1 bowl",
       "base_price": 189,
-      "logo_url": "https://images.example.invalid/menu-items/gc-kimchi-fried-rice.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-kimchi-fried-rice.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1192,7 +1214,7 @@
       "description": "Rice bowl with vegetables, egg and gochujang",
       "serving_description": "1 bowl",
       "base_price": 229,
-      "logo_url": "https://images.example.invalid/menu-items/gc-bibimbap.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-bibimbap.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1225,7 +1247,7 @@
       "description": "Rice cakes in spicy gochujang sauce",
       "serving_description": "1 plate",
       "base_price": 159,
-      "logo_url": "https://images.example.invalid/menu-items/gc-tteokbokki.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-tteokbokki.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1258,7 +1280,7 @@
       "description": "Double-fried wings with yangnyeom side sauce",
       "serving_description": "6 pieces with side sauce",
       "base_price": 220,
-      "logo_url": "https://images.example.invalid/menu-items/gc-korean-fried-chicken-6-pc.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-korean-fried-chicken-6-pc.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1291,7 +1313,7 @@
       "description": "Glass noodles with vegetables",
       "serving_description": "1 plate",
       "base_price": 179,
-      "logo_url": "https://images.example.invalid/menu-items/gc-japchae.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-japchae.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1324,7 +1346,7 @@
       "description": "Shaved ice with mango (seasonal)",
       "serving_description": "1 bowl",
       "base_price": 199,
-      "logo_url": "https://images.example.invalid/menu-items/gc-mango-bingsu.jpg",
+      "img_url": "https://images.example.invalid/menu-items/gc-mango-bingsu.jpg",
       "is_active": false,
       "channels": [
         {
@@ -1357,7 +1379,7 @@
       "description": "Grilled chicken leg quarter, inasal style",
       "serving_description": "1 leg quarter with rice",
       "base_price": 179,
-      "logo_url": "https://images.example.invalid/menu-items/ai-paa-inasal.jpg",
+      "img_url": "https://images.example.invalid/menu-items/ai-paa-inasal.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1390,7 +1412,7 @@
       "description": "Grilled chicken breast, inasal style",
       "serving_description": "1 breast with rice",
       "base_price": 189,
-      "logo_url": "https://images.example.invalid/menu-items/ai-pecho-inasal.jpg",
+      "img_url": "https://images.example.invalid/menu-items/ai-pecho-inasal.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1423,7 +1445,7 @@
       "description": "Grilled pork belly, inasal style",
       "serving_description": "1 serving with rice",
       "base_price": 199,
-      "logo_url": "https://images.example.invalid/menu-items/ai-pork-inasal.jpg",
+      "img_url": "https://images.example.invalid/menu-items/ai-pork-inasal.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1456,7 +1478,7 @@
       "description": "Miki noodles in pork broth with chicharon",
       "serving_description": "1 bowl",
       "base_price": 145,
-      "logo_url": "https://images.example.invalid/menu-items/ai-batchoy-special.jpg",
+      "img_url": "https://images.example.invalid/menu-items/ai-batchoy-special.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1489,7 +1511,7 @@
       "description": "Shaved ice with mixed sweets and milk",
       "serving_description": "1 glass",
       "base_price": 109,
-      "logo_url": "https://images.example.invalid/menu-items/ai-halo-halo.jpg",
+      "img_url": "https://images.example.invalid/menu-items/ai-halo-halo.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1522,7 +1544,7 @@
       "description": "Espresso with hot water",
       "serving_description": "12 oz",
       "base_price": 120,
-      "logo_url": "https://images.example.invalid/menu-items/kk-americano.jpg",
+      "img_url": "https://images.example.invalid/menu-items/kk-americano.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1555,7 +1577,7 @@
       "description": "Espresso, milk and condensed milk over ice",
       "serving_description": "16 oz",
       "base_price": 160,
-      "logo_url": "https://images.example.invalid/menu-items/kk-iced-spanish-latte.jpg",
+      "img_url": "https://images.example.invalid/menu-items/kk-iced-spanish-latte.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1588,7 +1610,7 @@
       "description": "Matcha with milk over ice",
       "serving_description": "16 oz",
       "base_price": 170,
-      "logo_url": "https://images.example.invalid/menu-items/kk-matcha-latte.jpg",
+      "img_url": "https://images.example.invalid/menu-items/kk-matcha-latte.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1621,7 +1643,7 @@
       "description": "Triple-decker with ham, egg and vegetables",
       "serving_description": "1 sandwich",
       "base_price": 195,
-      "logo_url": "https://images.example.invalid/menu-items/kk-clubhouse-sandwich.jpg",
+      "img_url": "https://images.example.invalid/menu-items/kk-clubhouse-sandwich.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1654,7 +1676,7 @@
       "description": "Ube pandesal with cheese filling",
       "serving_description": "3 pieces",
       "base_price": 95,
-      "logo_url": "https://images.example.invalid/menu-items/kk-ube-cheese-pandesal-3-pc.jpg",
+      "img_url": "https://images.example.invalid/menu-items/kk-ube-cheese-pandesal-3-pc.jpg",
       "is_active": true,
       "channels": [
         {
@@ -1675,6 +1697,303 @@
         {
           "order_channel": "FOODPANDA",
           "price": 110,
+          "is_available": true
+        }
+      ]
+    },
+    {
+      "code": "GC-SEOUL-COMFORT-BOWL",
+      "brand_code": "GC",
+      "recipe_code": "RCP-GC-KIMCHI-FRIED-RICE",
+      "name": "Seoul Comfort Bowl",
+      "description": "Kimchi fried rice with gochujang and sesame oil",
+      "serving_description": "1 bowl",
+      "base_price": 175,
+      "img_url": "https://images.example.invalid/menu-items/gc-seoul-comfort-bowl.jpg",
+      "is_active": true,
+      "channels": [
+        {
+          "order_channel": "DINE_IN",
+          "price": 175,
+          "is_available": true
+        },
+        {
+          "order_channel": "TAKEAWAY",
+          "price": 175,
+          "is_available": true
+        },
+        {
+          "order_channel": "GRABFOOD",
+          "price": 205,
+          "is_available": true
+        },
+        {
+          "order_channel": "FOODPANDA",
+          "price": 205,
+          "is_available": true
+        }
+      ]
+    },
+    {
+      "code": "GC-RAINBOW-BIBIMBAP",
+      "brand_code": "GC",
+      "recipe_code": "RCP-GC-BIBIMBAP",
+      "name": "Rainbow Bibimbap",
+      "description": "A colorful rice bowl with vegetables and Korean sauce",
+      "serving_description": "1 bowl",
+      "base_price": 215,
+      "img_url": "https://images.example.invalid/menu-items/gc-rainbow-bibimbap.jpg",
+      "is_active": true,
+      "channels": [
+        {
+          "order_channel": "DINE_IN",
+          "price": 215,
+          "is_available": true
+        },
+        {
+          "order_channel": "TAKEAWAY",
+          "price": 215,
+          "is_available": true
+        },
+        {
+          "order_channel": "GRABFOOD",
+          "price": 245,
+          "is_available": true
+        },
+        {
+          "order_channel": "FOODPANDA",
+          "price": 245,
+          "is_available": true
+        }
+      ]
+    },
+    {
+      "code": "GC-KPOP-CHICKEN-BOX",
+      "brand_code": "GC",
+      "recipe_code": "RCP-GC-KOREAN-FRIED-CHICKEN-6-PC",
+      "name": "K-Pop Chicken Box",
+      "description": "Six pieces of Korean fried chicken with side sauce",
+      "serving_description": "6 pieces",
+      "base_price": 235,
+      "img_url": "https://images.example.invalid/menu-items/gc-kpop-chicken-box.jpg",
+      "is_active": true,
+      "channels": [
+        {
+          "order_channel": "DINE_IN",
+          "price": 235,
+          "is_available": true
+        },
+        {
+          "order_channel": "TAKEAWAY",
+          "price": 235,
+          "is_available": true
+        },
+        {
+          "order_channel": "GRABFOOD",
+          "price": 265,
+          "is_available": true
+        },
+        {
+          "order_channel": "FOODPANDA",
+          "price": 265,
+          "is_available": true
+        }
+      ]
+    },
+    {
+      "code": "AI-SUNSET-PAA-PLATE",
+      "brand_code": "AI",
+      "recipe_code": "RCP-AI-PAA-INASAL",
+      "name": "Sunset Paa Plate",
+      "description": "Grilled inasal chicken leg with rice and chicken oil",
+      "serving_description": "1 plate",
+      "base_price": 185,
+      "img_url": "https://images.example.invalid/menu-items/ai-sunset-paa-plate.jpg",
+      "is_active": true,
+      "channels": [
+        {
+          "order_channel": "DINE_IN",
+          "price": 185,
+          "is_available": true
+        },
+        {
+          "order_channel": "TAKEAWAY",
+          "price": 185,
+          "is_available": true
+        },
+        {
+          "order_channel": "GRABFOOD",
+          "price": 215,
+          "is_available": true
+        },
+        {
+          "order_channel": "FOODPANDA",
+          "price": 215,
+          "is_available": true
+        }
+      ]
+    },
+    {
+      "code": "AI-SMOKY-PECHO-PLATE",
+      "brand_code": "AI",
+      "recipe_code": "RCP-AI-PECHO-INASAL",
+      "name": "Smoky Pecho Plate",
+      "description": "Marinated inasal chicken breast served with rice",
+      "serving_description": "1 plate",
+      "base_price": 205,
+      "img_url": "https://images.example.invalid/menu-items/ai-smoky-pecho-plate.jpg",
+      "is_active": true,
+      "channels": [
+        {
+          "order_channel": "DINE_IN",
+          "price": 205,
+          "is_available": true
+        },
+        {
+          "order_channel": "TAKEAWAY",
+          "price": 205,
+          "is_available": true
+        },
+        {
+          "order_channel": "GRABFOOD",
+          "price": 235,
+          "is_available": true
+        },
+        {
+          "order_channel": "FOODPANDA",
+          "price": 235,
+          "is_available": true
+        }
+      ]
+    },
+    {
+      "code": "AI-GRILLHOUSE-PORK-PLATE",
+      "brand_code": "AI",
+      "recipe_code": "RCP-AI-PORK-INASAL",
+      "name": "Grillhouse Pork Plate",
+      "description": "Pork inasal with rice and a savory grilled finish",
+      "serving_description": "1 plate",
+      "base_price": 225,
+      "img_url": "https://images.example.invalid/menu-items/ai-grillhouse-pork-plate.jpg",
+      "is_active": true,
+      "channels": [
+        {
+          "order_channel": "DINE_IN",
+          "price": 225,
+          "is_available": true
+        },
+        {
+          "order_channel": "TAKEAWAY",
+          "price": 225,
+          "is_available": true
+        },
+        {
+          "order_channel": "GRABFOOD",
+          "price": 255,
+          "is_available": true
+        },
+        {
+          "order_channel": "FOODPANDA",
+          "price": 255,
+          "is_available": true
+        }
+      ]
+    },
+    {
+      "code": "KK-MORNING-KICK-AMERICANO",
+      "brand_code": "KK",
+      "recipe_code": "RCP-KK-AMERICANO",
+      "name": "Morning Kick Americano",
+      "description": "Espresso and water for a straightforward coffee break",
+      "serving_description": "1 cup",
+      "base_price": 115,
+      "img_url": "https://images.example.invalid/menu-items/kk-morning-kick-americano.jpg",
+      "is_active": true,
+      "channels": [
+        {
+          "order_channel": "DINE_IN",
+          "price": 115,
+          "is_available": true
+        },
+        {
+          "order_channel": "TAKEAWAY",
+          "price": 115,
+          "is_available": true
+        },
+        {
+          "order_channel": "GRABFOOD",
+          "price": 145,
+          "is_available": true
+        },
+        {
+          "order_channel": "FOODPANDA",
+          "price": 145,
+          "is_available": true
+        }
+      ]
+    },
+    {
+      "code": "KK-MIDDAY-SPANISH-LATTE",
+      "brand_code": "KK",
+      "recipe_code": "RCP-KK-ICED-SPANISH-LATTE",
+      "name": "Midday Spanish Latte",
+      "description": "Iced espresso with milk and a sweet creamy finish",
+      "serving_description": "1 glass",
+      "base_price": 165,
+      "img_url": "https://images.example.invalid/menu-items/kk-midday-spanish-latte.jpg",
+      "is_active": true,
+      "channels": [
+        {
+          "order_channel": "DINE_IN",
+          "price": 165,
+          "is_available": true
+        },
+        {
+          "order_channel": "TAKEAWAY",
+          "price": 165,
+          "is_available": true
+        },
+        {
+          "order_channel": "GRABFOOD",
+          "price": 195,
+          "is_available": true
+        },
+        {
+          "order_channel": "FOODPANDA",
+          "price": 195,
+          "is_available": true
+        }
+      ]
+    },
+    {
+      "code": "KK-GREEN-VELVET-MATCHA",
+      "brand_code": "KK",
+      "recipe_code": "RCP-KK-MATCHA-LATTE",
+      "name": "Green Velvet Matcha",
+      "description": "Smooth matcha latte with milk",
+      "serving_description": "1 glass",
+      "base_price": 175,
+      "img_url": "https://images.example.invalid/menu-items/kk-green-velvet-matcha.jpg",
+      "is_active": true,
+      "channels": [
+        {
+          "order_channel": "DINE_IN",
+          "price": 175,
+          "is_available": true
+        },
+        {
+          "order_channel": "TAKEAWAY",
+          "price": 175,
+          "is_available": true
+        },
+        {
+          "order_channel": "GRABFOOD",
+          "price": 205,
+          "is_available": true
+        },
+        {
+          "order_channel": "FOODPANDA",
+          "price": 205,
           "is_available": true
         }
       ]

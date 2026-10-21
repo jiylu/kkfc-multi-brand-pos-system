@@ -10,6 +10,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BrandsModule } from './modules/brands/brands.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { MenuItemsModule } from './modules/menu/menu-items/menu-items.module';
+import { AssetsModule } from './modules/assets/assets.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { OrdersModule } from './modules/orders/orders.module';
     BrandsModule,
     AuditModule,
     OrdersModule,
+    MenuItemsModule,
+    AssetsModule,
   ],
   controllers: [],
   providers: [

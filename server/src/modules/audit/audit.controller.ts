@@ -16,7 +16,7 @@ import { FindAuditLogsDTO } from './dto/find-audit-logs.dto';
 @ApiTags('Audit logs')
 @ApiBearerAuth()
 @UseGuards(Authenticated, RolesGuard)
-@Roles(UserRole.OWNER)
+@Roles(UserRole.SUPERADMIN)
 export class AuditController {
   constructor(private readonly service: AuditService) {}
 

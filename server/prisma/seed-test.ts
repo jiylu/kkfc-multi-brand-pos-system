@@ -1,6 +1,6 @@
 import { config } from 'dotenv';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { Prisma, PrismaClient, UserRole } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { getDatabaseUrl } from '../src/database/database.config';
 
@@ -8,49 +8,95 @@ config({ path: ['.env', '../.env'], quiet: true });
 
 export const TEST_USERS = [
   {
+    username: 'test_superadmin',
+    first_name: 'Super',
+    last_name: 'Admin',
+    password: 'Password123!',
+    role: UserRole.SUPERADMIN,
+    brand_code: null,
+  },
+  {
+    username: 'test_recipe_mgr',
+    first_name: 'Recipe',
+    last_name: 'Manager',
+    password: 'Password123!',
+    role: UserRole.RECIPE_MANAGER,
+    brand_code: 'GC',
+  },
+  {
+    username: 'test_supervisor',
+    first_name: 'Test',
+    last_name: 'Supervisor',
+    password: 'Password123!',
+    role: UserRole.SUPERVISOR,
+    brand_code: 'GC',
+  },
+  {
     username: 'test_owner',
     first_name: 'Test',
     last_name: 'Owner',
     password: 'Password123!',
-    role: UserRole.OWNER,
+    role: UserRole.MANAGER,
+    brand_code: 'GC',
   },
   {
-    username: 'test_kitchen_head',
+    username: 'test_manager_ai',
+    first_name: 'Aurelia',
+    last_name: 'Manager',
+    password: 'Password123!',
+    role: UserRole.MANAGER,
+    brand_code: 'AI',
+  },
+  {
+    username: 'test_manager_kk',
+    first_name: 'King Kungs',
+    last_name: 'Manager',
+    password: 'Password123!',
+    role: UserRole.MANAGER,
+    brand_code: 'KK',
+  },
+  {
+    username: 'test_chef',
     first_name: 'Chef',
     last_name: 'Head',
     password: 'Password123!',
     role: UserRole.KITCHEN_HEAD,
+    brand_code: 'GC',
   },
   {
-    username: 'test_kitchen_preparer',
+    username: 'test_kitchen',
     first_name: 'Line',
     last_name: 'Cook',
     password: 'Password123!',
-    role: UserRole.KITCHEN_PREPARER,
+    role: UserRole.KITCHEN_STAFF,
+    brand_code: 'GC',
   },
   {
     username: 'test_order_staff',
     first_name: 'Cashier',
     last_name: 'Staff',
     password: 'Password123!',
-    role: UserRole.ORDER_STAFF,
+    role: UserRole.CASHIER_STAFF,
+    brand_code: 'GC',
   },
   {
-    username: 'test_inventory_staff',
+    username: 'test_inventory',
     first_name: 'Stock',
     last_name: 'Keeper',
     password: 'Password123!',
     role: UserRole.INVENTORY_STAFF,
+    brand_code: 'GC',
   },
 ];
 
-// Owner intentionally left without a brand so E2E tests can create one.
+// Manager intentionally left without a brand so E2E tests can create one.
 export const TEST_UNASSIGNED_OWNER = {
-  username: 'test_owner_unassigned',
+  username: 'test_unassigned',
   first_name: 'Unassigned',
   last_name: 'Owner',
   password: 'Password123!',
-  role: UserRole.OWNER,
+  role: UserRole.MANAGER,
+  brand_code: null,
 };
 
 export const TEST_BRANDS = [
@@ -71,6 +117,33 @@ export const TEST_BRANDS = [
   },
 ];
 
+export async function seedUsers(
+  prisma: Prisma.TransactionClient,
+  brandIds: ReadonlyMap<string, string>,
+) {
+  for (const user of [...TEST_USERS, TEST_UNASSIGNED_OWNER]) {
+    const { password, brand_code, ...data } = user;
+    const brand_id = brand_code === null ? null : brandIds.get(brand_code);
+    if (brand_id === undefined) {
+      throw new Error(`Unknown brand code in user seed data: ${brand_code}`);
+    }
+    const values = {
+      ...data,
+      password_hash: await argon2.hash(password),
+      brand_id,
+      is_active: true,
+    };
+    await prisma.user.upsert({
+      where: { username: user.username },
+      update: { ...values, modified_at: new Date() },
+      create: values,
+    });
+  }
+  console.log(
+    `Seeded ${TEST_USERS.length + 1} users covering all 8 roles, with one manager per brand.`,
+  );
+}
+
 async function seedTestDatabase() {
   const adapter = new PrismaPg({
     connectionString: getDatabaseUrl(process.env),
@@ -78,31 +151,8 @@ async function seedTestDatabase() {
   const prisma = new PrismaClient({ adapter });
 
   try {
-    console.log('Seeding test users...');
-    for (const user of TEST_USERS) {
-      const passwordHash = await argon2.hash(user.password);
-      await prisma.user.upsert({
-        where: { username: user.username },
-        update: {
-          first_name: user.first_name,
-          last_name: user.last_name,
-          role: user.role,
-          password_hash: passwordHash,
-          is_active: true,
-        },
-        create: {
-          username: user.username,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          role: user.role,
-          password_hash: passwordHash,
-          is_active: true,
-        },
-      });
-    }
-
     console.log('Seeding test brands...');
-    const seededBrands: { brand_id: string; code: string; name: string }[] = [];
+    const brandIds = new Map<string, string>();
     for (const brand of TEST_BRANDS) {
       const b = await prisma.brand.upsert({
         where: { code: brand.code },
@@ -118,38 +168,10 @@ async function seedTestDatabase() {
           is_active: true,
         },
       });
-      seededBrands.push(b);
+      brandIds.set(brand.code, b.brand_id);
     }
 
-    console.log('Assigning test users to the first test brand...');
-    await prisma.user.updateMany({
-      where: {
-        username: { in: TEST_USERS.map((u) => u.username) },
-      },
-      data: { brand_id: seededBrands[0].brand_id },
-    });
-
-    console.log('Seeding unassigned test owner...');
-    const unassignedHash = await argon2.hash(TEST_UNASSIGNED_OWNER.password);
-    await prisma.user.upsert({
-      where: { username: TEST_UNASSIGNED_OWNER.username },
-      update: {
-        first_name: TEST_UNASSIGNED_OWNER.first_name,
-        last_name: TEST_UNASSIGNED_OWNER.last_name,
-        role: TEST_UNASSIGNED_OWNER.role,
-        password_hash: unassignedHash,
-        brand_id: null,
-        is_active: true,
-      },
-      create: {
-        username: TEST_UNASSIGNED_OWNER.username,
-        first_name: TEST_UNASSIGNED_OWNER.first_name,
-        last_name: TEST_UNASSIGNED_OWNER.last_name,
-        role: TEST_UNASSIGNED_OWNER.role,
-        password_hash: unassignedHash,
-        is_active: true,
-      },
-    });
+    await seedUsers(prisma, brandIds);
 
     console.log('Test database seeded successfully.');
   } finally {

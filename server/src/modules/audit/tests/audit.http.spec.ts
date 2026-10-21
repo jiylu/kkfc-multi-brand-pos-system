@@ -46,7 +46,9 @@ describe('Audit list HTTP API', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    auth.validateSession.mockResolvedValue({ user: { role: UserRole.OWNER } });
+    auth.validateSession.mockResolvedValue({
+      user: { role: UserRole.SUPERADMIN },
+    });
     prisma.auditLog.findMany.mockResolvedValue([]);
     prisma.auditLog.count.mockResolvedValue(0);
     prisma.$transaction.mockImplementation((queries: Promise<unknown>[]) =>
@@ -114,14 +116,13 @@ describe('Audit list HTTP API', () => {
     });
   });
 
-  it.each(Object.values(UserRole).filter((role) => role !== UserRole.OWNER))(
-    'denies %s before querying audit records',
-    async (role) => {
-      auth.validateSession.mockResolvedValue({ user: { role } });
-      expect((await fetch(url, { headers })).status).toBe(403);
-      expect(prisma.auditLog.findMany).not.toHaveBeenCalled();
-    },
-  );
+  it.each(
+    Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
+  )('denies %s before querying audit records', async (role) => {
+    auth.validateSession.mockResolvedValue({ user: { role } });
+    expect((await fetch(url, { headers })).status).toBe(403);
+    expect(prisma.auditLog.findMany).not.toHaveBeenCalled();
+  });
 
   it('requires authentication', async () => {
     expect((await fetch(url)).status).toBe(401);

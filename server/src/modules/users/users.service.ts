@@ -14,12 +14,17 @@ import { FindUsersDTO } from './dto/find-users.dto';
 import { assertExists } from '../../shared/assertions/assert-exists';
 import { assertValidPagination } from '../../shared/assertions/assert-valid-pagination';
 import { isUUID } from 'class-validator';
+import { BrandsRepository } from '../brands/brands.repository';
 
+// TODO: REFACTOR YUNG ISSUPERADMIN, GAWING ASSERTION NALANG.
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly brandsRepository: BrandsRepository,
+  ) {}
 
   async createUser(
     dto: CreateUserDTO,
@@ -28,10 +33,7 @@ export class UsersService {
   ) {
     this.logger.log(`Creating ${dto.role} user ${dto.first_name}`);
 
-    if (
-      !isSuperAdmin &&
-      (dto.role === UserRole.OWNER || dto.role === UserRole.SUPERADMIN)
-    ) {
+    if (!isSuperAdmin && dto.role === UserRole.SUPERADMIN) {
       throw new ForbiddenException({
         code: 'CANNOT_CREATE_PRIVILEGED_ACCOUNT',
         message: 'You are not authorized to create this role.',
@@ -52,11 +54,7 @@ export class UsersService {
       });
     }
 
-    if (
-      dto.brand_id == null &&
-      dto.role !== UserRole.OWNER &&
-      dto.role !== UserRole.SUPERADMIN
-    ) {
+    if (dto.brand_id == null && dto.role !== UserRole.SUPERADMIN) {
       this.logger.warn(`Brand ID missing for role.`);
 
       throw new BadRequestException({
@@ -84,11 +82,7 @@ export class UsersService {
     return user;
   }
 
-  async findAllUsers(
-    { page, limit, activeOnly }: FindUsersDTO,
-    callerBrandId: string | null,
-    isSuperAdmin = false,
-  ) {
+  async findAllUsers({ page, limit, activeOnly }: FindUsersDTO) {
     this.logger.log(
       `Listing users: page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
     );
@@ -99,9 +93,42 @@ export class UsersService {
     const { users, total } = await this.usersRepository.findAll(
       skip,
       limit,
-      callerBrandId,
       activeOnly,
-      isSuperAdmin,
+    );
+
+    this.logger.log(
+      `Listed users: page=${page}, returned=${users.length}, total=${total}`,
+    );
+
+    return {
+      data: users,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findAllUsersByBrand(
+    { page, limit, activeOnly }: FindUsersDTO,
+    brandId: string,
+  ) {
+    this.logger.log(
+      `Listing users: brand=${brandId} page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
+    );
+    const brand = await this.brandsRepository.findOneBrand(brandId);
+    assertExists(brand, 'Brand', brandId, this.logger);
+
+    const skip = (page - 1) * limit;
+    assertValidPagination(skip, this.logger);
+
+    const { users, total } = await this.usersRepository.findAllByBrand(
+      skip,
+      limit,
+      activeOnly,
+      brandId,
     );
 
     this.logger.log(
@@ -121,9 +148,7 @@ export class UsersService {
 
   async findOneUser(
     usernameOrUserId: string | { user_id: string },
-    callerId: string,
     activeOnly = true,
-    isSuperAdmin = false,
   ) {
     const identifier =
       typeof usernameOrUserId === 'string'
@@ -131,64 +156,22 @@ export class UsersService {
         : usernameOrUserId.user_id;
     this.logger.log(`Finding user ${identifier}`);
 
-    let user =
+    const user =
       typeof usernameOrUserId === 'string' && !isUUID(identifier)
         ? await this.usersRepository.safeFindByUsername(identifier, activeOnly)
         : await this.usersRepository.findOne(identifier, activeOnly);
 
-    if (!user && typeof usernameOrUserId === 'string' && isUUID(identifier)) {
-      user = await this.usersRepository.safeFindByUsername(
-        identifier,
-        activeOnly,
-      );
-    }
-
     assertExists(user, 'User', identifier, this.logger);
-
-    if (!isSuperAdmin && user.user_id !== callerId) {
-      const caller = await this.usersRepository.findOne(callerId);
-      assertExists(caller, 'User', callerId, this.logger);
-
-      if (caller.brand_id === null || caller.brand_id !== user.brand_id) {
-        throw new ForbiddenException({
-          code: 'ACCESS_DENIED',
-          message: 'You cannot access users outside your brand.',
-        });
-      }
-    }
 
     this.logger.log(`User ${user.user_id} with role ${user.role} found.`);
     return user;
   }
 
-  async updateUser(
-    userId: string,
-    dto: UpdateUserDTO,
-    callerId: string,
-    isSuperAdmin = false,
-  ) {
+  async updateUser(userId: string, dto: UpdateUserDTO) {
     this.logger.log(`Updating user ${userId}`);
 
-    const user = await this.findOneUser(
-      { user_id: userId },
-      callerId,
-      true,
-      isSuperAdmin,
-    );
-
-    if (
-      !isSuperAdmin &&
-      user.user_id !== callerId &&
-      (user.role === UserRole.OWNER ||
-        user.role === UserRole.SUPERADMIN ||
-        dto.password !== undefined)
-    ) {
-      throw new ForbiddenException({
-        code: 'ACCESS_DENIED',
-        message:
-          "You cannot edit another owner or superadmin, or change another user's password.",
-      });
-    }
+    const user = await this.usersRepository.findOne(userId);
+    assertExists(user, 'User', userId, this.logger);
 
     if (dto.username !== undefined && dto.username !== user.username) {
       const existingUsername = await this.usersRepository.safeFindByUsername(
@@ -223,23 +206,10 @@ export class UsersService {
     }
   }
 
-  async deleteUser(userId: string, callerId: string, isSuperAdmin = false) {
+  async deleteUser(userId: string) {
     this.logger.log(`Deactivating user ${userId}`);
 
-    if (!isSuperAdmin && userId !== callerId) {
-      throw new ForbiddenException({
-        code: 'ACCESS_DENIED',
-        message: 'You can only deactivate your own account.',
-      });
-    }
-
-    const user = await this.findOneUser(
-      { user_id: userId },
-      callerId,
-      true,
-      isSuperAdmin,
-    );
-
+    const user = await this.usersRepository.findOne(userId);
     assertExists(user, 'User', userId, this.logger);
 
     const deleted = await this.usersRepository.delete(user.user_id);

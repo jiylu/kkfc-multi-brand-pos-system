@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Prisma, UserRole } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { BrandsRepository } from '../brands.repository';
 import { BrandsService } from '../brands.service';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
@@ -48,37 +48,6 @@ describe('BrandsService', () => {
   });
   afterEach(() => jest.restoreAllMocks());
 
-  describe('creation ownership', () => {
-    const dto = { name: 'Brand', code: 'BRND' };
-
-    it('requires superadmins to supply an owner ID', async () => {
-      await expect(service.create(dto, 'admin', true)).rejects.toMatchObject({
-        status: 400,
-        response: { code: 'MISSING_OWNER_ID' },
-      });
-      expect(brands.createBrand).not.toHaveBeenCalled();
-    });
-
-    it('uses the selected owner for superadmin creation', async () => {
-      const input = { ...dto, owner_id: 'selected-owner' };
-      await service.create(input, 'admin', true);
-      expect(brands.createBrand).toHaveBeenCalledWith(input, 'selected-owner');
-    });
-
-    it('blocks owners from selecting another owner', async () => {
-      await expect(
-        service.create({ ...dto, owner_id: 'another-owner' }, 'owner'),
-      ).rejects.toMatchObject({ status: 403 });
-      expect(brands.createBrand).not.toHaveBeenCalled();
-    });
-
-    it('accepts an owner explicitly selecting themselves', async () => {
-      const input = { ...dto, owner_id: 'owner' };
-      await service.create(input, 'owner');
-      expect(brands.createBrand).toHaveBeenCalledWith(input, 'owner');
-    });
-  });
-
   describe('direct user-brand relation', () => {
     const tx = {
       brand: {
@@ -96,39 +65,32 @@ describe('BrandsService', () => {
       for (const method of Object.values(tx.brand)) method.mockReset();
       tx.user.updateMany.mockReset().mockResolvedValue({ count: 1 });
       repository = new BrandsRepository({
+        ...tx,
         $transaction: (run: (client: typeof tx) => Promise<unknown>) => run(tx),
       } as unknown as PrismaService);
     });
 
-    it('sets the active owner brand without overwriting an existing brand', async () => {
+    it('creates a brand without changing user assignments', async () => {
       tx.brand.create.mockResolvedValue(brand);
-      await repository.createBrand(
-        { name: brand.name, code: brand.code, owner_id: 'owner' },
-        'owner',
-      );
-      expect(tx.user.updateMany).toHaveBeenCalledWith({
-        where: {
-          user_id: 'owner',
-          role: UserRole.OWNER,
-          brand_id: null,
-          is_active: true,
-        },
-        data: {
-          brand_id: brand.brand_id,
-          modified_at: expect.any(Date) as Date,
-        },
-      });
+      await expect(
+        repository.createBrand({ name: brand.name, code: brand.code }),
+      ).resolves.toEqual(brand);
+      expect(tx.user.updateMany).not.toHaveBeenCalled();
       expect(tx.brand.create).toHaveBeenCalledWith({
         data: { name: brand.name, code: brand.code, logo_url: undefined },
       });
     });
 
-    it('rejects creation when the target is not an active owner without a brand', async () => {
-      tx.brand.create.mockResolvedValue(brand);
-      tx.user.updateMany.mockResolvedValue({ count: 0 });
+    it('propagates creation failures from an explicit transaction', async () => {
+      const error = new Error('Brand creation failed');
+      tx.brand.create.mockRejectedValue(error);
       await expect(
-        repository.createBrand({ name: brand.name, code: brand.code }, 'owner'),
-      ).rejects.toMatchObject({ status: 409 });
+        repository.createBrand(
+          { name: brand.name, code: brand.code },
+          tx as unknown as Prisma.TransactionClient,
+        ),
+      ).rejects.toBe(error);
+      expect(tx.user.updateMany).not.toHaveBeenCalled();
     });
 
     it.each([true, false])(
@@ -199,19 +161,19 @@ describe('BrandsService', () => {
       ).mockRejectedValue(error);
       const result =
         operation === 'create'
-          ? service.create({ name: 'Brand', code: 'TAKE' }, 'owner')
+          ? service.create({ name: 'Brand', code: 'TAKE' })
           : service.update(brand.brand_id, { code: 'TAKE' });
       await expect(result).rejects.toBe(error);
     },
   );
-  it('creates a brand with the supplied code for its owner', async () => {
+  it('creates a brand with the supplied code', async () => {
     const dto = { name: 'New Brand', code: 'USER' };
 
-    await expect(service.create(dto, 'owner-id')).resolves.toMatchObject({
+    await expect(service.create(dto)).resolves.toMatchObject({
       name: dto.name,
       code: dto.code,
     });
-    expect(brands.createBrand).toHaveBeenCalledWith(dto, 'owner-id');
+    expect(brands.createBrand).toHaveBeenCalledWith(dto);
   });
 
   it('returns an active brand and rejects a missing or inactive brand', async () => {
