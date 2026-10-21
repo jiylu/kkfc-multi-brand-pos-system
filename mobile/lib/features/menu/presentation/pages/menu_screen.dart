@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import 'package:mobile/features/menu/data/models/menu_models.dart';
-import 'package:mobile/features/menu/presentation/menu_layout.dart';
-import 'package:mobile/features/menu/presentation/widgets/cart_bar.dart';
-import 'package:mobile/features/menu/presentation/widgets/cart_panel/cart_panel.dart';
-import 'package:mobile/features/menu/presentation/widgets/fade_slide_in.dart';
-import 'package:mobile/features/menu/presentation/widgets/menu_header.dart';
-import 'package:mobile/features/menu/presentation/widgets/menu_item_card.dart';
-import 'package:mobile/features/menu/presentation/widgets/menu_navigation.dart';
-import 'package:mobile/features/menu/presentation/widgets/menu_states.dart';
-import 'package:mobile/features/menu/presentation/widgets/responsive_card_grid.dart';
-import 'package:mobile/features/menu/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/features/new_order/presentation/widgets/cart_bar.dart';
+import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
+import 'package:mobile/features/new_order/presentation/widgets/fade_slide_in.dart';
+import 'package:mobile/features/new_order/presentation/widgets/menu_header.dart';
+import 'package:mobile/features/new_order/presentation/widgets/menu_item_card.dart';
+import 'package:mobile/features/new_order/presentation/widgets/menu_navigation.dart';
+import 'package:mobile/features/new_order/presentation/widgets/menu_states.dart';
+import 'package:mobile/features/new_order/presentation/widgets/responsive_card_grid.dart';
+import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 
 class MenuScreen extends StatelessWidget {

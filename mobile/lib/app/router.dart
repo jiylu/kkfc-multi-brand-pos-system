@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/providers/session_provider.dart';
 import '../features/auth/presentation/pages/login_screen.dart';
-import '../features/menu/presentation/pages/menu_screen.dart';
+import '../features/new_order/presentation/pages/menu_screen.dart';
 import '../features/orders/screens/orders_screen.dart';
 import 'routes.dart';
 

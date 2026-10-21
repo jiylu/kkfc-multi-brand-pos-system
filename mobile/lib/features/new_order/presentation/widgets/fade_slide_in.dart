@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:mobile/features/menu/presentation/menu_layout.dart';
+import 'package:mobile/features/new_order/presentation/menu_layout.dart';
 
 class FadeSlideIn extends StatefulWidget {
   const FadeSlideIn({super.key, required this.child, this.index = 0});

@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mobile/app/theme/theme.dart';
-import 'package:mobile/features/menu/data/seed/sample_menu.dart';
-import 'package:mobile/features/menu/presentation/pages/menu_screen.dart';
-import 'package:mobile/features/menu/presentation/widgets/cart_bar.dart';
-import 'package:mobile/features/menu/presentation/widgets/cart_panel/cart_panel.dart';
-import 'package:mobile/features/menu/presentation/widgets/channel_tabs.dart';
-import 'package:mobile/features/menu/presentation/widgets/menu_header.dart';
-import 'package:mobile/features/menu/presentation/widgets/menu_navigation.dart';
-import 'package:mobile/features/menu/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
+import 'package:mobile/features/new_order/presentation/pages/menu_screen.dart';
+import 'package:mobile/features/new_order/presentation/widgets/cart_bar.dart';
+import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
+import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
+import 'package:mobile/features/new_order/presentation/widgets/menu_header.dart';
+import 'package:mobile/features/new_order/presentation/widgets/menu_navigation.dart';
+import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 const _phone = Size(412, 1400);
 const _narrowPhone = Size(320, 900);

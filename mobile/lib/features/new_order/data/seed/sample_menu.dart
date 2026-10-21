@@ -1,4 +1,4 @@
-import 'package:mobile/features/menu/data/models/menu_models.dart';
+import 'package:mobile/features/new_order/data/models/menu_models.dart';
 
 // TODO: REMOVE WHEN CONNECTED TO BACKEND
 

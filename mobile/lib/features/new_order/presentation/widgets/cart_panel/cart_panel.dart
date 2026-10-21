@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/features/menu/presentation/menu_layout.dart';
-import 'package:mobile/features/menu/presentation/widgets/cart_panel/cart_line_tile.dart';
-import 'package:mobile/features/menu/presentation/widgets/cart_panel/cart_panel_footer.dart';
-import 'package:mobile/features/menu/presentation/widgets/cart_panel/cart_panel_header.dart';
-import 'package:mobile/features/menu/presentation/widgets/fade_slide_in.dart';
-import 'package:mobile/features/menu/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_line_tile.dart';
+import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel_footer.dart';
+import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel_header.dart';
+import 'package:mobile/features/new_order/presentation/widgets/fade_slide_in.dart';
+import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 class CartPanel extends ConsumerWidget {
   const CartPanel({super.key});

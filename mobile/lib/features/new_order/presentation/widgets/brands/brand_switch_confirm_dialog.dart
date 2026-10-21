@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/menu/data/models/brand_models.dart';
-import 'package:mobile/features/menu/presentation/menu_layout.dart';
-import 'package:mobile/features/menu/presentation/widgets/menu_dialog.dart';
+import 'package:mobile/features/new_order/data/models/brand_models.dart';
+import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/features/new_order/presentation/widgets/menu_dialog.dart';
 
 // Unapproved policy copy from the design review. Remove once Product +
 // Backend confirm the switch/reset behavior.

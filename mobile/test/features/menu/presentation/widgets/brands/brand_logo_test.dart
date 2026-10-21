@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/features/menu/data/models/brand_models.dart';
-import 'package:mobile/features/menu/data/seed/sample_brands.dart';
-import 'package:mobile/features/menu/presentation/widgets/brands/brand_logo.dart';
+import 'package:mobile/features/new_order/data/models/brand_models.dart';
+import 'package:mobile/features/new_order/data/seed/sample_brands.dart';
+import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
 
 const _assets = <String, String>{
   'gamcheon': 'assets/images/gamcheon.png',

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
-import 'package:mobile/features/menu/presentation/menu_layout.dart';
+import 'package:mobile/features/new_order/presentation/menu_layout.dart';
 
 typedef _Destination = ({IconData icon, IconData selected, String label});
 

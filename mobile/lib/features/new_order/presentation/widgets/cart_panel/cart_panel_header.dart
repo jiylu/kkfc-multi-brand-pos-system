@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/menu/presentation/menu_layout.dart';
+import 'package:mobile/features/new_order/presentation/menu_layout.dart';
 
 class CartPanelHeader extends StatelessWidget {
   const CartPanelHeader({

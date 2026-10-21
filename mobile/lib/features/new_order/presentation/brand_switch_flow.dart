@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/features/menu/presentation/widgets/brands/brand_picker_dialog.dart';
-import 'package:mobile/features/menu/presentation/widgets/brands/brand_switch_confirm_dialog.dart';
-import 'package:mobile/features/menu/providers/brand_providers.dart';
-import 'package:mobile/features/menu/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/presentation/widgets/brands/brand_picker_dialog.dart';
+import 'package:mobile/features/new_order/presentation/widgets/brands/brand_switch_confirm_dialog.dart';
+import 'package:mobile/features/new_order/providers/brand_providers.dart';
+import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 Future<void> startBrandSwitch(BuildContext context, WidgetRef ref) async {
   final current = ref.read(activeBrandProvider);

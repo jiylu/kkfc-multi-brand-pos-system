@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/menu/data/models/brand_models.dart';
+import 'package:mobile/features/new_order/data/models/brand_models.dart';
 
 class BrandLogo extends StatelessWidget {
   const BrandLogo({super.key, required this.brand, this.height = 24});

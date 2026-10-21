@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
-import 'package:mobile/features/menu/presentation/menu_layout.dart';
-import 'package:mobile/features/menu/presentation/widgets/brands/brand_logo.dart';
-import 'package:mobile/features/menu/presentation/widgets/channel_tabs.dart';
-import 'package:mobile/features/menu/presentation/brand_switch_flow.dart';
-import 'package:mobile/features/menu/providers/brand_providers.dart';
+import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
+import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
+import 'package:mobile/features/new_order/presentation/brand_switch_flow.dart';
+import 'package:mobile/features/new_order/providers/brand_providers.dart';
 
 class MenuHeader extends ConsumerWidget {
   const MenuHeader({super.key});

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/features/menu/data/seed/sample_menu.dart';
-import 'package:mobile/features/menu/data/models/menu_models.dart';
-import 'package:mobile/features/menu/providers/brand_providers.dart';
+import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
+import 'package:mobile/features/new_order/data/models/menu_models.dart';
+import 'package:mobile/features/new_order/providers/brand_providers.dart';
 
 class MenuChannelNotifier extends Notifier<MenuChannel> {
   @override

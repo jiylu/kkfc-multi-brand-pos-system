@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/features/menu/presentation/menu_layout.dart';
-import 'package:mobile/features/menu/presentation/widgets/animated_peso.dart';
-import 'package:mobile/features/menu/presentation/widgets/cart_panel/cart_panel.dart';
-import 'package:mobile/features/menu/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
+import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
+import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 void showCartSheet(BuildContext context) {
   showModalBottomSheet<void>(

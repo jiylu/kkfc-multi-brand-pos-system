@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/menu/presentation/menu_layout.dart';
-import 'package:mobile/features/menu/presentation/widgets/animated_peso.dart';
+import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
 
 class CartPanelFooter extends StatelessWidget {
   const CartPanelFooter({
