@@ -24,9 +24,7 @@ Future<void> _pumpScreen(WidgetTester tester, Size size) async {
 
   final container = ProviderContainer();
   addTearDown(container.dispose);
-  container
-      .read(menuChannelProvider.notifier)
-      .select(MenuChannel.grabFood);
+  container.read(menuChannelProvider.notifier).select(MenuChannel.grabFood);
 
   await tester.pumpWidget(
     UncontrolledProviderScope(
@@ -117,10 +115,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp.router(
-            theme: counterTheme,
-            routerConfig: router,
-          ),
+          child: MaterialApp.router(theme: counterTheme, routerConfig: router),
         ),
       );
       await tester.pumpAndSettle();

@@ -95,9 +95,7 @@ class _RepricingBody extends ConsumerWidget {
 
   void _undo(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Undo is provisional in this prototype.'),
-      ),
+      const SnackBar(content: Text('Undo is provisional in this prototype.')),
     );
   }
 
@@ -154,9 +152,7 @@ class _RepricingBody extends ConsumerWidget {
               trailing: _ValuePill(
                 child: Text(
                   formatPeso(line.totalCentavos(channel)),
-                  style: text.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -204,9 +200,7 @@ class _GotItBar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(MenuSpace.md),
         child: FilledButton(
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(48),
-          ),
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
           onPressed: () => context.go(AppRoutes.menu),
           child: const Text('Got it'),
         ),

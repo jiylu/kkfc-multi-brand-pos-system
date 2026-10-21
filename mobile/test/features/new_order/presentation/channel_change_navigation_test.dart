@@ -27,9 +27,7 @@ void main() {
           child: MaterialApp(
             theme: counterTheme,
             home: Scaffold(
-              body: Center(
-                child: ChannelTabs(onSelected: (c) => notified = c),
-              ),
+              body: Center(child: ChannelTabs(onSelected: (c) => notified = c)),
             ),
           ),
         ),
@@ -53,9 +51,7 @@ void main() {
           child: MaterialApp(
             theme: counterTheme,
             home: Scaffold(
-              body: Center(
-                child: ChannelTabs(onSelected: (c) => notified = c),
-              ),
+              body: Center(child: ChannelTabs(onSelected: (c) => notified = c)),
             ),
           ),
         ),
@@ -99,10 +95,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp.router(
-            theme: counterTheme,
-            routerConfig: router,
-          ),
+          child: MaterialApp.router(theme: counterTheme, routerConfig: router),
         ),
       );
       await tester.pumpAndSettle();
@@ -142,10 +135,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          child: MaterialApp.router(
-            theme: counterTheme,
-            routerConfig: router,
-          ),
+          child: MaterialApp.router(theme: counterTheme, routerConfig: router),
         ),
       );
       await tester.pumpAndSettle();

@@ -34,7 +34,10 @@ class OperationalContextCard extends StatelessWidget {
               style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: MenuSpace.lg),
-            const _ContextBlock(label: 'ROLE', value: 'Order staff / contextual'),
+            const _ContextBlock(
+              label: 'ROLE',
+              value: 'Order staff / contextual',
+            ),
             const SizedBox(height: MenuSpace.lg),
             const _ContextBlock(label: 'WORKFLOW', value: 'channel repriced'),
             const SizedBox(height: MenuSpace.lg),
