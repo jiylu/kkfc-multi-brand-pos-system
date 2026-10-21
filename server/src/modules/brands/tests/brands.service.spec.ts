@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { BrandsRepository } from '../brands.repository';
 import { BrandsService } from '../brands.service';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { StorageService } from '../../../shared/storage/storage.service';
 
 describe('BrandsService', () => {
   const now = new Date('2030-01-01T00:00:00Z');
@@ -44,7 +45,10 @@ describe('BrandsService', () => {
       updateBrand: jest.fn((_id, dto) => Promise.resolve({ ...brand, ...dto })),
       deleteBrand: jest.fn().mockResolvedValue({ ...brand, is_active: false }),
     };
-    service = new BrandsService(brands as unknown as BrandsRepository);
+    service = new BrandsService(
+      brands as unknown as BrandsRepository,
+      { createDownloadUrl: jest.fn() } as unknown as StorageService,
+    );
   });
   afterEach(() => jest.restoreAllMocks());
 

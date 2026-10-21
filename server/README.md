@@ -113,7 +113,7 @@ Password hashes are excluded from API responses.
 | `POST /api/brands` | Superadmins only. Creates a brand without assigning users. A unique client-supplied code of one to four characters is required; owner_id is not accepted. |
 | `GET /api/brands` | Superadmins only; lists all brands. |
 | `GET /api/brands/:brandId` | Any authenticated user can read their assigned brand; superadmins can read any active brand. |
-| `PATCH /api/brands/:brandId` | Superadmins only; updates any active brand. Code is optional and is not generated on rename. |
+| `PATCH /api/brands/:brandId` | Superadmins only; updates any active brand using JSON or multipart form data. Optional `file` replaces the logo. Code is optional and is not generated on rename. |
 | `DELETE /api/brands/:brandId` | Superadmins only; deactivates the brand and its active users together. |
 
 Menu endpoints are documented in Swagger under **Menu items**:
@@ -144,6 +144,27 @@ Brand codes are unique and manually supplied. Setting `logo_url` to null clears
 the logo on update; omitted update fields keep their existing values. The old
 brand-assignment endpoints have been removed. A user is linked directly to a
 brand through `brand_id` during user creation. Brand creation does not link users.
+
+To replace a brand logo, send `PATCH /api/brands/:brandId` as multipart/form-data
+with one `file` (JPG/PNG, at most 5 MiB and 20 megapixels). Name and code are optional.
+An uploaded file takes precedence over `logo_url`; without a file, omission preserves
+the logo and JSON `logo_url: null` clears it. Update responses contain the stored
+object key; fetch the brand to obtain the display URL.
+
+## Image URL expiry
+
+`StorageService.createDownloadUrl(key)` returns a signed URL that expires after
+five minutes. Pass `false` as the second argument to return a stable, unsigned URL:
+`createDownloadUrl(key, false)`. That mode requires `S3_PUBLIC_BASE_URL` and a
+CloudFront origin configured to allow public viewer requests; S3 can remain private
+behind CloudFront. This option does not change AWS permissions, DNS, or TLS configuration.
+
+`AssetsService.upload(userId, file, false)` and `download(userId, key, false)`
+also support stable URLs. They default to signed URLs and report `expiresIn: 300`
+for signed URLs or `expiresIn: null` for stable URLs. HTTP callers cannot select
+the mode; choose it in the calling backend code. Presigned S3 upload URLs always
+expire after five minutes. Continue storing object keys in the database rather
+than signed URLs.
 
 ## Run tests
 

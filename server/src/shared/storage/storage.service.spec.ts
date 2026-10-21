@@ -36,6 +36,78 @@ describe('StorageService (UT-SHRD)', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
+  it('returns a stable encoded CloudFront URL without signing credentials when expiry is disabled', async () => {
+    const service = new StorageService(
+      createConfig({
+        S3_PUBLIC_BASE_URL: 'https://files.example.com/',
+      }),
+    );
+
+    const url = await service.createDownloadUrl(
+      'uploads/menu photo#1?.png',
+      false,
+    );
+    expect(url).toBe(
+      'https://files.example.com/uploads/menu%20photo%231%3F.png',
+    );
+    expect(mockedGetSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it('requires a CloudFront base URL when expiry is disabled', async () => {
+    const service = new StorageService(
+      createConfig({
+        S3_BUCKET: 'private-bucket',
+      }),
+    );
+    await expect(
+      service.createDownloadUrl('uploads/photo.png', false),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    expect(mockedGetSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it.each(['http://files.example.com', 'https://files.example.com/uploads'])(
+    'validates the origin in non-expiring mode: %s',
+    async (baseUrl) => {
+      const service = new StorageService(
+        createConfig({
+          S3_PUBLIC_BASE_URL: baseUrl,
+        }),
+      );
+      await expect(
+        service.createDownloadUrl('uploads/photo.png', false),
+      ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    },
+  );
+
+  it.each(['uploads/*', '../private.png', 'uploads/../private.png'])(
+    'rejects invalid public object keys: %s',
+    async (key) => {
+      const service = new StorageService(
+        createConfig({
+          S3_PUBLIC_BASE_URL: 'https://files.example.com',
+        }),
+      );
+      await expect(
+        service.createDownloadUrl(key, false),
+      ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    },
+  );
+
+  it('keeps upload URLs signed for five minutes when download expiry is disabled', async () => {
+    const service = new StorageService(
+      createConfig({
+        S3_BUCKET: 'private-bucket',
+        S3_PUBLIC_BASE_URL: 'https://files.example.com',
+      }),
+    );
+    await service.createDownloadUrl('uploads/photo.jpg', false);
+    await service.createUploadUrl('photo.jpg', 'image/jpeg');
+    expect(mockedGetSignedUrl.mock.calls[0][1]).toBeInstanceOf(
+      PutObjectCommand,
+    );
+    expect(mockedGetSignedUrl.mock.calls[0][2]).toEqual({ expiresIn: 300 });
+  });
+
   it('UT-SHRD-011: generates a 5-minute presigned PutObject upload URL with normalized extension', async () => {
     const service = new StorageService(
       createConfig({

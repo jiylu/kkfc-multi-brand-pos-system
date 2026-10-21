@@ -14,6 +14,7 @@ import { AuthService } from '../auth/auth.service';
 
 describe('Assets HTTP', () => {
   let app: INestApplication<Server>;
+  let assets: AssetsService;
   let png: Buffer;
   let jpg: Buffer;
   const owner = '11111111-1111-4111-8111-111111111111';
@@ -49,6 +50,7 @@ describe('Assets HTTP', () => {
         },
       ],
     }).compile();
+    assets = module.get(AssetsService);
     app = module.createNestApplication();
     app.setGlobalPrefix('api');
     app.useGlobalPipes(
@@ -62,6 +64,20 @@ describe('Assets HTTP', () => {
   });
   beforeEach(() => jest.clearAllMocks());
   afterAll(async () => app.close());
+
+  it('forwards the function toggle and reports no expiry for public URLs', async () => {
+    const uploaded = await assets.upload(
+      owner,
+      { originalname: 'image.png', mimetype: 'image/png', buffer: png },
+      false,
+    );
+    expect(uploaded.expiresIn).toBeNull();
+    expect(storage.createDownloadUrl).toHaveBeenCalledWith(uploaded.key, false);
+
+    const downloaded = await assets.download(owner, key, false);
+    expect(downloaded.expiresIn).toBeNull();
+    expect(storage.createDownloadUrl).toHaveBeenCalledWith(key, false);
+  });
 
   it.each(['png', 'jpg'])(
     'accepts a real %s and stores normalized bytes under the owner prefix',

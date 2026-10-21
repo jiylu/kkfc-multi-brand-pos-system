@@ -38,7 +38,8 @@ export class UpdateBrandDTO {
     format: 'uri',
     maxLength: 2048,
     nullable: true,
-    description: 'Omit to preserve the logo; null clears it.',
+    description:
+      'Without an uploaded file, omit to preserve the logo or send JSON null to clear it. An uploaded multipart file takes precedence over this URL.',
   })
   logo_url?: string | null;
 }

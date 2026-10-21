@@ -9,6 +9,7 @@ import { AuthService } from '../auth.service';
 import { CreateSessionDTO } from '../dto/create-session.dto';
 import { UsersRepository } from '../../users/users.repository';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { StorageService } from '../../../shared/storage/storage.service';
 
 describe('Auth HTTP endpoints', () => {
   let app: INestApplication;
@@ -79,6 +80,8 @@ describe('Auth HTTP endpoints', () => {
       $transaction: (queries: Promise<unknown>[]) => Promise.all(queries),
     } as unknown as PrismaService);
     const module = await Test.createTestingModule({ imports: [AuthModule] })
+      .overrideProvider(StorageService)
+      .useValue({ createDownloadUrl: jest.fn() })
       .overrideProvider(PrismaService)
       .useValue({
         user: {
