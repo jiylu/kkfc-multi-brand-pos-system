@@ -158,27 +158,26 @@ class _MenuBodyState extends ConsumerState<_MenuBody> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: MenuSpace.lg),
-          child: Wrap(
-            spacing: MenuSpace.md,
-            runSpacing: MenuSpace.xs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                'All menu items',
-                style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              if (visible.hasValue)
+          child: Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: MenuSpace.md,
+              runSpacing: MenuSpace.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
                 Text(
-                  '${visible.requireValue.length} items',
-                  style: text.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+                  'All menu items',
+                  style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
-              Text(
-                'SAMPLE PRICES · PHOTOS PENDING',
-                style: text.labelSmall?.copyWith(color: scheme.primary),
-              ),
-            ],
+                if (visible.hasValue)
+                  Text(
+                    '${visible.requireValue.length} items',
+                    style: text.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
         Expanded(
