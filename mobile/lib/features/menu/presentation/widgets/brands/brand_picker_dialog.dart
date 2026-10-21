@@ -31,7 +31,8 @@ class _BrandPickerContentState extends State<_BrandPickerContent> {
   String _subtitle(AssignedBrand brand) {
     final isCurrent = brand.id == widget.current.id;
     final isSelected = brand.id == _selected.id;
-    if (isCurrent) return isSelected ? 'Current brand · Selected' : 'Current brand';
+    if (isCurrent)
+      return isSelected ? 'Current brand · Selected' : 'Current brand';
     return 'Available to this demo account';
   }
 
@@ -45,11 +46,15 @@ class _BrandPickerContentState extends State<_BrandPickerContent> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Choose assigned brand',
-            style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          'Choose assigned brand',
+          style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: MenuSpace.xs),
-        Text('DEMO ACCOUNT · ${widget.brands.length} ASSIGNED BRANDS',
-            style: text.labelSmall?.copyWith(color: scheme.primary)),
+        Text(
+          'DEMO ACCOUNT · ${widget.brands.length} ASSIGNED BRANDS',
+          style: text.labelSmall?.copyWith(color: scheme.primary),
+        ),
         const SizedBox(height: MenuSpace.md),
         for (final brand in widget.brands)
           Padding(
@@ -130,12 +135,18 @@ class _BrandTile extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('${brand.code} · ${brand.name}',
-                              style: text.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.w700)),
-                          Text(subtitle,
-                              style: text.bodySmall?.copyWith(
-                                  color: scheme.onSurfaceVariant)),
+                          Text(
+                            '${brand.code} · ${brand.name}',
+                            style: text.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            subtitle,
+                            style: text.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
                         ],
                       ),
                     ),

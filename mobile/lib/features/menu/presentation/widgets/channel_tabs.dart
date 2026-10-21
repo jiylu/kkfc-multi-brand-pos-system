@@ -92,7 +92,9 @@ class _ChannelTab extends StatelessWidget {
                         child: Icon(
                           Icons.check,
                           size: 16,
-                          color: inverted ? scheme.inverseSurface : scheme.primary,
+                          color: inverted
+                              ? scheme.inverseSurface
+                              : scheme.primary,
                         ),
                       )
                     : const SizedBox.shrink(),
@@ -103,8 +105,8 @@ class _ChannelTab extends StatelessWidget {
                   color: selected
                       ? (inverted ? scheme.inverseSurface : scheme.onSurface)
                       : (inverted
-                          ? scheme.onInverseSurface.withValues(alpha: 0.7)
-                          : scheme.onSurfaceVariant),
+                            ? scheme.onInverseSurface.withValues(alpha: 0.7)
+                            : scheme.onSurfaceVariant),
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 ),
                 child: Text(channel.label),

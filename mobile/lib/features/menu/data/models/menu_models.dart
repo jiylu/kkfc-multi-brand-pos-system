@@ -50,10 +50,10 @@ class CartLine {
   final bool extraRice;
 
   CartLine copyWith({int? quantity}) => CartLine(
-        item: item,
-        quantity: quantity ?? this.quantity,
-        extraRice: extraRice,
-      );
+    item: item,
+    quantity: quantity ?? this.quantity,
+    extraRice: extraRice,
+  );
 
   int unitCentavos(MenuChannel channel) =>
       item.priceFor(channel) + (extraRice ? kExtraRiceCentavos : 0);

@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mobile/features/menu/presentation/menu_layout.dart';
 
@@ -14,10 +15,14 @@ class FadeSlideIn extends StatefulWidget {
 
 class _FadeSlideInState extends State<FadeSlideIn>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller =
-      AnimationController(vsync: this, duration: MenuMotion.medium);
-  late final Animation<double> _curve =
-      CurvedAnimation(parent: _controller, curve: MenuMotion.curve);
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: MenuMotion.medium,
+  );
+  late final Animation<double> _curve = CurvedAnimation(
+    parent: _controller,
+    curve: MenuMotion.curve,
+  );
   Timer? _timer;
   bool _started = false;
 
@@ -48,8 +53,10 @@ class _FadeSlideInState extends State<FadeSlideIn>
     return FadeTransition(
       opacity: _curve,
       child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
-            .animate(_curve),
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.06),
+          end: Offset.zero,
+        ).animate(_curve),
         child: widget.child,
       ),
     );

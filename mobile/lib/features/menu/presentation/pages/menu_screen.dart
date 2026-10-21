@@ -122,7 +122,11 @@ class _MenuBodyState extends ConsumerState<_MenuBody> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
-              MenuSpace.lg, MenuSpace.lg, MenuSpace.lg, MenuSpace.xs),
+            MenuSpace.lg,
+            MenuSpace.lg,
+            MenuSpace.lg,
+            MenuSpace.xs,
+          ),
           child: Text(
             'New order',
             style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
@@ -130,7 +134,11 @@ class _MenuBodyState extends ConsumerState<_MenuBody> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(
-              MenuSpace.lg, 0, MenuSpace.lg, MenuSpace.sm),
+            MenuSpace.lg,
+            0,
+            MenuSpace.lg,
+            MenuSpace.sm,
+          ),
           child: SearchBar(
             controller: _search,
             hintText: 'Search menu',
@@ -142,7 +150,8 @@ class _MenuBodyState extends ConsumerState<_MenuBody> {
                 IconButton(
                   tooltip: 'Clear search',
                   icon: const Icon(Icons.close),
-                  onPressed: () => ref.read(menuSearchProvider.notifier).clear(),
+                  onPressed: () =>
+                      ref.read(menuSearchProvider.notifier).clear(),
                 ),
             ],
           ),
@@ -154,15 +163,21 @@ class _MenuBodyState extends ConsumerState<_MenuBody> {
             runSpacing: MenuSpace.xs,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text('All menu items',
-                  style: text.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'All menu items',
+                style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
               if (visible.hasValue)
-                Text('${visible.requireValue.length} items',
-                    style: text.bodySmall
-                        ?.copyWith(color: scheme.onSurfaceVariant)),
-              Text('SAMPLE PRICES · PHOTOS PENDING',
-                  style: text.labelSmall?.copyWith(color: scheme.primary)),
+                Text(
+                  '${visible.requireValue.length} items',
+                  style: text.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              Text(
+                'SAMPLE PRICES · PHOTOS PENDING',
+                style: text.labelSmall?.copyWith(color: scheme.primary),
+              ),
             ],
           ),
         ),

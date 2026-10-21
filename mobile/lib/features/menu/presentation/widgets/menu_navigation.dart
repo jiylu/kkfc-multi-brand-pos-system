@@ -4,9 +4,21 @@ import 'package:mobile/features/menu/presentation/menu_layout.dart';
 typedef _Destination = ({IconData icon, IconData selected, String label});
 
 const List<_Destination> _destinations = [
-  (icon: Icons.add_shopping_cart_outlined, selected: Icons.add_shopping_cart, label: 'New order'),
-  (icon: Icons.receipt_long_outlined, selected: Icons.receipt_long, label: 'Orders'),
-  (icon: Icons.restaurant_menu_outlined, selected: Icons.restaurant_menu, label: 'Menu'),
+  (
+    icon: Icons.add_shopping_cart_outlined,
+    selected: Icons.add_shopping_cart,
+    label: 'New order',
+  ),
+  (
+    icon: Icons.receipt_long_outlined,
+    selected: Icons.receipt_long,
+    label: 'Orders',
+  ),
+  (
+    icon: Icons.restaurant_menu_outlined,
+    selected: Icons.restaurant_menu,
+    label: 'Menu',
+  ),
   (icon: Icons.history_outlined, selected: Icons.history, label: 'Audit'),
 ];
 
@@ -134,7 +146,10 @@ class _NavItem extends StatelessWidget {
                       duration: context.motion(MenuMotion.fast),
                       style: labelStyle.copyWith(color: fg),
                       textAlign: TextAlign.center,
-                      child: Text(destination.label, textAlign: TextAlign.center),
+                      child: Text(
+                        destination.label,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ],
                 ),

@@ -16,8 +16,7 @@ class ResponsiveCardGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final usable = constraints.maxWidth - MenuSpace.lg * 2;
-        final columns =
-            (usable / MenuLayout.minCardWidth).floor().clamp(2, 5);
+        final columns = (usable / MenuLayout.minCardWidth).floor().clamp(2, 5);
         final rows = (itemCount / columns).ceil();
 
         return ListView.builder(

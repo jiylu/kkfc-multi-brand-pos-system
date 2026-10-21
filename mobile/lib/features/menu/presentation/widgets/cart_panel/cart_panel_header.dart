@@ -21,13 +21,18 @@ class CartPanelHeader extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
-              MenuSpace.lg, MenuSpace.lg, MenuSpace.sm, MenuSpace.sm),
+            MenuSpace.lg,
+            MenuSpace.lg,
+            MenuSpace.sm,
+            MenuSpace.sm,
+          ),
           child: Row(
             children: [
               Expanded(
-                child: Text('New order',
-                    style:
-                        text.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                child: Text(
+                  'New order',
+                  style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
               TextButton(
                 onPressed: canClear ? onClear : null,

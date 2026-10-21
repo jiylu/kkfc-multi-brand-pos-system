@@ -11,10 +11,14 @@ class MenuGridSkeleton extends StatefulWidget {
 
 class _MenuGridSkeletonState extends State<MenuGridSkeleton>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
-  late final Animation<double> _opacity = Tween<double>(begin: 0.45, end: 1)
-      .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  );
+  late final Animation<double> _opacity = Tween<double>(
+    begin: 0.45,
+    end: 1,
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
   @override
   void didChangeDependencies() {
@@ -37,13 +41,13 @@ class _MenuGridSkeletonState extends State<MenuGridSkeleton>
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     Widget bar(double h, {double? w}) => Container(
-          height: h,
-          width: w,
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(MenuRadius.sm),
-          ),
-        );
+      height: h,
+      width: w,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(MenuRadius.sm),
+      ),
+    );
 
     return Semantics(
       label: 'Loading menu',
@@ -62,7 +66,10 @@ class _MenuGridSkeletonState extends State<MenuGridSkeleton>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AspectRatio(aspectRatio: 16 / 10, child: bar(double.infinity)),
+                  AspectRatio(
+                    aspectRatio: 16 / 10,
+                    child: bar(double.infinity),
+                  ),
                   const SizedBox(height: MenuSpace.md),
                   bar(14, w: 90),
                   const SizedBox(height: MenuSpace.sm),
@@ -119,13 +126,19 @@ class MenuMessageCard extends StatelessWidget {
                 children: [
                   Icon(icon, color: scheme.primary),
                   const SizedBox(height: MenuSpace.md),
-                  Text(title,
-                      style: text.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    title,
+                    style: text.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: MenuSpace.xs),
-                  Text(body,
-                      style: text.bodyMedium
-                          ?.copyWith(color: scheme.onSurfaceVariant)),
+                  Text(
+                    body,
+                    style: text.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
                   const SizedBox(height: MenuSpace.lg),
                   FilledButton(onPressed: onAction, child: Text(actionLabel)),
                 ],
