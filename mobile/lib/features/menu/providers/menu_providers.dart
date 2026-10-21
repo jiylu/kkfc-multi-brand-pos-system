@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/menu/data/seed/sample_menu.dart';
 import 'package:mobile/features/menu/data/models/menu_models.dart';
+import 'package:mobile/features/menu/providers/brand_providers.dart';
 
 class MenuChannelNotifier extends Notifier<MenuChannel> {
   @override
@@ -21,9 +22,8 @@ class MenuSearchNotifier extends Notifier<String> {
 final menuSearchProvider =
     NotifierProvider<MenuSearchNotifier, String>(MenuSearchNotifier.new);
 
-/// Fake latency so the skeleton shows. To preview the error state,
-/// temporarily `throw Exception('offline');` before the return.
 final menuItemsProvider = FutureProvider.autoDispose<List<MenuItem>>((ref) async {
+  ref.watch(activeBrandProvider); // refetch on brand switch
   await Future<void>.delayed(const Duration(milliseconds: 900));
   return sampleMenu;
 });

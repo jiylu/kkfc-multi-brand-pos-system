@@ -6,6 +6,8 @@ import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/menu/presentation/menu_layout.dart';
 import 'package:mobile/features/menu/presentation/widgets/channel_tabs.dart';
+import 'package:mobile/features/menu/presentation/brand_switch_flow.dart';
+import 'package:mobile/features/menu/providers/brand_providers.dart';
 
 class MenuHeader extends ConsumerWidget {
   const MenuHeader({super.key});
@@ -21,22 +23,15 @@ class MenuHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final brandName = ref.watch(activeBrandProvider.select((b) => b.name));
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
     final themedBrand = OutlinedButton.icon(
-      onPressed: () {},
-      icon: Icon(Icons.expand_more, color: scheme.onInverseSurface),
+      onPressed: () => startBrandSwitch(context, ref),
+      icon: const Icon(Icons.expand_more),
       iconAlignment: IconAlignment.end,
-      label: Text(
-        "Aurelia's Inasal",
-        overflow: TextOverflow.ellipsis,
-        maxLines: 1,
-        style: TextStyle(color: scheme.onInverseSurface),
-      ),
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(color: scheme.onInverseSurface.withValues(alpha: 0.5)),
-      ),
+      label: Text(brandName),
     );
 
     final themedUser = Column(
