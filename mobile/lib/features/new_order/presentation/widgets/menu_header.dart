@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/new_order/presentation/menu_layout.dart';
@@ -20,6 +22,18 @@ class MenuHeader extends ConsumerWidget {
     unawaited(ref.read(authRepositoryProvider).logout(token));
     ref.read(sessionExpiredProvider.notifier).set(false);
     ref.read(sessionTokenProvider.notifier).setToken(null);
+  }
+
+  /// Shows the repricing notice after a channel change. When the notice is
+  /// already on screen the live provider update is enough, so we skip the
+  /// redundant navigation.
+  void _onChannelSelected(BuildContext context) {
+    final router = GoRouter.maybeOf(context);
+    if (router == null) return;
+    if (GoRouterState.of(context).matchedLocation == AppRoutes.channelChange) {
+      return;
+    }
+    router.go(AppRoutes.channelChange);
   }
 
   @override
@@ -108,9 +122,12 @@ class MenuHeader extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: MenuSpace.md),
-                      const Center(
+                      Center(
                         child: IntrinsicWidth(
-                          child: ChannelTabs(inverted: true),
+                          child: ChannelTabs(
+                            inverted: true,
+                            onSelected: (_) => _onChannelSelected(context),
+                          ),
                         ),
                       ),
                     ],
@@ -120,9 +137,12 @@ class MenuHeader extends ConsumerWidget {
                     children: [
                       Flexible(child: themedBrand),
                       const SizedBox(width: MenuSpace.lg),
-                      const Flexible(
+                      Flexible(
                         child: IntrinsicWidth(
-                          child: ChannelTabs(inverted: true),
+                          child: ChannelTabs(
+                            inverted: true,
+                            onSelected: (_) => _onChannelSelected(context),
+                          ),
                         ),
                       ),
                       const SizedBox(width: MenuSpace.lg),

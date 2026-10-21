@@ -5,9 +5,13 @@ import 'package:mobile/features/new_order/presentation/menu_layout.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 class ChannelTabs extends ConsumerWidget {
-  const ChannelTabs({super.key, this.inverted = false});
+  const ChannelTabs({super.key, this.inverted = false, this.onSelected});
 
   final bool inverted;
+
+  /// Called after a different channel is selected. Not invoked when the
+  /// tapped channel is already active.
+  final ValueChanged<MenuChannel>? onSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,8 +37,11 @@ class ChannelTabs extends ConsumerWidget {
                   channel: channel,
                   selected: channel == selected,
                   inverted: inverted,
-                  onTap: () =>
-                      ref.read(menuChannelProvider.notifier).select(channel),
+                  onTap: () {
+                    if (channel == selected) return;
+                    ref.read(menuChannelProvider.notifier).select(channel);
+                    onSelected?.call(channel);
+                  },
                 ),
             ],
           ),
