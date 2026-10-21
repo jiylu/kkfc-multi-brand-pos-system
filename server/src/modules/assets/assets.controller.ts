@@ -24,9 +24,11 @@ import { AssetsService, MAX_ASSET_BYTES } from './assets.service';
 import type { AssetUpload } from './assets.service';
 
 export class AssetDownloadQuery {
-  @IsString()
-  @MinLength(1)
-  @MaxLength(1024)
+  @IsString({ message: 'Asset key must be a string.' })
+  @MinLength(1, { message: 'Asset key is required and cannot be empty.' })
+  @MaxLength(1024, {
+    message: 'Asset key must be at most 1024 characters long.',
+  })
   key!: string;
 }
 

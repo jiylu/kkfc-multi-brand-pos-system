@@ -39,12 +39,12 @@ export class CreateUserDTO {
   password!: string;
 
   @IsEnum(UserRole, {
-    message:
-      'Role must be one of: ORDER_STAFF, KITCHEN_PREPARER, INVENTORY_STAFF, KITCHEN_HEAD, OWNER, SUPERADMIN.',
+    message: `Role must be one of: ${Object.values(UserRole).join(', ')}.`,
   })
   @ApiProperty({
     enum: UserRole,
-    description: 'Only superadmins can create OWNER or SUPERADMIN accounts.',
+    description:
+      'Only superadmins can create SUPERADMIN accounts. Other authenticated users can create non-superadmin accounts in their own brand.',
   })
   role!: UserRole;
 
@@ -54,7 +54,7 @@ export class CreateUserDTO {
     format: 'uuid',
     nullable: true,
     description:
-      'Required for staff; optional or null for OWNER and SUPERADMIN. Any supplied brand must be active. Owners can create users only in their assigned brand.',
+      'Required for every role except SUPERADMIN. Superadmins may omit it or use null for a SUPERADMIN account. Other callers must supply their own brand ID. Any supplied brand must exist and be active.',
   })
   brand_id?: string | null;
 }

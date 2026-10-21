@@ -1,7 +1,7 @@
 # Sprint 1 Order API
 
 All routes use `/api/brands/:brandId/orders`, a bearer session, and brand access.
-Allowed roles: ORDER_STAFF, OWNER, SUPERADMIN (the latter may access any brand).
+Allowed roles: CASHIER_STAFF, MANAGER, SUPERADMIN (the latter may access any brand).
 
 - `POST /`: create a draft. Required body: client-generated `order_id` UUID,
   `order_channel`, and nonempty `lines` (`menu_item_id`, positive integer `quantity`,
@@ -38,9 +38,9 @@ use a global non-resetting bigint database sequence with at least three digits:
 T-001, T-99999, T-100000, and onward. The character limit is 64 (already supported
 by the database column), replacing the earlier seven-character requirement.
 PostgreSQL's bigint ceiling is 9223372036854775807 (21 characters with T-).
-Gaps are expected after rollback; numbers are never recycled. Apply both order
-migrations; the extension preserves allocated numbers and includes existing
-tickets longer than five digits. Existing legacy ticket formats are left untouched.
+Gaps are expected after rollback; numbers are never recycled. The configured
+database must provide `kitchen_ticket_number_seq`; verify that it exists before
+confirming orders.
 
 Full recipe snapshots remain in the database; Order API responses omit them to
 avoid exposing restricted recipe instructions. Responses include applied recipe

@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { Authenticated } from '../../../auth/auth.guard';
 import { AuthService } from '../../../auth/auth.service';
@@ -138,6 +139,58 @@ describe('Menu items HTTP endpoints', () => {
   });
 
   afterAll(async () => app?.close());
+
+  it('documents every menu route and preserves the create/update field contracts', () => {
+    const document = SwaggerModule.createDocument(
+      app,
+      new DocumentBuilder().addBearerAuth().build(),
+    );
+    const operations = [
+      document.paths['/api/menu-items'].post,
+      document.paths['/api/menu-items'].get,
+      document.paths['/api/menu-items/{id}'].get,
+      document.paths['/api/menu-items/{id}'].patch,
+      document.paths['/api/menu-items/{id}'].delete,
+      document.paths['/api/menu-items/brand/{brandId}'].get,
+      document.paths['/api/menu-items/reactivate/{id}'].patch,
+    ];
+    for (const operation of operations) {
+      expect(operation).toMatchObject({
+        summary: expect.any(String),
+        description: expect.any(String),
+        tags: ['Menu items'],
+        security: [{ bearer: [] }],
+        responses: {
+          400: expect.any(Object),
+          401: expect.any(Object),
+          403: expect.any(Object),
+        },
+      });
+    }
+    expect(document.components?.schemas?.CreateMenuItemDTO).toMatchObject({
+      required: expect.arrayContaining([
+        'brand_id',
+        'recipe_id',
+        'img_url',
+        'code',
+        'name',
+        'base_price',
+      ]),
+      properties: {
+        base_price: { minimum: 0, multipleOf: 0.01 },
+        description: { nullable: true },
+      },
+    });
+    expect(document.components?.schemas?.UpdateMenuItemDTO).toMatchObject({
+      properties: { name: expect.any(Object) },
+    });
+    expect(document.components?.schemas?.UpdateMenuItemDTO).not.toHaveProperty(
+      'properties.brand_id',
+    );
+    expect(document.components?.schemas?.UpdateMenuItemDTO).not.toHaveProperty(
+      'required',
+    );
+  });
 
   it.each(mutations)(
     'delegates $verb $path for an assigned manager',

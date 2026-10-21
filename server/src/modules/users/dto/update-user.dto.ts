@@ -41,7 +41,7 @@ export class UpdateUserDTO {
     maxLength: 32,
     format: 'password',
     description:
-      "Owners may change only their own password. Superadmins may reset another active user's password.",
+      'Managers may change passwords for active users in their own brand. Superadmins may change passwords across brands.',
   })
   password?: string;
 }

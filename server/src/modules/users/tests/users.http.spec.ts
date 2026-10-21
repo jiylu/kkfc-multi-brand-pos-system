@@ -109,6 +109,27 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     await app?.close();
   });
 
+  it('reports current role names when a legacy role is supplied', async () => {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: 'new_cashier',
+        first_name: 'Test',
+        last_name: 'User',
+        password: 'Password123!',
+        role: 'OWNER',
+        brand_id: brandId,
+      }),
+    });
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { message: string[] };
+    expect(body.message).toEqual([expect.stringContaining('CASHIER_STAFF')]);
+    expect(body.message[0]).toContain('MANAGER');
+    expect(body.message[0]).not.toMatch(/OWNER|ORDER_STAFF|KITCHEN_PREPARER/);
+    expect(service.createUser).not.toHaveBeenCalled();
+  });
+
   it.each([UserRole.SUPERADMIN, UserRole.MANAGER])(
     'lists a brand for %s',
     async (role) => {
