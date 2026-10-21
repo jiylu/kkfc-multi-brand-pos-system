@@ -167,12 +167,7 @@ export class UsersService {
     return user;
   }
 
-  async updateUser(
-    userId: string,
-    dto: UpdateUserDTO,
-    callerId: string,
-    isSuperAdmin = false,
-  ) {
+  async updateUser(userId: string, dto: UpdateUserDTO) {
     this.logger.log(`Updating user ${userId}`);
 
     const user = await this.usersRepository.findOne(userId);
@@ -211,15 +206,8 @@ export class UsersService {
     }
   }
 
-  async deleteUser(userId: string, callerId: string, isSuperAdmin = false) {
+  async deleteUser(userId: string) {
     this.logger.log(`Deactivating user ${userId}`);
-
-    if (!isSuperAdmin && userId !== callerId) {
-      throw new ForbiddenException({
-        code: 'ACCESS_DENIED',
-        message: 'You can only deactivate your own account.',
-      });
-    }
 
     const user = await this.usersRepository.findOne(userId);
     assertExists(user, 'User', userId, this.logger);

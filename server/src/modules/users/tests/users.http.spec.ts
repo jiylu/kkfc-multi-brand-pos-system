@@ -10,6 +10,7 @@ import { Prisma, UserRole } from '@prisma/client';
 import { Authenticated } from '../../auth/auth.guard';
 import { UsersController } from '../users.controller';
 import { UsersService } from '../users.service';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { AllExceptionsFilter } from '../../../shared/filters/all-exceptions.filter';
 import { PrismaExceptionFilter } from '../../../shared/filters/prisma-exception.filter';
@@ -21,11 +22,13 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   let currentRole: UserRole = UserRole.SUPERADMIN;
   const userId = '00000000-0000-4000-8000-000000000010';
   const brandId = '00000000-0000-4000-8000-000000000020';
+  let resourceBrandId = brandId;
 
   const service = {
     createUser: jest.fn(),
     updateUser: jest.fn(),
     findAllUsers: jest.fn(),
+    findAllUsersByBrand: jest.fn(),
     findOneUser: jest.fn(),
     deleteUser: jest.fn(),
   };
@@ -36,6 +39,18 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       providers: [
         { provide: UsersService, useValue: service },
         RolesGuard,
+        {
+          provide: PrismaService,
+          useValue: {
+            user: {
+              findUnique: jest
+                .fn()
+                .mockImplementation(() =>
+                  Promise.resolve({ brand_id: resourceBrandId }),
+                ),
+            },
+          },
+        },
         { provide: APP_FILTER, useClass: AllExceptionsFilter },
         { provide: APP_FILTER, useClass: PrismaExceptionFilter },
       ],
@@ -84,6 +99,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   beforeEach(() => {
     authenticated = true;
     currentRole = UserRole.SUPERADMIN;
+    resourceBrandId = brandId;
     for (const method of Object.values(service)) {
       method.mockReset().mockResolvedValue({ ok: true });
     }
@@ -91,6 +107,69 @@ describe('Users HTTP endpoints (IT-USER)', () => {
 
   afterAll(async () => {
     await app?.close();
+  });
+
+  it.each([UserRole.SUPERADMIN, UserRole.MANAGER])(
+    'lists a brand for %s',
+    async (role) => {
+      currentRole = role;
+      const response = await fetch(
+        `${url}/brand/${brandId}?page=2&limit=5&activeOnly=false`,
+      );
+      expect(response.status).toBe(200);
+      expect(service.findAllUsersByBrand).toHaveBeenCalledWith(
+        { page: 2, limit: 5, activeOnly: false },
+        brandId,
+      );
+      expect(service.findAllUsers).not.toHaveBeenCalled();
+    },
+  );
+
+  it('denies managers access to another brand listing', async () => {
+    currentRole = UserRole.MANAGER;
+    const response = await fetch(
+      `${url}/brand/00000000-0000-4000-8000-000000000030`,
+    );
+    expect(response.status).toBe(403);
+    expect(service.findAllUsersByBrand).not.toHaveBeenCalled();
+  });
+
+  it.each(['GET', 'PATCH', 'DELETE'])(
+    'denies manager %s access to users in another brand',
+    async (method) => {
+      currentRole = UserRole.MANAGER;
+      resourceBrandId = '00000000-0000-4000-8000-000000000030';
+      const response = await fetch(`${url}/${userId}`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        ...(method === 'PATCH'
+          ? { body: JSON.stringify({ first_name: 'Updated' }) }
+          : {}),
+      });
+      expect(response.status).toBe(403);
+      expect(service.findOneUser).not.toHaveBeenCalled();
+      expect(service.updateUser).not.toHaveBeenCalled();
+      expect(service.deleteUser).not.toHaveBeenCalled();
+    },
+  );
+
+  it('allows managers to update and deactivate users in their brand', async () => {
+    currentRole = UserRole.MANAGER;
+    const dto = { first_name: 'Updated' };
+    expect(
+      (
+        await fetch(`${url}/${userId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dto),
+        })
+      ).status,
+    ).toBe(200);
+    expect(service.updateUser).toHaveBeenCalledWith(userId, dto);
+    expect((await fetch(`${url}/${userId}`, { method: 'DELETE' })).status).toBe(
+      200,
+    );
+    expect(service.deleteUser).toHaveBeenCalledWith(userId);
   });
 
   it('IT-USER-001: creates a user when requested by a SUPERADMIN with valid payload', async () => {
@@ -162,27 +241,19 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   it('IT-USER-003: lists users with default and custom pagination/activeOnly filters', async () => {
     const defaultResp = await fetch(url);
     expect(defaultResp.status).toBe(200);
-    expect(service.findAllUsers).toHaveBeenCalledWith(
-      {
-        page: 1,
-        limit: 10,
-        activeOnly: true,
-      },
-      null,
-      true,
-    );
+    expect(service.findAllUsers).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+      activeOnly: true,
+    });
 
     const filteredResp = await fetch(`${url}?page=2&limit=5&activeOnly=false`);
     expect(filteredResp.status).toBe(200);
-    expect(service.findAllUsers).toHaveBeenLastCalledWith(
-      {
-        page: 2,
-        limit: 5,
-        activeOnly: false,
-      },
-      null,
-      true,
-    );
+    expect(service.findAllUsers).toHaveBeenLastCalledWith({
+      page: 2,
+      limit: 5,
+      activeOnly: false,
+    });
   });
 
   it.each(['?page=0', '?limit=0', '?limit=101', '?activeOnly=invalid'])(
@@ -197,21 +268,11 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   it('IT-USER-005: gets a single user by UUID and respects activeOnly query parameter', async () => {
     const defaultResp = await fetch(`${url}/${userId}`);
     expect(defaultResp.status).toBe(200);
-    expect(service.findOneUser).toHaveBeenCalledWith(
-      userId,
-      '00000000-0000-4000-8000-000000000001',
-      true,
-      true,
-    );
+    expect(service.findOneUser).toHaveBeenCalledWith(userId, true);
 
     const inactiveResp = await fetch(`${url}/${userId}?activeOnly=false`);
     expect(inactiveResp.status).toBe(200);
-    expect(service.findOneUser).toHaveBeenLastCalledWith(
-      userId,
-      '00000000-0000-4000-8000-000000000001',
-      false,
-      true,
-    );
+    expect(service.findOneUser).toHaveBeenLastCalledWith(userId, false);
   });
 
   it('IT-USER-006: updates an existing user by UUID with valid fields', async () => {
@@ -223,12 +284,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(service.updateUser).toHaveBeenCalledWith(
-      userId,
-      dto,
-      '00000000-0000-4000-8000-000000000001',
-      true,
-    );
+    expect(service.updateUser).toHaveBeenCalledWith(userId, dto);
   });
 
   it.each(['renamed_user', 'a'.repeat(16)])(
@@ -241,12 +297,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(service.updateUser).toHaveBeenCalledWith(
-        userId,
-        { username },
-        '00000000-0000-4000-8000-000000000001',
-        true,
-      );
+      expect(service.updateUser).toHaveBeenCalledWith(userId, { username });
     },
   );
 
@@ -294,6 +345,8 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     { first_name: '' },
     { password: '123' },
     { role: UserRole.MANAGER },
+    { brand_id: brandId },
+    { brand_id: null },
     { is_active: false },
   ])(
     'IT-USER-007: rejects invalid or non-whitelisted UpdateUserDTO fields: %j',
@@ -312,11 +365,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   it('IT-USER-008: deactivates a user via DELETE /:id', async () => {
     const response = await fetch(`${url}/${userId}`, { method: 'DELETE' });
     expect(response.status).toBe(200);
-    expect(service.deleteUser).toHaveBeenCalledWith(
-      userId,
-      '00000000-0000-4000-8000-000000000001',
-      true,
-    );
+    expect(service.deleteUser).toHaveBeenCalledWith(userId);
   });
 
   it.each([
@@ -338,13 +387,12 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       (role) => role !== UserRole.MANAGER && role !== UserRole.SUPERADMIN,
     ),
   )(
-    'IT-USER-010: denies staff role %s across all user endpoints',
+    'IT-USER-010: restricts staff role %s to reading users in their brand',
     async (role) => {
       currentRole = role;
 
       expect((await fetch(url)).status).toBe(403);
-      expect((await fetch(`${url}/${userId}`)).status).toBe(403);
-      expect((await fetch(url, { method: 'POST' })).status).toBe(403);
+      expect((await fetch(`${url}/${userId}`)).status).toBe(200);
       expect(
         (await fetch(`${url}/${userId}`, { method: 'PATCH' })).status,
       ).toBe(403);
@@ -357,17 +405,11 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   it('allows username lookups through the GET route', async () => {
     const response = await fetch(`${url}/owner`);
     expect(response.status).toBe(200);
-    expect(service.findOneUser).toHaveBeenCalledWith(
-      'owner',
-      '00000000-0000-4000-8000-000000000001',
-      true,
-      true,
-    );
+    expect(service.findOneUser).toHaveBeenCalledWith('owner', true);
   });
 
-  it('passes authenticated superadmin access to every service operation', async () => {
+  it('delegates superadmin requests to the current service contracts', async () => {
     currentRole = UserRole.SUPERADMIN;
-    const callerId = '00000000-0000-4000-8000-000000000001';
     const payload = {
       username: 'new_manager',
       first_name: 'Test',
@@ -387,18 +429,13 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     ).toBe(201);
     expect(service.createUser).toHaveBeenCalledWith(payload, true, null);
     expect((await fetch(`${url}?activeOnly=false`)).status).toBe(200);
-    expect(service.findAllUsers).toHaveBeenCalledWith(
-      { page: 1, limit: 10, activeOnly: false },
-      null,
-      true,
-    );
+    expect(service.findAllUsers).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+      activeOnly: false,
+    });
     expect((await fetch(`${url}/${userId}`)).status).toBe(200);
-    expect(service.findOneUser).toHaveBeenCalledWith(
-      userId,
-      callerId,
-      true,
-      true,
-    );
+    expect(service.findOneUser).toHaveBeenCalledWith(userId, true);
     const dto = { password: 'Password123!' };
     expect(
       (
@@ -409,15 +446,10 @@ describe('Users HTTP endpoints (IT-USER)', () => {
         })
       ).status,
     ).toBe(200);
-    expect(service.updateUser).toHaveBeenCalledWith(
-      userId,
-      dto,
-      callerId,
-      true,
-    );
+    expect(service.updateUser).toHaveBeenCalledWith(userId, dto);
     expect((await fetch(`${url}/${userId}`, { method: 'DELETE' })).status).toBe(
       200,
     );
-    expect(service.deleteUser).toHaveBeenCalledWith(userId, callerId, true);
+    expect(service.deleteUser).toHaveBeenCalledWith(userId);
   });
 });

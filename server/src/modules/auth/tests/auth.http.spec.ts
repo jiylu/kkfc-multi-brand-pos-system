@@ -80,7 +80,22 @@ describe('Auth HTTP endpoints', () => {
     } as unknown as PrismaService);
     const module = await Test.createTestingModule({ imports: [AuthModule] })
       .overrideProvider(PrismaService)
-      .useValue({})
+      .useValue({
+        user: {
+          findUnique: ({
+            where,
+          }: {
+            where: { user_id?: string; username?: string };
+          }) =>
+            Promise.resolve(
+              [...users.values()].find((user) =>
+                where.user_id
+                  ? user.user_id === where.user_id
+                  : user.username === where.username,
+              ) ?? null,
+            ),
+        },
+      })
       .overrideProvider(UsersRepository)
       .useValue({
         findByUsername: jest.fn((username: string) => {
@@ -98,20 +113,8 @@ describe('Auth HTTP endpoints', () => {
           return Promise.resolve(user?.is_active ? user : null);
         }),
         findAll: jest.fn(
-          (
-            skip: number,
-            take: number,
-            callerBrandId: string | null,
-            activeOnly: boolean = true,
-            isSuperAdmin: boolean = false,
-          ) =>
-            listingRepository.findAll(
-              skip,
-              take,
-              callerBrandId,
-              activeOnly,
-              isSuperAdmin,
-            ),
+          (skip: number, take: number, activeOnly: boolean = true) =>
+            listingRepository.findAll(skip, take, activeOnly),
         ),
       })
       .overrideProvider(AuthRepository)
@@ -222,14 +225,16 @@ describe('Auth HTTP endpoints', () => {
     expect(lookup.status).toBe(200);
   });
 
-  it('IT-AUTH-015: blocks managers from editing or deactivating other users', async () => {
+  it('IT-AUTH-015: blocks managers from editing or deactivating users in another brand', async () => {
     users.set(admin.user_id, { ...admin, role: UserRole.MANAGER });
     const otherAdmin = {
       ...admin,
       user_id: randomUUID(),
       username: 'other-admin',
+      brand_id: randomUUID(),
     };
     users.set(otherAdmin.user_id, otherAdmin);
+    users.set(staff.user_id, { ...staff, brand_id: randomUUID() });
     const { token } = await login();
     const headers = {
       Authorization: `Bearer ${token}`,
@@ -479,14 +484,6 @@ describe('Auth HTTP endpoints', () => {
     expect(
       (
         await fetch(`${url}/api/users`, {
-          headers: { Authorization: `Bearer ${member.token}` },
-        })
-      ).status,
-    ).toBe(403);
-    expect(
-      (
-        await fetch(`${url}/api/users`, {
-          method: 'POST',
           headers: { Authorization: `Bearer ${member.token}` },
         })
       ).status,

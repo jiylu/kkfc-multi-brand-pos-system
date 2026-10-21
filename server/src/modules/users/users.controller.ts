@@ -30,6 +30,10 @@ import { Authenticated, type AuthenticatedRequest } from '../auth/auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { BrandsGuard } from '../../shared/guards/brands.guard';
+import {
+  BrandResource,
+  BrandResourceType,
+} from '../../shared/decorators/brand-resource.decorator';
 
 @Controller('users')
 @UsersDocs()
@@ -70,8 +74,9 @@ export class UsersController {
 
   @Get(':id')
   @FindOneUserDocs()
+  @UseGuards(BrandsGuard)
+  @BrandResource(BrandResourceType.USER, 'id')
   async findOne(
-    @Req() request: AuthenticatedRequest,
     @Param('id') usernameOrUserId: string,
     @Query('activeOnly', new DefaultValuePipe(true), ParseBoolPipe)
     activeOnly: boolean,
@@ -81,29 +86,22 @@ export class UsersController {
 
   @Patch(':id')
   @UpdateUserDocs()
+  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @UseGuards(BrandsGuard)
+  @BrandResource(BrandResourceType.USER, 'id')
   async update(
-    @Req() request: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserDTO,
   ) {
-    return this.usersService.updateUser(
-      id,
-      dto,
-      request.session.user.user_id,
-      request.session.user.role === UserRole.SUPERADMIN,
-    );
+    return this.usersService.updateUser(id, dto);
   }
 
   @Delete(':id')
   @DeleteUserDocs()
-  async delete(
-    @Req() request: AuthenticatedRequest,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    return this.usersService.deleteUser(
-      id,
-      request.session.user.user_id,
-      request.session.user.role === UserRole.SUPERADMIN,
-    );
+  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @UseGuards(BrandsGuard)
+  @BrandResource(BrandResourceType.USER, 'id')
+  async delete(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.deleteUser(id);
   }
 }
