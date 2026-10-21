@@ -155,35 +155,34 @@ describe('Menu items HTTP endpoints', () => {
       document.paths['/api/menu-items/reactivate/{id}'].patch,
     ];
     for (const operation of operations) {
+      expect(typeof operation?.summary).toBe('string');
+      expect(typeof operation?.description).toBe('string');
       expect(operation).toMatchObject({
-        summary: expect.any(String),
-        description: expect.any(String),
         tags: ['Menu items'],
         security: [{ bearer: [] }],
-        responses: {
-          400: expect.any(Object),
-          401: expect.any(Object),
-          403: expect.any(Object),
-        },
       });
+      expect(operation?.responses).toHaveProperty('400.description');
+      expect(operation?.responses).toHaveProperty('401.description');
+      expect(operation?.responses).toHaveProperty('403.description');
     }
     expect(document.components?.schemas?.CreateMenuItemDTO).toMatchObject({
-      required: expect.arrayContaining([
+      required: [
         'brand_id',
         'recipe_id',
         'img_url',
         'code',
         'name',
         'base_price',
-      ]),
+      ],
       properties: {
         base_price: { minimum: 0, multipleOf: 0.01 },
         description: { nullable: true },
       },
     });
-    expect(document.components?.schemas?.UpdateMenuItemDTO).toMatchObject({
-      properties: { name: expect.any(Object) },
-    });
+    expect(document.components?.schemas?.UpdateMenuItemDTO).toHaveProperty(
+      'properties.name.type',
+      'string',
+    );
     expect(document.components?.schemas?.UpdateMenuItemDTO).not.toHaveProperty(
       'properties.brand_id',
     );
