@@ -27,22 +27,27 @@ class CartLineTile extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(line.item.name,
-                    style: text.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                child: Text(
+                  line.item.name,
+                  style: text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
               const SizedBox(width: MenuSpace.sm),
-              Text(formatPeso(line.totalCentavos(channel)),
-                  style: text.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                formatPeso(line.totalCentavos(channel)),
+                style: text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
             ],
           ),
           Row(
             children: [
               Expanded(
-                child: Text(modifier,
-                    style: text.bodySmall
-                        ?.copyWith(color: scheme.onSurfaceVariant)),
+                child: Text(
+                  modifier,
+                  style: text.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
               IconButton.outlined(
                 tooltip: 'Remove one',
@@ -62,8 +67,7 @@ class CartLineTile extends ConsumerWidget {
               ),
               IconButton.outlined(
                 tooltip: 'Add one',
-                onPressed: () =>
-                    ref.read(cartProvider.notifier).add(line.item),
+                onPressed: () => ref.read(cartProvider.notifier).add(line.item),
                 icon: const Icon(Icons.add),
               ),
             ],

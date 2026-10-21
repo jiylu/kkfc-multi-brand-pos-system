@@ -9,8 +9,11 @@ Future<void> startBrandSwitch(BuildContext context, WidgetRef ref) async {
   final current = ref.read(activeBrandProvider);
   final brands = ref.read(assignedBrandsProvider);
 
-  final picked =
-      await showBrandPicker(context, brands: brands, current: current);
+  final picked = await showBrandPicker(
+    context,
+    brands: brands,
+    current: current,
+  );
   if (picked == null || picked.id == current.id) return;
   if (!context.mounted) return;
 

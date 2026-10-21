@@ -2,8 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/menu/data/seed/sample_brands.dart';
 import 'package:mobile/features/menu/data/models/brand_models.dart';
 
-final assignedBrandsProvider =
-    Provider<List<AssignedBrand>>((ref) => sampleAssignedBrands);
+final assignedBrandsProvider = Provider<List<AssignedBrand>>(
+  (ref) => sampleAssignedBrands,
+);
 
 class ActiveBrandNotifier extends Notifier<AssignedBrand> {
   @override
@@ -13,4 +14,6 @@ class ActiveBrandNotifier extends Notifier<AssignedBrand> {
 }
 
 final activeBrandProvider =
-    NotifierProvider<ActiveBrandNotifier, AssignedBrand>(ActiveBrandNotifier.new);
+    NotifierProvider<ActiveBrandNotifier, AssignedBrand>(
+      ActiveBrandNotifier.new,
+    );

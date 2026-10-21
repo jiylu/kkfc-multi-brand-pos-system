@@ -6,7 +6,8 @@ import 'package:mobile/features/menu/presentation/widgets/menu_dialog.dart';
 // Unapproved policy copy from the design review. Remove once Product +
 // Backend confirm the switch/reset behavior.
 const _proposalTitle = 'PO REVIEW PROPOSAL — NOT APPROVED';
-const _proposalBody = 'Do not discard a cart automatically. Confirm the final '
+const _proposalBody =
+    'Do not discard a cart automatically. Confirm the final '
     'switch/reset policy with Product + Backend.';
 
 /// Returns true to clear the cart and switch, false/null to keep the order.
@@ -18,11 +19,8 @@ Future<bool?> showBrandSwitchConfirm(
 }) {
   return showMenuDialog<bool>(
     context,
-    builder: (_) => _ConfirmContent(
-      current: current,
-      target: target,
-      cartCount: cartCount,
-    ),
+    builder: (_) =>
+        _ConfirmContent(current: current, target: target, cartCount: cartCount),
   );
 }
 
@@ -47,8 +45,10 @@ class _ConfirmContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Switch to ${target.name}?',
-            style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          'Switch to ${target.name}?',
+          style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: MenuSpace.sm),
         Text(
           'Current cart: $cartCount $items for ${current.name}. '
@@ -66,19 +66,26 @@ class _ConfirmContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_proposalTitle,
-                    style: text.labelSmall?.copyWith(color: scheme.primary)),
+                Text(
+                  _proposalTitle,
+                  style: text.labelSmall?.copyWith(color: scheme.primary),
+                ),
                 const SizedBox(height: MenuSpace.xs),
-                Text(_proposalBody,
-                    style: text.bodySmall
-                        ?.copyWith(color: scheme.onSurfaceVariant)),
+                Text(
+                  _proposalBody,
+                  style: text.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ),
         ),
         const SizedBox(height: MenuSpace.lg),
         OutlinedButton(
-          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+          ),
           onPressed: () => Navigator.of(context).pop(false),
           child: const Text('Keep current order'),
         ),

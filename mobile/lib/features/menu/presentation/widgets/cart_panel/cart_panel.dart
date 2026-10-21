@@ -50,22 +50,25 @@ class CartPanel extends ConsumerWidget {
                         key: const ValueKey('empty'),
                         child: Padding(
                           padding: const EdgeInsets.all(MenuSpace.xl),
-                          child: Text('No items yet. Tap a menu item to add it.',
-                              textAlign: TextAlign.center,
-                              style: text.bodyMedium
-                                  ?.copyWith(color: scheme.onSurfaceVariant)),
+                          child: Text(
+                            'No items yet. Tap a menu item to add it.',
+                            textAlign: TextAlign.center,
+                            style: text.bodyMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
                         ),
                       )
                     : ListView(
                         key: const ValueKey('lines'),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: MenuSpace.lg),
+                          horizontal: MenuSpace.lg,
+                        ),
                         children: [
                           for (final line in lines)
                             FadeSlideIn(
                               key: ValueKey(line.item.id),
-                              child:
-                                  CartLineTile(line: line, channel: channel),
+                              child: CartLineTile(line: line, channel: channel),
                             ),
                         ],
                       ),

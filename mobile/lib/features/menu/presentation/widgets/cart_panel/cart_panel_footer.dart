@@ -33,22 +33,26 @@ class CartPanelFooter extends StatelessWidget {
               ),
               AnimatedPeso(
                 centavos: total,
-                style:
-                    text.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                style: text.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ],
           ),
           const SizedBox(height: MenuSpace.md),
           FilledButton(
-            style:
-                FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+            ),
             // TODO: submit order once the backend exists.
             onPressed: canSend ? onSend : null,
             child: const Text('Check and send'),
           ),
           const SizedBox(height: MenuSpace.sm),
-          Text('Review item prices and modifiers before sending.',
-              style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+          Text(
+            'Review item prices and modifiers before sending.',
+            style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
         ],
       ),
     );

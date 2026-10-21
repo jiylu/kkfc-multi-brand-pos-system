@@ -67,10 +67,14 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
           duration: context.motion(MenuMotion.medium),
           curve: MenuMotion.curve,
           decoration: BoxDecoration(
-            color: selected ? context.semanticColors.highlightsSecondary : scheme.surface,
+            color: selected
+                ? context.semanticColors.highlightsSecondary
+                : scheme.surface,
             borderRadius: BorderRadius.circular(MenuRadius.md),
             border: Border.all(
-              color: selected ? context.semanticColors.highlights : scheme.outlineVariant,
+              color: selected
+                  ? context.semanticColors.highlights
+                  : scheme.outlineVariant,
               width: selected ? MenuBorder.thick : MenuBorder.thin,
             ),
           ),
@@ -165,9 +169,7 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
                           duration: context.motion(MenuMotion.fast),
                           curve: MenuMotion.curve,
                           style: (text.bodySmall ?? const TextStyle()).copyWith(
-                            color: selected
-                                ? scheme.primary
-                                : scheme.onSurface,
+                            color: selected ? scheme.primary : scheme.onSurface,
                           ),
                           child: Text(note.title),
                         ),

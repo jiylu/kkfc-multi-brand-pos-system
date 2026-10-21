@@ -45,20 +45,25 @@ class CartBar extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('$count items in order',
-                              style: text.labelMedium?.copyWith(
-                                  color: scheme.onSurfaceVariant)),
+                          Text(
+                            '$count items in order',
+                            style: text.labelMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
                           AnimatedPeso(
                             centavos: total,
-                            style: text.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w800),
+                            style: text.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     FilledButton(
                       style: FilledButton.styleFrom(
-                          minimumSize: const Size(0, 48)),
+                        minimumSize: const Size(0, 48),
+                      ),
                       onPressed: () => showCartSheet(context),
                       child: const Text('View cart'),
                     ),
