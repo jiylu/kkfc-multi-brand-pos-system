@@ -92,7 +92,7 @@ class _MenuItemCardState extends ConsumerState<MenuItemCard> {
                       Stack(
                         children: [
                           AspectRatio(
-                            aspectRatio: 16 / 10,
+                            aspectRatio: 10 / 12,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 color: scheme.surfaceContainerHighest,
