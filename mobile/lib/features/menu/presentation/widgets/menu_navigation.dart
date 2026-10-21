@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/features/menu/presentation/menu_layout.dart';
 
 typedef _Destination = ({IconData icon, IconData selected, String label});
@@ -122,6 +123,19 @@ class _NavItem extends StatelessWidget {
           type: MaterialType.transparency,
           child: InkWell(
             onTap: onTap,
+            overlayColor: WidgetStateProperty.resolveWith((states) {
+              final pressed = states.contains(WidgetState.pressed);
+              final active =
+                  pressed ||
+                  states.contains(WidgetState.hovered) ||
+                  states.contains(WidgetState.focused);
+              if (!active) return null;
+
+              final base = selected ? scheme.inverseSurface : onDark;
+              return base.withValues(
+                alpha: pressed ? KkfcOpacity.pressed : KkfcOpacity.hover,
+              );
+            }),
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 64),
               child: Padding(

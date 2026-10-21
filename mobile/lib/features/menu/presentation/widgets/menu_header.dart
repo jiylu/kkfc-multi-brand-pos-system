@@ -88,60 +88,51 @@ class MenuHeader extends ConsumerWidget {
 
     return Material(
       color: scheme.inverseSurface,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: scheme.onInverseSurface.withValues(alpha: 0.2),
-            ),
-          ),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final compact = constraints.maxWidth < MenuLayout.compactMax;
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < MenuLayout.compactMax;
 
-            return Padding(
-              padding: const EdgeInsets.all(MenuSpace.md),
-              child: compact
-                  ? Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Flexible(child: themedBrand),
-                            const SizedBox(width: MenuSpace.md),
-                            themedUser,
-                            const SizedBox(width: MenuSpace.sm),
-                            themedLogout,
-                          ],
+          return Padding(
+            padding: const EdgeInsets.all(MenuSpace.md),
+            child: compact
+                ? Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(child: themedBrand),
+                          const SizedBox(width: MenuSpace.md),
+                          themedUser,
+                          const SizedBox(width: MenuSpace.sm),
+                          themedLogout,
+                        ],
+                      ),
+                      const SizedBox(height: MenuSpace.md),
+                      const Center(
+                        child: IntrinsicWidth(
+                          child: ChannelTabs(inverted: true),
                         ),
-                        const SizedBox(height: MenuSpace.md),
-                        const Center(
-                          child: IntrinsicWidth(
-                            child: ChannelTabs(inverted: true),
-                          ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(child: themedBrand),
+                      const SizedBox(width: MenuSpace.lg),
+                      const Flexible(
+                        child: IntrinsicWidth(
+                          child: ChannelTabs(inverted: true),
                         ),
-                      ],
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Flexible(child: themedBrand),
-                        const SizedBox(width: MenuSpace.lg),
-                        const Flexible(
-                          child: IntrinsicWidth(
-                            child: ChannelTabs(inverted: true),
-                          ),
-                        ),
-                        const SizedBox(width: MenuSpace.lg),
-                        themedUser,
-                        const SizedBox(width: MenuSpace.sm),
-                        themedLogout,
-                      ],
-                    ),
-            );
-          },
-        ),
+                      ),
+                      const SizedBox(width: MenuSpace.lg),
+                      themedUser,
+                      const SizedBox(width: MenuSpace.sm),
+                      themedLogout,
+                    ],
+                  ),
+          );
+        },
       ),
     );
   }

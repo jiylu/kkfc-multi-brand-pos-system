@@ -85,6 +85,9 @@ class _ConfirmContent extends StatelessWidget {
         OutlinedButton(
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(48),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(MenuRadius.md),
+            ),
           ),
           onPressed: () => Navigator.of(context).pop(false),
           child: const Text('Keep current order'),
