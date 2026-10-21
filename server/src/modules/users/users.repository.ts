@@ -34,18 +34,42 @@ export class UsersRepository {
   async findAll(
     skip: number,
     take: number,
-    callerBrandId: string | null,
     activeOnly = true,
-    isSuperAdmin = false,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
-    if (!isSuperAdmin && callerBrandId === null) {
-      return { users: [], total: 0 };
-    }
-
     const where: Prisma.UserWhereInput = {
       is_active: activeOnly ? true : undefined,
-      ...(isSuperAdmin ? {} : { brand_id: callerBrandId }),
+    };
+
+    const usersQuery = tx.user.findMany({
+      where,
+      skip,
+      take,
+      orderBy: [{ created_at: 'desc' }, { user_id: 'asc' }],
+      omit: { password_hash: true },
+    });
+    const totalQuery = tx.user.count({ where });
+
+    const [users, total] =
+      '$transaction' in tx
+        ? await tx.$transaction([usersQuery, totalQuery], {
+            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+          })
+        : await Promise.all([usersQuery, totalQuery]);
+
+    return { users, total };
+  }
+
+  async findAllByBrand(
+    skip: number,
+    take: number,
+    activeOnly = true,
+    brandId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const where: Prisma.UserWhereInput = {
+      is_active: activeOnly ? true : undefined,
+      brand_id: brandId,
     };
 
     const usersQuery = tx.user.findMany({

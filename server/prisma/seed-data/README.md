@@ -84,14 +84,14 @@ Apply the pending migrations to the intended database, then run `npm run prisma:
 | MANAGER (GC) | `test_owner` |
 | MANAGER (AI) | `test_manager_ai` |
 | MANAGER (KK) | `test_manager_kk` |
-| RECIPE_MANAGER | `test_recipe_manager` |
+| RECIPE_MANAGER | `test_recipe_mgr` |
 | SUPERVISOR | `test_supervisor` |
-| KITCHEN_HEAD | `test_kitchen_head` |
-| INVENTORY_STAFF | `test_inventory_staff` |
-| KITCHEN_STAFF | `test_kitchen_preparer` |
+| KITCHEN_HEAD | `test_chef` |
+| INVENTORY_STAFF | `test_inventory` |
+| KITCHEN_STAFF | `test_kitchen` |
 | CASHIER_STAFF | `test_order_staff` |
 
-Existing usernames are retained for login fixtures. Each seed brand has one assigned manager. Other staff are assigned to GC; the superadmin and `test_owner_unassigned` have no brand. Assignments resolve by brand code rather than seed order.
+All seed usernames fit the 16-character limit. Longer legacy usernames have been shortened for login fixtures. Each seed brand has one assigned manager. Other staff are assigned to GC; the superadmin and `test_unassigned` have no brand. Assignments resolve by brand code rather than seed order.
 
 `npm run db:seed:check` checks ingredient and output links, brand ownership, rerun behavior, stock preservation and role coverage without connecting to a database.
 

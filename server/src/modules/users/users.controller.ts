@@ -29,14 +29,15 @@ import { FindUsersDTO } from './dto/find-users.dto';
 import { Authenticated, type AuthenticatedRequest } from '../auth/auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
+import { BrandsGuard } from '../../shared/guards/brands.guard';
 
 @Controller('users')
 @UsersDocs()
 @UseGuards(Authenticated, RolesGuard)
-@Roles(UserRole.SUPERADMIN)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  // TODO: FLEXIBLE creation ?
   @Post()
   @CreateUserDocs()
   async create(
@@ -52,17 +53,19 @@ export class UsersController {
 
   @Get()
   @FindAllUsersDocs()
-  async findAll(
-    @Req() request: AuthenticatedRequest,
+  @Roles(UserRole.SUPERADMIN)
+  async findAll(@Query() query: FindUsersDTO) {
+    return this.usersService.findAllUsers(query);
+  }
+
+  @Get('brand/:brandId')
+  @UseGuards(BrandsGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  async findAllByBrand(
+    @Param('brandId', ParseUUIDPipe) brandId: string,
     @Query() query: FindUsersDTO,
   ) {
-    const isSuperAdmin = request.session.user.role === UserRole.SUPERADMIN;
-
-    return this.usersService.findAllUsers(
-      query,
-      request.session.user.brand_id,
-      isSuperAdmin,
-    );
+    return this.usersService.findAllUsersByBrand(query, brandId);
   }
 
   @Get(':id')
@@ -73,12 +76,7 @@ export class UsersController {
     @Query('activeOnly', new DefaultValuePipe(true), ParseBoolPipe)
     activeOnly: boolean,
   ) {
-    return this.usersService.findOneUser(
-      usernameOrUserId,
-      request.session.user.user_id,
-      activeOnly,
-      request.session.user.role === UserRole.SUPERADMIN,
-    );
+    return this.usersService.findOneUser(usernameOrUserId, activeOnly);
   }
 
   @Patch(':id')

@@ -16,7 +16,7 @@ export const TEST_USERS = [
     brand_code: null,
   },
   {
-    username: 'test_recipe_manager',
+    username: 'test_recipe_mgr',
     first_name: 'Recipe',
     last_name: 'Manager',
     password: 'Password123!',
@@ -56,7 +56,7 @@ export const TEST_USERS = [
     brand_code: 'KK',
   },
   {
-    username: 'test_kitchen_head',
+    username: 'test_chef',
     first_name: 'Chef',
     last_name: 'Head',
     password: 'Password123!',
@@ -64,7 +64,7 @@ export const TEST_USERS = [
     brand_code: 'GC',
   },
   {
-    username: 'test_kitchen_preparer',
+    username: 'test_kitchen',
     first_name: 'Line',
     last_name: 'Cook',
     password: 'Password123!',
@@ -80,7 +80,7 @@ export const TEST_USERS = [
     brand_code: 'GC',
   },
   {
-    username: 'test_inventory_staff',
+    username: 'test_inventory',
     first_name: 'Stock',
     last_name: 'Keeper',
     password: 'Password123!',
@@ -91,7 +91,7 @@ export const TEST_USERS = [
 
 // Manager intentionally left without a brand so E2E tests can create one.
 export const TEST_UNASSIGNED_OWNER = {
-  username: 'test_owner_unassigned',
+  username: 'test_unassigned',
   first_name: 'Unassigned',
   last_name: 'Owner',
   password: 'Password123!',

@@ -231,7 +231,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     );
   });
 
-  it.each(['renamed_user', 'a'.repeat(64)])(
+  it.each(['renamed_user', 'a'.repeat(16)])(
     'updates a username without requiring other profile fields: %s',
     async (username) => {
       const response = await fetch(`${url}/${userId}`, {
@@ -290,7 +290,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     { username: '' },
     { username: null },
     { username: 123 },
-    { username: 'a'.repeat(65) },
+    { username: 'a'.repeat(17) },
     { first_name: '' },
     { password: '123' },
     { role: UserRole.MANAGER },

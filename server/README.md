@@ -119,8 +119,8 @@ Listings accept `page` (default 1), `limit` (default 10, maximum 100), and
 `activeOnly` (default true). `activeOnly=false` includes both active and inactive
 records. Listings return `{ data, meta: { page, limit, total, totalPages } }`.
 The single-user lookup also accepts `activeOnly`; the single-brand lookup
-returns active brands only. User UUIDs take priority over usernames for profile
-searches. Session validation and user update/delete operations use strict user-ID lookups.
+returns active brands only. Usernames are limited to 16 characters. User UUIDs
+take priority over usernames for profile searches. Session validation and user update/delete operations use strict user-ID lookups.
 
 Brand codes are unique and manually supplied. Setting `logo_url` to null clears
 the logo on update; omitted update fields keep their existing values. The old
