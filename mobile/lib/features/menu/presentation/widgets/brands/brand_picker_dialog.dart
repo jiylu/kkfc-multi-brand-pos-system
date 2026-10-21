@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/app/theme/theme_context.dart';
 import 'package:mobile/features/menu/data/models/brand_models.dart';
 import 'package:mobile/features/menu/presentation/menu_layout.dart';
 import 'package:mobile/features/menu/presentation/widgets/menu_dialog.dart';
@@ -31,8 +32,9 @@ class _BrandPickerContentState extends State<_BrandPickerContent> {
   String _subtitle(AssignedBrand brand) {
     final isCurrent = brand.id == widget.current.id;
     final isSelected = brand.id == _selected.id;
-    if (isCurrent)
+    if (isCurrent) {
       return isSelected ? 'Current brand · Selected' : 'Current brand';
+    }
     return 'Available to this demo account';
   }
 
@@ -110,10 +112,14 @@ class _BrandTile extends StatelessWidget {
         duration: context.motion(MenuMotion.medium),
         curve: MenuMotion.curve,
         decoration: BoxDecoration(
-          color: selected ? scheme.primaryContainer : scheme.surface,
+          color: selected
+              ? context.semanticColors.highlightsSecondary
+              : scheme.surface,
           borderRadius: BorderRadius.circular(MenuRadius.md),
           border: Border.all(
-            color: selected ? scheme.primary : scheme.outlineVariant,
+            color: selected
+                ? context.semanticColors.highlights
+                : scheme.outlineVariant,
             width: selected ? MenuBorder.thick : MenuBorder.thin,
           ),
         ),
