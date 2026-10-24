@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/app/theme/tokens.dart';
-
-import 'motion.dart';
+import 'package:mobile/shared/shared_layout.dart';
 
 class AvailabilityToggle extends StatelessWidget {
   const AvailabilityToggle({
@@ -19,8 +17,8 @@ class AvailabilityToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final duration = motionOf(context, KkfcMotion.normal);
-    final radius = BorderRadius.circular(KkfcRadius.md);
+    final duration = context.motion(MenuMotion.medium);
+    final radius = BorderRadius.circular(MenuRadius.md);
 
     return Semantics(
       button: true,
@@ -38,7 +36,7 @@ class AvailabilityToggle extends StatelessWidget {
               minWidth: 96,
             ),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: KkfcSpace.md),
+              padding: EdgeInsets.symmetric(horizontal: MenuSpace.md),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -53,7 +51,7 @@ class AvailabilityToggle extends StatelessWidget {
                       style: theme.textTheme.labelLarge,
                     ),
                   ),
-                  SizedBox(width: KkfcSpace.sm),
+                  SizedBox(width: MenuSpace.sm),
                   _Track(value: value, duration: duration),
                 ],
               ),
@@ -76,7 +74,7 @@ class _Track extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return AnimatedContainer(
       duration: duration,
-      curve: Curves.easeOutCubic,
+      curve: MenuMotion.curve,
       width: 36,
       height: 18,
       padding: const EdgeInsets.all(3),

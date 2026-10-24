@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/app/theme/tokens.dart';
-
-import 'motion.dart';
+import 'package:mobile/shared/shared_layout.dart';
 
 class StatusChip extends StatelessWidget {
   const StatusChip(this.label, {super.key});
@@ -16,12 +14,12 @@ class StatusChip extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(KkfcRadius.sm),
+          borderRadius: BorderRadius.circular(MenuRadius.sm),
         ),
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: KkfcSpace.md,
-            vertical: KkfcSpace.sm,
+            horizontal: MenuSpace.md,
+            vertical: MenuSpace.sm,
           ),
           child: Center(
             widthFactor: 1,
@@ -53,14 +51,14 @@ class InfoRow extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(KkfcRadius.md),
+        borderRadius: BorderRadius.circular(MenuRadius.md),
         border: Border.all(
           color: scheme.outlineVariant,
-          width: KkfcBorderWidth.thin,
+          width: MenuBorder.thin,
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.all(KkfcSpace.md),
+        padding: EdgeInsets.all(MenuSpace.md),
         child: Row(
           children: [
             Expanded(
@@ -68,12 +66,12 @@ class InfoRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: theme.textTheme.titleSmall),
-                  SizedBox(height: KkfcSpace.xs),
+                  SizedBox(height: MenuSpace.xs),
                   AnimatedSwitcher(
-                    duration: motionOf(context, KkfcMotion.normal),
+                    duration: context.motion(MenuMotion.medium),
                     layoutBuilder: (current, previous) => Stack(
                       alignment: Alignment.centerLeft,
-                      children: [...previous, if (current != null) current],
+                      children: [...previous, ?current],
                     ),
                     child: Text(
                       subtitle,
@@ -84,7 +82,7 @@ class InfoRow extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(width: KkfcSpace.md),
+            SizedBox(width: MenuSpace.md),
             trailing,
           ],
         ),

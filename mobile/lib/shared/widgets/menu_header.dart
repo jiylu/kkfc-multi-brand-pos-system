@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,14 +6,28 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
-import 'package:mobile/shared/menu_layout.dart';
+import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/features/new_order/presentation/brand_switch_flow.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
+import 'package:mobile/features/availability/data/models/availability_model.dart';
 
 class MenuHeader extends ConsumerWidget {
-  const MenuHeader({super.key});
+  const MenuHeader({
+    super.key,
+    this.compact,
+    this.channel,
+    this.onChannelChanged,
+    this.staffName,
+    this.staffRole,
+  });
+
+  final bool? compact;
+  final PosChannel? channel;
+  final ValueChanged<PosChannel>? onChannelChanged;
+  final String? staffName;
+  final String? staffRole;
 
   void _signOut(WidgetRef ref) {
     final token = ref.read(sessionTokenProvider);
@@ -82,11 +96,11 @@ class MenuHeader extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Ana R.',
+          staffName ?? 'Ana R.',
           style: text.labelLarge?.copyWith(color: scheme.onInverseSurface),
         ),
         Text(
-          'Order staff',
+          staffRole ?? 'Order staff',
           style: text.labelSmall?.copyWith(
             color: scheme.onInverseSurface.withValues(alpha: 0.7),
           ),
@@ -100,15 +114,43 @@ class MenuHeader extends ConsumerWidget {
       onPressed: () => _signOut(ref),
     );
 
+    Widget channelWidget;
+    if (onChannelChanged != null && channel != null) {
+      // Simple channel display when used by PosShell
+      channelWidget = IntrinsicWidth(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: MenuSpace.md,
+            vertical: MenuSpace.sm,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(MenuRadius.md),
+            color: scheme.surface.withValues(alpha: 0.1),
+          ),
+          child: Text(
+            channel!.label,
+            style: text.labelLarge?.copyWith(color: scheme.onInverseSurface),
+          ),
+        ),
+      );
+    } else {
+      channelWidget = IntrinsicWidth(
+        child: ChannelTabs(
+          inverted: true,
+          onSelected: (_) => _onChannelSelected(context),
+        ),
+      );
+    }
+
     return Material(
       color: scheme.inverseSurface,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < MenuLayout.compactMax;
+          final isCompact = compact ?? constraints.maxWidth < MenuLayout.compactMax;
 
           return Padding(
             padding: const EdgeInsets.all(MenuSpace.md),
-            child: compact
+            child: isCompact
                 ? Column(
                     children: [
                       Row(
@@ -122,14 +164,7 @@ class MenuHeader extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: MenuSpace.md),
-                      Center(
-                        child: IntrinsicWidth(
-                          child: ChannelTabs(
-                            inverted: true,
-                            onSelected: (_) => _onChannelSelected(context),
-                          ),
-                        ),
-                      ),
+                      Center(child: channelWidget),
                     ],
                   )
                 : Row(
@@ -137,14 +172,7 @@ class MenuHeader extends ConsumerWidget {
                     children: [
                       Flexible(child: themedBrand),
                       const SizedBox(width: MenuSpace.lg),
-                      Flexible(
-                        child: IntrinsicWidth(
-                          child: ChannelTabs(
-                            inverted: true,
-                            onSelected: (_) => _onChannelSelected(context),
-                          ),
-                        ),
-                      ),
+                      Flexible(child: channelWidget),
                       const SizedBox(width: MenuSpace.lg),
                       themedUser,
                       const SizedBox(width: MenuSpace.sm),

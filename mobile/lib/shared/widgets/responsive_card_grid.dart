@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/shared/menu_layout.dart';
+import 'package:mobile/shared/shared_layout.dart';
 
 class ResponsiveCardGrid extends StatelessWidget {
   const ResponsiveCardGrid({

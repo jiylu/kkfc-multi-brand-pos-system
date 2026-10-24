@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/app/theme/tokens.dart';
+import 'package:mobile/shared/shared_layout.dart';
 
 class NoteBanner extends StatelessWidget {
   const NoteBanner({super.key, required this.message, this.title});
@@ -14,10 +14,10 @@ class NoteBanner extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(KkfcSpace.md),
+      padding: EdgeInsets.all(MenuSpace.md),
       decoration: BoxDecoration(
         color: scheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(KkfcRadius.sm),
+        borderRadius: BorderRadius.circular(MenuRadius.sm),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -25,15 +25,17 @@ class NoteBanner extends StatelessWidget {
           if (title != null) ...[
             Text(
               title!,
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(color: scheme.onSecondaryContainer),
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: scheme.onSecondaryContainer,
+              ),
             ),
-            SizedBox(height: KkfcSpace.sm),
+            SizedBox(height: MenuSpace.sm),
           ],
           Text(
             message,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: scheme.onSecondaryContainer),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSecondaryContainer,
+            ),
           ),
         ],
       ),

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../domain/availability_item.dart';
-import '../widgets/availability_row.dart';
-import '../widgets/availability_toggle.dart';
-import '../widgets/note_banner.dart';
-import '../widgets/operational_context_card.dart';
-import '../widgets/pos_shell.dart';
+import 'package:mobile/features/availability/data/models/availability_model.dart';
+import 'package:mobile/features/availability/data/seed/sample_availability_item.dart';
+import 'package:mobile/features/availability/presentation/widgets/availability_row.dart';
+import 'package:mobile/features/availability/presentation/widgets/availability_toggle.dart';
+import 'package:mobile/features/availability/presentation/widgets/note_banner.dart';
+import 'package:mobile/features/availability/presentation/widgets/operational_context_card.dart';
+import 'package:mobile/features/availability/presentation/widgets/pos_shell.dart';
 
 class AvailabilityManagementScreen extends StatefulWidget {
   const AvailabilityManagementScreen({super.key});
@@ -34,7 +35,8 @@ class _AvailabilityManagementScreenState
       sectionsBuilder: (context, isTablet) => [
         const NoteBanner(
           title: 'Channel-scoped availability',
-          message: 'Authorized role only. Tapping a switch saves that item '
+          message:
+              'Authorized role only. Tapping a switch saves that item '
               'and channel immediately; record the actor and time.',
         ),
         for (var i = 0; i < _items.length; i++)
@@ -45,8 +47,7 @@ class _AvailabilityManagementScreenState
                 : 'Manual: unavailable · OFF',
             trailing: AvailabilityToggle(
               value: _items[i].available,
-              semanticLabel:
-                  '${_items[i].name} on ${_items[i].channel.label}',
+              semanticLabel: '${_items[i].name} on ${_items[i].channel.label}',
               onChanged: (v) => _setAvailable(i, v),
             ),
           ),
@@ -56,7 +57,8 @@ class _AvailabilityManagementScreenState
           trailing: StatusChip('Tracked'),
         ),
         const NoteBanner(
-          message: 'SAMPLE DATA · Inventory status and permission rules '
+          message:
+              'SAMPLE DATA · Inventory status and permission rules '
               'require API validation.',
         ),
       ],
