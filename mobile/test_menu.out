@@ -1,0 +1,43 @@
+﻿00:00 +0: loading C:/dev/kkfc-multi-brand-pos-system/mobile/test/features/menu/presentation/menu_screen_test.dart
+00:00 +0: MenuScreen layout the menu bar is merged into the header
+00:01 +1: MenuScreen layout tapping Menu tab navigates to availability screen
+ΓòÉΓòÉΓòí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γò₧ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.last (dart:core/iterable.dart:679:7)
+#1      _LastFinderMixin.filter (package:flutter_test/src/finders.dart:1410:28)
+#3      _AncestorFinderMixin.allCandidates (package:flutter_test/src/finders.dart:1857:49)
+#4      FinderBase.evaluate (package:flutter_test/src/finders.dart:1030:76)
+#5      WidgetController.widgetList (package:flutter_test/src/controller.dart:848:19)
+#6      WidgetController._maybeViewOf (package:flutter_test/src/controller.dart:795:34)
+#7      WidgetController.tap (package:flutter_test/src/controller.dart:1078:31)
+#8      main.<anonymous closure>.<anonymous closure> (file:///C:/dev/kkfc-multi-brand-pos-system/mobile/test/features/menu/presentation/menu_screen_test.dart:87:20)
+<asynchronous suspension>
+#9      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#10     TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 2 frames from dart:async-patch and package:stack_trace)
+
+The test description was:
+  tapping Menu tab navigates to availability screen
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+00:01 +1 -1: MenuScreen layout tapping Menu tab navigates to availability screen [E]
+  Test failed. See exception logs above.
+  The test description was: tapping Menu tab navigates to availability screen
+  
+00:01 +1 -1: MenuScreen layout the header shows the active brand logo
+00:01 +2 -1: MenuScreen layout the menu bar shares the header row on a wide screen
+00:02 +3 -1: MenuScreen layout the header content is centered on a wide screen
+00:02 +4 -1: MenuScreen layout the menu bar spans the full width
+00:02 +5 -1: MenuScreen layout the cart panel docks under the header on a wide screen
+00:02 +6 -1: MenuScreen layout a phone shows the menu bar under the header and the cart bar
+00:02 +7 -1: MenuScreen layout the header content is centered on a phone
+00:03 +8 -1: MenuScreen layout the header does not overflow on a narrow phone
+00:03 +9 -1: Some tests failed.
+
+Failing tests:
+  C:/dev/kkfc-multi-brand-pos-system/mobile/test/features/menu/presentation/menu_screen_test.dart: MenuScreen layout tapping Menu tab navigates to availability screen

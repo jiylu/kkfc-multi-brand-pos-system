@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/theme.dart';
+import 'package:mobile/features/availability/presentation/pages/availability_management_screen.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:mobile/features/new_order/presentation/pages/menu_screen.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_bar.dart';
@@ -45,6 +48,47 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('tapping Menu tab navigates to availability screen', (
+      tester,
+    ) async {
+      tester.view.physicalSize = _phone;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final router = GoRouter(
+        initialLocation: AppRoutes.menu,
+        routes: [
+          GoRoute(
+            path: AppRoutes.menu,
+            builder: (context, state) => const MenuScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.availability,
+            builder: (context, state) => const AvailabilityManagementScreen(),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            menuItemsProvider.overrideWith((ref) async => sampleMenu),
+          ],
+          child: MaterialApp.router(theme: counterTheme, routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AvailabilityManagementScreen), findsNothing);
+      expect(find.byType(MenuBottomNav), findsOneWidget);
+
+      await tester.tap(find.text('Menu'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AvailabilityManagementScreen), findsOneWidget);
     });
 
     testWidgets('the header shows the active brand logo', (tester) async {
@@ -187,4 +231,3 @@ void main() {
     });
   });
 }
-

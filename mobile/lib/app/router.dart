@@ -28,13 +28,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isLoggedIn && onLogin) {
         return AppRoutes.menu;
       }
-      if (isLoggedIn && onLogin) {
-        return AppRoutes.orders;
-      }
-
-      if (isLoggedIn && onLogin) {
-        return AppRoutes.availability;
-      }
       return null;
     },
     routes: [
@@ -55,7 +48,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const OrdersScreen(),
       ),
       GoRoute(
-        path: AppRoutes.channelChange,
+        path: AppRoutes.availability,
         builder: (context, state) => const AvailabilityManagementScreen(),
       ),
     ],

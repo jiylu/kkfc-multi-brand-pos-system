@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/shared_layout.dart';
 
@@ -23,11 +25,38 @@ const List<_Destination> _destinations = [
   (icon: Icons.history_outlined, selected: Icons.history, label: 'Audit'),
 ];
 
+void _openDestination(BuildContext context, int index) {
+  final router = GoRouter.maybeOf(context);
+
+  if (index == 1) {
+    router?.go(AppRoutes.orders);
+  } else if (index == 2) {
+    router?.go(AppRoutes.availability);
+  } else if (index == 3) {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(content: Text('Audit is not available yet.')),
+    );
+  } else {
+    router?.go(AppRoutes.menu);
+  }
+}
+
+void _selectDestination(
+  BuildContext context,
+  int index,
+  ValueChanged<int>? onSelected,
+) {
+  if (onSelected != null) {
+    onSelected(index);
+    return;
+  }
+  _openDestination(context, index);
+}
+
 class MenuRail extends StatelessWidget {
   const MenuRail({super.key, this.selectedIndex = 0, this.onSelected});
 
   final int selectedIndex;
-  // TODO: route between tabs once Orders / Audit screens exist.
   final ValueChanged<int>? onSelected;
 
   @override
@@ -46,7 +75,7 @@ class MenuRail extends StatelessWidget {
                 _NavItem(
                   destination: _destinations[i],
                   selected: i == selectedIndex,
-                  onTap: () => onSelected?.call(i),
+                  onTap: () => _selectDestination(context, i, onSelected),
                 ),
             ],
           ),
@@ -79,7 +108,7 @@ class MenuBottomNav extends StatelessWidget {
                 child: _NavItem(
                   destination: _destinations[i],
                   selected: i == selectedIndex,
-                  onTap: () => onSelected?.call(i),
+                  onTap: () => _selectDestination(context, i, onSelected),
                 ),
               ),
           ],

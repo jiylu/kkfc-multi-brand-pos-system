@@ -40,7 +40,6 @@ class PosShell extends StatefulWidget {
 }
 
 class _PosShellState extends State<PosShell> {
-  int _destinationIndex = 0;
   PosChannel _channel = PosChannel.dineIn;
 
   @override
@@ -82,11 +81,7 @@ class _PosShellState extends State<PosShell> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      MenuRail(
-                        selectedIndex: _destinationIndex,
-                        onSelected: (d) =>
-                            setState(() => _destinationIndex = d),
-                      ),
+                      const MenuRail(selectedIndex: 2),
                       Expanded(child: content),
                     ],
                   ),
@@ -103,10 +98,7 @@ class _PosShellState extends State<PosShell> {
                 label: widget.actionLabel,
                 onPressed: widget.onAction,
               ),
-              MenuBottomNav(
-                selectedIndex: _destinationIndex,
-                onSelected: (d) => setState(() => _destinationIndex = d),
-              ),
+              const MenuBottomNav(selectedIndex: 2),
             ],
           );
         },
