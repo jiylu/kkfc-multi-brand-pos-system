@@ -5,3 +5,5 @@ robot/results/
 server/reports/
 server/jest-html-reporters-attach/
 Master-Backend-QA-Automation-Rules.md
+*.xml
+.idea/kkfc-multi-brand-pos-system.iml
