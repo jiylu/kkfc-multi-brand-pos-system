@@ -11,6 +11,7 @@ import { BrandsModule } from './modules/brands/brands.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { MenuItemsModule } from './modules/menu/menu-items/menu-items.module';
+import { MenuChannelsModule } from './modules/menu/menu-channels/menu-channels.module';
 import { AssetsModule } from './modules/assets/assets.module';
 
 @Module({
@@ -31,6 +32,7 @@ import { AssetsModule } from './modules/assets/assets.module';
     AuditModule,
     OrdersModule,
     MenuItemsModule,
+    MenuChannelsModule,
     AssetsModule,
   ],
   controllers: [],
