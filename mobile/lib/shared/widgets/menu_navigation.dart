@@ -25,6 +25,20 @@ const List<_Destination> _destinations = [
   (icon: Icons.history_outlined, selected: Icons.history, label: 'Audit'),
 ];
 
+int _selectedDestination(BuildContext context) {
+  final location = GoRouter.maybeOf(context)
+      ?.routerDelegate
+      .currentConfiguration
+      .uri
+      .path;
+
+  return switch (location) {
+    AppRoutes.orders => 1,
+    AppRoutes.availability => 2,
+    _ => 0,
+  };
+}
+
 void _openDestination(BuildContext context, int index) {
   final router = GoRouter.maybeOf(context);
 
@@ -54,14 +68,14 @@ void _selectDestination(
 }
 
 class MenuRail extends StatelessWidget {
-  const MenuRail({super.key, this.selectedIndex = 0, this.onSelected});
+  const MenuRail({super.key, this.onSelected});
 
-  final int selectedIndex;
   final ValueChanged<int>? onSelected;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final selectedIndex = _selectedDestination(context);
 
     return Material(
       color: scheme.inverseSurface,
@@ -69,6 +83,7 @@ class MenuRail extends StatelessWidget {
         width: MenuLayout.railWidth,
         child: SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: MenuSpace.sm),
               for (var i = 0; i < _destinations.length; i++)
@@ -86,14 +101,14 @@ class MenuRail extends StatelessWidget {
 }
 
 class MenuBottomNav extends StatelessWidget {
-  const MenuBottomNav({super.key, this.selectedIndex = 0, this.onSelected});
+  const MenuBottomNav({super.key, this.onSelected});
 
-  final int selectedIndex;
   final ValueChanged<int>? onSelected;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final selectedIndex = _selectedDestination(context);
 
     return Material(
       color: scheme.inverseSurface,

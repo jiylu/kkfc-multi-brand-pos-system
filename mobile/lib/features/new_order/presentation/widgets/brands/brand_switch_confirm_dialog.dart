@@ -96,7 +96,7 @@ class _ConfirmContent extends StatelessWidget {
         FilledButton(
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Clear cart & switch · proposed'),
+          child: const Text('Clear cart & switch'),
         ),
       ],
     );

@@ -81,7 +81,7 @@ class _PosShellState extends State<PosShell> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const MenuRail(selectedIndex: 2),
+                      const MenuRail(),
                       Expanded(child: content),
                     ],
                   ),
@@ -98,7 +98,7 @@ class _PosShellState extends State<PosShell> {
                 label: widget.actionLabel,
                 onPressed: widget.onAction,
               ),
-              const MenuBottomNav(selectedIndex: 2),
+              const MenuBottomNav(),
             ],
           );
         },
