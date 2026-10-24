@@ -60,15 +60,16 @@ export class BrandsController {
     @UploadedFile() file: AssetUpload,
     @Req() request: AuthenticatedRequest,
   ) {
-    const asset = await this.assetsService.upload(
-      request.session.user.user_id,
-      file,
-    );
+    if (file) {
+      const asset = await this.assetsService.upload(
+        request.session.user.user_id,
+        file,
+      );
 
-    return this.brandsService.create({
-      ...dto,
-      logo_url: asset.key,
-    });
+      dto = { ...dto, logo_url: asset.key };
+    }
+
+    return this.brandsService.create(dto);
   }
 
   @Get(':brandId')

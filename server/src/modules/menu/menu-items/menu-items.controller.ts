@@ -10,10 +10,16 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { MenuItemsService } from './menu-items.service';
-import { Authenticated } from '../../auth/auth.guard';
+import {
+  Authenticated,
+  type AuthenticatedRequest,
+} from '../../auth/auth.guard';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { CreateMenuItemDTO } from './dto/create-menu-item.dto';
 import { UserRole } from '@prisma/client';
@@ -35,18 +41,45 @@ import {
   ReactivateMenuItemDocs,
   DeleteMenuItemDocs,
 } from './docs/menu-items.docs';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  AssetsService,
+  type AssetUpload,
+  MAX_ASSET_BYTES,
+} from '../../assets/assets.service';
 
 @Controller('menu-items')
 @MenuItemsDocs()
 @UseGuards(Authenticated, RolesGuard)
 export class MenuItemsController {
-  constructor(private readonly menuItemsService: MenuItemsService) {}
+  constructor(
+    private readonly menuItemsService: MenuItemsService,
+    private readonly assetsService: AssetsService,
+  ) {}
 
   @Post()
   @CreateMenuItemDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_ASSET_BYTES, files: 1 },
+    }),
+  )
   @UseGuards(BrandsGuard)
-  async create(@Body() dto: CreateMenuItemDTO) {
+  async create(
+    @Body() dto: CreateMenuItemDTO,
+    @UploadedFile() file: AssetUpload,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    if (file) {
+      const asset = await this.assetsService.upload(
+        request.session.user.user_id,
+        file,
+      );
+
+      dto = { ...dto, img_url: asset.key };
+    }
+
     return this.menuItemsService.createMenuItem(dto);
   }
 
@@ -84,10 +117,25 @@ export class MenuItemsController {
   @UseGuards(BrandsGuard)
   @BrandResource(BrandResourceType.MENU_ITEM, 'id')
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_ASSET_BYTES, files: 1 },
+    }),
+  )
   async update(
     @Param('id', ParseUUIDPipe) menuItemId: string,
     @Body() dto: UpdateMenuItemDTO,
+    @UploadedFile() file: AssetUpload | undefined,
+    @Req() request: AuthenticatedRequest,
   ) {
+    if (file) {
+      await this.menuItemsService.findOneMenuItem(menuItemId);
+      const asset = await this.assetsService.upload(
+        request.session.user.user_id,
+        file,
+      );
+      dto = { ...dto, img_url: asset.key };
+    }
     return this.menuItemsService.updateMenuItem(menuItemId, dto);
   }
 
