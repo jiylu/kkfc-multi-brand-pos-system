@@ -9,7 +9,7 @@ import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:mobile/features/new_order/presentation/pages/channel_repricing_screen.dart';
 import 'package:mobile/features/new_order/presentation/pages/menu_screen.dart';
-import 'package:mobile/features/new_order/presentation/widgets/menu_navigation.dart';
+import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/operational_context_card.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
@@ -130,3 +130,4 @@ void main() {
     });
   });
 }
+

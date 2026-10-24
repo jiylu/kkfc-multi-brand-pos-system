@@ -6,8 +6,8 @@ import 'package:mobile/app/routes.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/menu_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
-import 'package:mobile/features/new_order/presentation/widgets/menu_header.dart';
-import 'package:mobile/features/new_order/presentation/widgets/menu_navigation.dart';
+import 'package:mobile/shared/widgets/menu_header.dart';
+import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/operational_context_card.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_notice.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_row.dart';
@@ -286,3 +286,4 @@ class _PrototypeNote extends StatelessWidget {
     );
   }
 }
+
