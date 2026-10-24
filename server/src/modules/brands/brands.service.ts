@@ -5,11 +5,15 @@ import { assertExists } from '../../shared/assertions/assert-exists';
 import { FindBrandsDTO } from './dto/find-brands.dto';
 import { assertValidPagination } from '../../shared/assertions/assert-valid-pagination';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
+import { StorageService } from '../../shared/storage/storage.service';
 
 @Injectable()
 export class BrandsService {
   private readonly logger = new Logger(BrandsService.name);
-  constructor(private readonly brandsRepository: BrandsRepository) {}
+  constructor(
+    private readonly brandsRepository: BrandsRepository,
+    private readonly storage: StorageService,
+  ) {}
 
   async create(dto: CreateBrandDTO) {
     this.logger.log(`Creating new brand ${dto.name}`);
@@ -30,7 +34,12 @@ export class BrandsService {
     assertExists(brand, 'Brand', brandId, this.logger);
 
     this.logger.log(`Brand with brandId ${brand.brand_id} found`);
-    return brand;
+    return {
+      ...brand,
+      logo_url: brand.logo_url?.startsWith('uploads/')
+        ? await this.storage.createDownloadUrl(brand.logo_url, false)
+        : brand.logo_url,
+    };
   }
 
   async findAll({ page, limit, activeOnly }: FindBrandsDTO) {
@@ -53,7 +62,14 @@ export class BrandsService {
     );
 
     return {
-      data: brands,
+      data: await Promise.all(
+        brands.map(async (brand) => ({
+          ...brand,
+          logo_url: brand.logo_url?.startsWith('uploads/')
+            ? await this.storage.createDownloadUrl(brand.logo_url, false)
+            : brand.logo_url,
+        })),
+      ),
       meta: {
         page,
         limit,

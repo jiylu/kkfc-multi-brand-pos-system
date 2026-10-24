@@ -1,12 +1,17 @@
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiExtraModels,
   ApiOperation,
   ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger';
+import { UpdateMenuItemDTO } from '../dto/update-menu-item.dto';
 
 export function MenuItemsDocs() {
   return applyDecorators(
@@ -109,10 +114,23 @@ export function FindMenuItemsByBrandDocs() {
 
 export function UpdateMenuItemDocs() {
   return applyDecorators(
+    ApiExtraModels(UpdateMenuItemDTO),
+    ApiConsumes('application/json', 'multipart/form-data'),
+    ApiBody({
+      schema: {
+        allOf: [
+          { $ref: getSchemaPath(UpdateMenuItemDTO) },
+          {
+            type: 'object',
+            properties: { file: { type: 'string', format: 'binary' } },
+          },
+        ],
+      },
+    }),
     ApiOperation({
       summary: 'Update an active menu item (manager or superadmin).',
       description:
-        'Managers can update items in their assigned brand; superadmins can update items across brands. Accepts a menu item UUID, not a code. Supports recipe_id, img_url, code, name, description, serving_description, and base_price. Omitted fields are unchanged. Null clears description or serving_description; other fields reject null. brand_id and is_active are not accepted.',
+        'Managers can update items in their assigned brand; superadmins can update items across brands. Accepts a menu item UUID, not a code. Supports recipe_id, img_url, code, name, description, serving_description, and base_price. Optionally send file as multipart/form-data to replace the image with an uploaded JPG/PNG (maximum 5 MiB, 20 megapixels); the uploaded asset key overrides img_url. Omitted fields are unchanged. Null clears description or serving_description; other fields reject null. brand_id and is_active are not accepted.',
     }),
     ApiParam({ name: 'id', format: 'uuid', description: 'Menu item UUID.' }),
     ApiResponse({ status: 200, description: 'Updated menu item.' }),

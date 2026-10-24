@@ -1,4 +1,8 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import {
+  INestApplication,
+  NotFoundException,
+  ValidationPipe,
+} from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -12,12 +16,14 @@ import { RolesGuard } from '../../../../shared/guards/roles.guard';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
 import { MenuItemsController } from '../menu-items.controller';
 import { MenuItemsService } from '../menu-items.service';
+import { AssetsService } from '../../../assets/assets.service';
 
 describe('Menu items HTTP endpoints', () => {
   const brandId = '00000000-0000-4000-8000-000000000001';
   const otherBrandId = '00000000-0000-4000-8000-000000000002';
   const menuId = '00000000-0000-4000-8000-000000000003';
   const recipeId = '00000000-0000-4000-8000-000000000004';
+  const userId = '00000000-0000-4000-8000-000000000005';
   const code = 'GC-KIMCHI-RICE';
   const headers = {
     Authorization: 'Bearer test-session',
@@ -41,6 +47,7 @@ describe('Menu items HTTP endpoints', () => {
     deleteMenuItem: jest.fn(),
   };
   const prisma = { menuItem: { findUnique: jest.fn() } };
+  const assets = { upload: jest.fn() };
   const auth = { validateSession: jest.fn() };
   const mutations = [
     {
@@ -101,6 +108,7 @@ describe('Menu items HTTP endpoints', () => {
         { provide: AuthService, useValue: auth },
         { provide: PrismaService, useValue: prisma },
         { provide: MenuItemsService, useValue: service },
+        { provide: AssetsService, useValue: assets },
         { provide: APP_FILTER, useClass: AllExceptionsFilter },
         { provide: APP_FILTER, useClass: PrismaExceptionFilter },
       ],
@@ -124,7 +132,9 @@ describe('Menu items HTTP endpoints', () => {
     role = UserRole.MANAGER;
     callerBrand = brandId;
     auth.validateSession.mockImplementation(() =>
-      Promise.resolve({ user: { role, brand_id: callerBrand } }),
+      Promise.resolve({
+        user: { user_id: userId, role, brand_id: callerBrand },
+      }),
     );
     prisma.menuItem.findUnique.mockImplementation(
       ({ where }: { where: { menu_item_id?: string; code?: string } }) =>
@@ -189,6 +199,24 @@ describe('Menu items HTTP endpoints', () => {
     expect(document.components?.schemas?.UpdateMenuItemDTO).not.toHaveProperty(
       'required',
     );
+    expect(
+      document.paths['/api/menu-items/{id}'].patch?.requestBody,
+    ).toMatchObject({
+      content: {
+        'application/json': {},
+        'multipart/form-data': {
+          schema: {
+            allOf: [
+              { $ref: '#/components/schemas/UpdateMenuItemDTO' },
+              {
+                type: 'object',
+                properties: { file: { type: 'string', format: 'binary' } },
+              },
+            ],
+          },
+        },
+      },
+    });
   });
 
   it.each(mutations)(
@@ -301,6 +329,69 @@ describe('Menu items HTTP endpoints', () => {
       ).status,
     ).toBe(200);
     expect(service.updateMenuItem).toHaveBeenCalledWith(menuId, dto);
+    expect(assets.upload).not.toHaveBeenCalled();
+  });
+
+  it('updates multipart fields without uploading or changing the image', async () => {
+    const body = new FormData();
+    body.set('name', 'Updated');
+
+    const response = await fetch(`${url}/${menuId}`, {
+      method: 'PATCH',
+      headers: { Authorization: headers.Authorization },
+      body,
+    });
+
+    expect(response.status).toBe(200);
+    expect(service.updateMenuItem).toHaveBeenCalledWith(menuId, {
+      name: 'Updated',
+    });
+    expect(assets.upload).not.toHaveBeenCalled();
+  });
+
+  it('uploads an optional image and updates the item with its asset key', async () => {
+    const key = `uploads/${userId}/image.png`;
+    assets.upload.mockResolvedValue({ key });
+    const body = new FormData();
+    body.set('name', 'Updated');
+    body.set('file', new Blob(['image'], { type: 'image/png' }), 'image.png');
+
+    const response = await fetch(`${url}/${menuId}`, {
+      method: 'PATCH',
+      headers: { Authorization: headers.Authorization },
+      body,
+    });
+
+    expect(response.status).toBe(200);
+    expect(service.findOneMenuItem).toHaveBeenCalledWith(menuId);
+    expect(assets.upload).toHaveBeenCalledWith(
+      userId,
+      expect.objectContaining({
+        originalname: 'image.png',
+        mimetype: 'image/png',
+        buffer: Buffer.from('image'),
+      }),
+    );
+    expect(service.updateMenuItem).toHaveBeenCalledWith(menuId, {
+      name: 'Updated',
+      img_url: key,
+    });
+  });
+
+  it('does not upload an image when the item is inactive', async () => {
+    service.findOneMenuItem.mockRejectedValue(new NotFoundException());
+    const body = new FormData();
+    body.set('file', new Blob(['image'], { type: 'image/png' }), 'image.png');
+
+    const response = await fetch(`${url}/${menuId}`, {
+      method: 'PATCH',
+      headers: { Authorization: headers.Authorization },
+      body,
+    });
+
+    expect(response.status).toBe(404);
+    expect(assets.upload).not.toHaveBeenCalled();
+    expect(service.updateMenuItem).not.toHaveBeenCalled();
   });
 
   it('accepts the schema maximum menu code length', async () => {

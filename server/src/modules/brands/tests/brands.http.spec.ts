@@ -1,6 +1,7 @@
 import {
   ExecutionContext,
   INestApplication,
+  NotFoundException,
   ValidationPipe,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -9,12 +10,17 @@ import { BrandsModule } from '../brands.module';
 import { BrandsService } from '../brands.service';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { Authenticated } from '../../auth/auth.guard';
+import sharp from 'sharp';
+import { MAX_ASSET_BYTES } from '../../assets/assets.service';
+import { StorageService } from '../../../shared/storage/storage.service';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 describe('Brands HTTP endpoints', () => {
   let app: INestApplication;
   let url: string;
   let currentRole: UserRole;
   let currentBrandId: string | null;
+  let image: Buffer;
   const brandId = '00000000-0000-4000-8000-000000000001';
   const callerId = '00000000-0000-4000-8000-000000000004';
   const otherBrandId = '00000000-0000-4000-8000-000000000099';
@@ -25,13 +31,24 @@ describe('Brands HTTP endpoints', () => {
     update: jest.fn(),
     delete: jest.fn(),
   };
+  const storage = {
+    putObject: jest.fn(),
+    createDownloadUrl: jest.fn(),
+  };
 
   beforeAll(async () => {
+    image = await sharp({
+      create: { width: 2, height: 2, channels: 3, background: 'red' },
+    })
+      .png()
+      .toBuffer();
     const module = await Test.createTestingModule({ imports: [BrandsModule] })
       .overrideProvider(PrismaService)
       .useValue({})
       .overrideProvider(BrandsService)
       .useValue(service)
+      .overrideProvider(StorageService)
+      .useValue(storage)
       .overrideGuard(Authenticated)
       .useValue({
         canActivate(context: ExecutionContext) {
@@ -72,10 +89,151 @@ describe('Brands HTTP endpoints', () => {
   beforeEach(() => {
     currentRole = UserRole.SUPERADMIN;
     currentBrandId = brandId;
+    storage.putObject.mockReset().mockResolvedValue(undefined);
+    storage.createDownloadUrl
+      .mockReset()
+      .mockResolvedValue('https://files.example.com/image.png');
     for (const method of Object.values(service))
       method.mockReset().mockResolvedValue({ ok: true });
   });
   afterAll(async () => app?.close());
+
+  function imageForm() {
+    const form = new FormData();
+    form.set(
+      'file',
+      new Blob([new Uint8Array(image)], { type: 'image/png' }),
+      'logo.png',
+    );
+    return form;
+  }
+
+  it('updates the brand image with multipart form data', async () => {
+    const form = imageForm();
+    form.set('name', 'Updated');
+    form.set('code', 'EDIT');
+    form.set('logo_url', 'https://old.example.com/image.png');
+    const response = await fetch(`${url}/${brandId}`, {
+      method: 'PATCH',
+      body: form,
+    });
+    expect(response.status).toBe(200);
+    const [[key]] = storage.putObject.mock.calls as [string, Buffer, string][];
+    expect(key).toMatch(new RegExp(`^uploads/${callerId}/[a-f0-9-]+\\.png$`));
+    expect(service.findOne).toHaveBeenCalledWith(brandId);
+    expect(service.update).toHaveBeenCalledWith(brandId, {
+      name: 'Updated',
+      code: 'EDIT',
+      logo_url: key,
+    });
+  });
+
+  it('updates only the image without requiring name or code', async () => {
+    const response = await fetch(`${url}/${brandId}`, {
+      method: 'PATCH',
+      body: imageForm(),
+    });
+    expect(response.status).toBe(200);
+    const [[key]] = storage.putObject.mock.calls as [string, Buffer, string][];
+    expect(service.update).toHaveBeenCalledWith(brandId, { logo_url: key });
+  });
+
+  it('keeps multipart updates without an image working', async () => {
+    const form = new FormData();
+    form.set('name', 'Updated');
+    const response = await fetch(`${url}/${brandId}`, {
+      method: 'PATCH',
+      body: form,
+    });
+    expect(response.status).toBe(200);
+    expect(service.update).toHaveBeenCalledWith(brandId, { name: 'Updated' });
+    expect(storage.putObject).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed update fields before uploading the image', async () => {
+    const form = imageForm();
+    form.set('code', 'TOOLONG');
+    expect(
+      (await fetch(`${url}/${brandId}`, { method: 'PATCH', body: form }))
+        .status,
+    ).toBe(400);
+    expect(storage.putObject).not.toHaveBeenCalled();
+    expect(service.update).not.toHaveBeenCalled();
+  });
+
+  it('checks the target brand before uploading its replacement image', async () => {
+    service.findOne.mockRejectedValue(new NotFoundException());
+    expect(
+      (await fetch(`${url}/${brandId}`, { method: 'PATCH', body: imageForm() }))
+        .status,
+    ).toBe(404);
+    expect(storage.putObject).not.toHaveBeenCalled();
+    expect(service.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid image bytes without changing the brand', async () => {
+    const form = new FormData();
+    form.set(
+      'file',
+      new Blob(['not an image'], { type: 'image/png' }),
+      'logo.png',
+    );
+    expect(
+      (await fetch(`${url}/${brandId}`, { method: 'PATCH', body: form }))
+        .status,
+    ).toBe(415);
+    expect(storage.putObject).not.toHaveBeenCalled();
+    expect(service.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects oversized update images', async () => {
+    const form = new FormData();
+    form.set(
+      'file',
+      new Blob([new Uint8Array(MAX_ASSET_BYTES + 1)], { type: 'image/png' }),
+      'logo.png',
+    );
+    expect(
+      (await fetch(`${url}/${brandId}`, { method: 'PATCH', body: form }))
+        .status,
+    ).toBe(413);
+    expect(storage.putObject).not.toHaveBeenCalled();
+    expect(service.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects multiple update images', async () => {
+    const form = imageForm();
+    form.append(
+      'file',
+      new Blob([new Uint8Array(image)], { type: 'image/png' }),
+      'second.png',
+    );
+    expect(
+      (await fetch(`${url}/${brandId}`, { method: 'PATCH', body: form }))
+        .status,
+    ).toBe(400);
+    expect(storage.putObject).not.toHaveBeenCalled();
+    expect(service.update).not.toHaveBeenCalled();
+  });
+
+  it('keeps the brand unchanged when image storage fails', async () => {
+    storage.putObject.mockRejectedValue(new Error('storage unavailable'));
+    expect(
+      (await fetch(`${url}/${brandId}`, { method: 'PATCH', body: imageForm() }))
+        .status,
+    ).toBe(503);
+    expect(service.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks managers before uploading replacement images', async () => {
+    currentRole = UserRole.MANAGER;
+    expect(
+      (await fetch(`${url}/${brandId}`, { method: 'PATCH', body: imageForm() }))
+        .status,
+    ).toBe(403);
+    expect(storage.putObject).not.toHaveBeenCalled();
+    expect(service.update).not.toHaveBeenCalled();
+  });
 
   it.each([
     ['', { page: 1, limit: 10, activeOnly: true }],
@@ -109,6 +267,22 @@ describe('Brands HTTP endpoints', () => {
     });
     expect(response.status).toBe(200);
     expect(service.update).toHaveBeenCalledWith(brandId, dto);
+    expect(storage.putObject).not.toHaveBeenCalled();
+  });
+
+  it('documents optional multipart images while retaining JSON updates', () => {
+    const document = SwaggerModule.createDocument(
+      app,
+      new DocumentBuilder().addBearerAuth().build(),
+    );
+    const operation = document.paths['/api/brands/{brandId}'].patch;
+    expect(operation?.requestBody).toHaveProperty('content.application/json');
+    expect(operation?.requestBody).toHaveProperty(
+      'content.multipart/form-data',
+    );
+    expect(operation?.responses).toHaveProperty('413');
+    expect(operation?.responses).toHaveProperty('415');
+    expect(operation?.responses).toHaveProperty('503');
   });
 
   it.each(
@@ -182,13 +356,16 @@ describe('Brands HTTP endpoints', () => {
     { name: 'King Kungs Kafé', code: 'KK' },
   ])('creates a brand for the authenticated superadmin: %j', async (dto) => {
     currentBrandId = null;
+    const form = imageForm();
+    form.set('name', dto.name);
+    form.set('code', dto.code);
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dto),
+      body: form,
     });
     expect(response.status).toBe(201);
-    expect(service.create).toHaveBeenCalledWith(dto);
+    const [[key]] = storage.putObject.mock.calls as [string, Buffer, string][];
+    expect(service.create).toHaveBeenCalledWith({ ...dto, logo_url: key });
   });
 
   it.each([
@@ -220,13 +397,16 @@ describe('Brands HTTP endpoints', () => {
     currentRole = UserRole.SUPERADMIN;
     currentBrandId = null;
     const dto = { name: 'Brand', code: 'BRND' };
+    const form = imageForm();
+    form.set('name', dto.name);
+    form.set('code', dto.code);
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dto),
+      body: form,
     });
     expect(response.status).toBe(201);
-    expect(service.create).toHaveBeenCalledWith(dto);
+    const [[key]] = storage.putObject.mock.calls as [string, Buffer, string][];
+    expect(service.create).toHaveBeenCalledWith({ ...dto, logo_url: key });
   });
 
   it.each(
