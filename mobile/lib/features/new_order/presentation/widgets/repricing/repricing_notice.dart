@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/theme_context.dart';
-import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/shared/shared_layout.dart';
 
 class RepricingNotice extends StatelessWidget {
   const RepricingNotice({super.key, required this.title, required this.body});

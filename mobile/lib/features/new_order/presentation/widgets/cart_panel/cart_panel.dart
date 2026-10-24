@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_line_tile.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel_footer.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel_header.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
 
 class CartPanelFooter extends StatelessWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
-import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/shared/shared_layout.dart';
 
 class AnimatedPeso extends StatelessWidget {
   const AnimatedPeso({super.key, required this.centavos, this.style});

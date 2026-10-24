@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/responsive_card_grid.dart';
 
 class MenuGridSkeleton extends StatefulWidget {

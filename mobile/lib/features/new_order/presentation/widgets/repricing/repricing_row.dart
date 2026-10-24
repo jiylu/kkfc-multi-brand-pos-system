@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/shared/shared_layout.dart';
 
 /// A rounded, bordered card with a primary label, an optional secondary
 /// line, and an optional trailing widget. Set [emphasiseSubtitle] when the

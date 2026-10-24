@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
-import 'package:mobile/features/new_order/presentation/menu_layout.dart';
+import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
 import 'package:mobile/shared/widgets/menu_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
