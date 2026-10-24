@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
+import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
+import 'package:mobile/shared/widgets/menu_navigation.dart';
 
 class OrdersScreen extends ConsumerWidget {
   const OrdersScreen({super.key});
@@ -23,7 +25,26 @@ class OrdersScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: const Center(child: Text('Orders')),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final showRail = constraints.maxWidth >= MenuLayout.compactMax;
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (showRail) const MenuRail(),
+              Expanded(
+                child: Column(
+                  children: [
+                    const Expanded(child: Center(child: Text('Orders'))),
+                    if (!showRail) const MenuBottomNav(),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 

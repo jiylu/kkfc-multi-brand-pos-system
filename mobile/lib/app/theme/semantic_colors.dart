@@ -31,6 +31,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     required this.borderFocus,
     required this.borderFocusInverse,
     required this.highlights,
+    required this.highlightsSecondary,
     required this.tag,
     required this.success,
     required this.warning,
@@ -55,6 +56,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
   final Color borderFocus;
   final Color borderFocusInverse;
   final Color highlights;
+  final Color highlightsSecondary;
   final KkfcTone tag;
   final KkfcTone success;
   final KkfcTone warning;
@@ -80,6 +82,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     borderFocus: Color(0xFF1F5FD6), // blue.600
     borderFocusInverse: Color(0xFF93B4EE), // blue.300
     highlights: Color(0xFFFF9248),
+    highlightsSecondary: Color(0xFFFFF0E3),
     tag: KkfcTone(
       bg: Color(0xFFE3E7EF),
       fg: Color(0xFF283650),
@@ -137,6 +140,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     borderFocus: Color(0xFF93B4EE), // blue.300
     borderFocusInverse: Color(0xFF1F5FD6), // blue.600
     highlights: Color(0xFFFF9248),
+    highlightsSecondary: Color(0xFFFFF0E3),
     tag: KkfcTone(
       bg: Color(0xFF1D2940),
       fg: Color(0xFFE3E7EF),
@@ -194,6 +198,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     Color? borderFocus,
     Color? borderFocusInverse,
     Color? highlights,
+    Color? highlightsSecondary,
     KkfcTone? tag,
     KkfcTone? success,
     KkfcTone? warning,
@@ -218,6 +223,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       borderFocus: borderFocus ?? this.borderFocus,
       borderFocusInverse: borderFocusInverse ?? this.borderFocusInverse,
       highlights: highlights ?? this.highlights,
+      highlightsSecondary: highlightsSecondary ?? this.highlightsSecondary,
       tag: tag ?? this.tag,
       success: success ?? this.success,
       warning: warning ?? this.warning,
@@ -251,6 +257,11 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
         t,
       )!,
       highlights: Color.lerp(highlights, other.highlights, t)!,
+      highlightsSecondary: Color.lerp(
+        highlightsSecondary,
+        other.highlightsSecondary,
+        t,
+      )!,
       tag: KkfcTone.lerp(tag, other.tag, t),
       success: KkfcTone.lerp(success, other.success, t),
       warning: KkfcTone.lerp(warning, other.warning, t),

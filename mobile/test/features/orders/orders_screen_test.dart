@@ -2,12 +2,15 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/orders/screens/orders_screen.dart';
+import 'package:mobile/shared/widgets/menu_navigation.dart';
 
 class _FakeAuthRepository extends AuthRepository {
   _FakeAuthRepository() : super(Dio(), TokenStore());
@@ -78,5 +81,28 @@ void main() {
 
     expect(container.read(sessionTokenProvider), isNull);
     expect(repo.logoutTokens, isEmpty);
+  });
+
+  testWidgets('shows the navigation rail on a wide screen', (tester) async {
+    final router = GoRouter(
+      initialLocation: AppRoutes.orders,
+      routes: [
+        GoRoute(
+          path: AppRoutes.orders,
+          builder: (context, state) => const OrdersScreen(),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(theme: counterTheme, routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MenuRail), findsOneWidget);
+    expect(find.byType(MenuBottomNav), findsNothing);
   });
 }
