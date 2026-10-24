@@ -5,7 +5,12 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
+  ApiBody,
+  ApiConsumes,
+  ApiExtraModels,
+  getSchemaPath,
 } from '@nestjs/swagger';
+import { UpdateBrandDTO } from '../dto/update-brand.dto';
 
 export function BrandsDocs() {
   return applyDecorators(
@@ -72,7 +77,27 @@ export function UpdateBrandDocs() {
     ApiOperation({
       summary: 'Update an active brand (superadmin).',
       description:
-        'Superadmins can update any active brand. Update the name, manually supplied code, or logo_url. Omitted fields are unchanged; null clears logo_url. Renaming does not generate a code.',
+        'Superadmins can update any active brand using JSON or multipart/form-data. Update the name, manually supplied code, or logo_url. An optional multipart file field replaces the logo with a validated JPG/PNG image (maximum 5 MiB and 20 megapixels); the uploaded image takes precedence over logo_url. File-only updates are supported. Without a file, omitted fields are unchanged; JSON null clears logo_url. Renaming does not generate a code. The response contains the stored image key; fetch the brand to obtain its display URL.',
+    }),
+    ApiConsumes('application/json', 'multipart/form-data'),
+    ApiExtraModels(UpdateBrandDTO),
+    ApiBody({
+      schema: {
+        allOf: [
+          { $ref: getSchemaPath(UpdateBrandDTO) },
+          {
+            type: 'object',
+            properties: {
+              file: {
+                type: 'string',
+                format: 'binary',
+                description:
+                  'Optional JPG or PNG logo. Only available with multipart/form-data.',
+              },
+            },
+          },
+        ],
+      },
     }),
     ApiParam({
       name: 'brandId',
@@ -82,6 +107,20 @@ export function UpdateBrandDocs() {
     ApiResponse({ status: 200, description: 'Updated brand.' }),
     ApiResponse({ status: 409, description: 'Brand code is already taken.' }),
     ApiResponse({ status: 404, description: 'Brand not found or inactive.' }),
+    ApiResponse({
+      status: 413,
+      description: 'Image exceeds the 5 MiB size limit.',
+    }),
+    ApiResponse({
+      status: 415,
+      description:
+        'Invalid, unsupported, animated, or oversized image dimensions.',
+    }),
+    ApiResponse({
+      status: 503,
+      description:
+        'Image storage or download URL configuration is unavailable.',
+    }),
   );
 }
 

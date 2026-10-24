@@ -12,6 +12,8 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getSignedUrl as getCloudFrontSignedUrl } from '@aws-sdk/cloudfront-signer';
 
+export const SIGNED_URL_EXPIRY_SECONDS = 300;
+
 @Injectable()
 export class StorageService {
   private readonly client: S3Client;
@@ -38,22 +40,28 @@ export class StorageService {
         Key: key,
         ContentType: contentType,
       }),
-      { expiresIn: 300 },
+      { expiresIn: SIGNED_URL_EXPIRY_SECONDS },
     );
 
     return { key, uploadUrl };
   }
 
-  async createDownloadUrl(key: string): Promise<string> {
+  async createDownloadUrl(key: string, expires = true): Promise<string> {
+    const expiresIn = expires ? SIGNED_URL_EXPIRY_SECONDS : null;
     const baseUrl = this.config.get<string>('S3_PUBLIC_BASE_URL', '').trim();
     if (baseUrl) {
-      return this.createCloudFrontDownloadUrl(baseUrl, key);
+      return this.createCloudFrontDownloadUrl(baseUrl, key, expiresIn);
+    }
+    if (expiresIn === null) {
+      throw new ServiceUnavailableException(
+        'Non-expiring download URLs require S3_PUBLIC_BASE_URL',
+      );
     }
     const bucket = this.requireBucket();
     return getSignedUrl(
       this.client,
       new GetObjectCommand({ Bucket: bucket, Key: key }),
-      { expiresIn: 300 },
+      { expiresIn },
     );
   }
 
@@ -87,7 +95,11 @@ export class StorageService {
     }
   }
 
-  private createCloudFrontDownloadUrl(baseUrl: string, key: string): string {
+  private createCloudFrontDownloadUrl(
+    baseUrl: string,
+    key: string,
+    expiresIn: number | null,
+  ): string {
     const keyPairId = this.config.get<string>('CLOUDFRONT_KEY_PAIR_ID', '');
     const privateKeyFile = this.config.get<string>(
       'CLOUDFRONT_PRIVATE_KEY_FILE',
@@ -110,9 +122,6 @@ export class StorageService {
       ) {
         throw new Error('Expected an HTTPS origin');
       }
-      if (!keyPairId || (!privateKeyValue && !privateKeyFile)) {
-        throw new Error('Missing CloudFront signing credentials');
-      }
       // Preserve S3 path separators while encoding spaces, query characters, etc.
       const segments = key.split('/');
       if (
@@ -131,14 +140,19 @@ export class StorageService {
           ),
         )
         .join('/');
+      const url = `${origin.origin}/${encodedKey}`;
+      if (expiresIn === null) return url;
+      if (!keyPairId || (!privateKeyValue && !privateKeyFile)) {
+        throw new Error('Missing CloudFront signing credentials');
+      }
       const privateKey = privateKeyValue
         ? privateKeyValue.replace(/\\n/g, '\n')
         : readFileSync(privateKeyFile, 'utf8');
       return getCloudFrontSignedUrl({
-        url: `${origin.origin}/${encodedKey}`,
+        url,
         keyPairId,
         privateKey,
-        dateLessThan: new Date(Date.now() + 300_000).toISOString(),
+        dateLessThan: new Date(Date.now() + expiresIn * 1000).toISOString(),
       });
     } catch {
       // Never fall back to S3 or expose private key/parser details to callers.
