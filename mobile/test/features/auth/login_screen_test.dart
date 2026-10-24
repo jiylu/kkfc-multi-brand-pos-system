@@ -14,8 +14,8 @@ import 'package:mobile/features/auth/presentation/pages/login_screen.dart';
 import 'package:mobile/features/auth/presentation/widgets/brand_panel.dart';
 import 'package:mobile/features/auth/presentation/widgets/login_form_card.dart';
 import 'package:mobile/features/auth/presentation/widgets/login_notice.dart';
-import 'package:mobile/features/auth/presentation/widgets/login_submit_button.dart';
 import 'package:mobile/features/auth/presentation/widgets/login_text_field.dart';
+import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 import 'package:mobile/features/auth/presentation/widgets/session_expired/session_expired_copy.dart';
 import 'package:mobile/features/auth/presentation/widgets/session_expired/session_expired_dialog.dart';
 
@@ -90,7 +90,7 @@ LoginStatus _status(WidgetTester tester) =>
     tester.widget<LoginNotice>(find.byType(LoginNotice)).status;
 
 Future<void> _tapSignIn(WidgetTester tester) async {
-  await tester.tap(find.byType(LoginSubmitButton));
+  await tester.tap(find.byType(KkfcLoadingButton));
   await tester.pump();
 }
 
@@ -117,7 +117,7 @@ void main() {
       expect(find.byType(BrandPanel), findsOneWidget);
       expect(find.byType(TextField), findsNWidgets(2));
       expect(find.byType(LoginPasswordField), findsOneWidget);
-      expect(find.byType(LoginSubmitButton), findsOneWidget);
+      expect(find.byType(KkfcLoadingButton), findsOneWidget);
       expect(_status(tester), LoginStatus.idle);
     });
 
@@ -159,7 +159,7 @@ void main() {
       expect(_status(tester), LoginStatus.missingFields);
       expect(
         tester
-            .widget<LoginSubmitButton>(find.byType(LoginSubmitButton))
+            .widget<KkfcLoadingButton>(find.byType(KkfcLoadingButton))
             .isLoading,
         isFalse,
       );
@@ -205,7 +205,7 @@ void main() {
       expect(_status(tester), LoginStatus.submitting);
       expect(
         tester
-            .widget<LoginSubmitButton>(find.byType(LoginSubmitButton))
+            .widget<KkfcLoadingButton>(find.byType(KkfcLoadingButton))
             .isLoading,
         isTrue,
       );
