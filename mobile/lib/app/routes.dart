@@ -3,5 +3,5 @@ abstract final class AppRoutes {
   static const orders = '/orders';
   static const menu = '/menu';
   static const channelChange = '/channel-change';
-    static const availability = '/availability';
+  static const availability = '/availability';
 }
