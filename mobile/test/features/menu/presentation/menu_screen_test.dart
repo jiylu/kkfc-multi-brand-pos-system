@@ -89,6 +89,25 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AvailabilityManagementScreen), findsOneWidget);
+
+      expect(find.byType(ChannelTabs), findsOneWidget);
+      expect(find.text('Takeaway'), findsOneWidget);
+      expect(find.text('foodpanda'), findsOneWidget);
+
+      await tester.tap(find.text('Takeaway'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AvailabilityManagementScreen), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Takeaway'),
+            matching: find.byType(InkWell),
+          ),
+          matching: find.byIcon(Icons.check),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the header shows the active brand logo', (tester) async {
@@ -201,6 +220,24 @@ void main() {
 
       expect((accountLeft + accountRight) / 2, closeTo(headerCenter, 1));
       expect(tabsCenter, closeTo(headerCenter, 1));
+    });
+
+    testWidgets('every channel tab stays inside the header on a narrow phone', (
+      tester,
+    ) async {
+      await _pumpMenu(tester, _narrowPhone);
+
+      expect(tester.takeException(), isNull);
+
+      final tabs = tester.getRect(find.byType(ChannelTabs));
+      for (final label in ['Dine-in', 'Takeaway', 'GrabFood', 'foodpanda']) {
+        final tab = tester.getRect(find.text(label));
+
+        expect(tab.left, greaterThanOrEqualTo(tabs.left), reason: label);
+        expect(tab.right, lessThanOrEqualTo(tabs.right), reason: label);
+        expect(tab.top, greaterThanOrEqualTo(tabs.top), reason: label);
+        expect(tab.bottom, lessThanOrEqualTo(tabs.bottom), reason: label);
+      }
     });
 
     testWidgets('the header does not overflow on a narrow phone', (

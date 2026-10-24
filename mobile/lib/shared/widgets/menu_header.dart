@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,11 +7,26 @@ import 'package:mobile/app/routes.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/shared/shared_layout.dart';
+import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/features/new_order/presentation/brand_switch_flow.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/availability/data/models/availability_model.dart';
+
+MenuChannel _menuChannelFor(PosChannel channel) => switch (channel) {
+  PosChannel.dineIn => MenuChannel.dineIn,
+  PosChannel.takeaway => MenuChannel.takeaway,
+  PosChannel.grabFood => MenuChannel.grabFood,
+  PosChannel.foodpanda => MenuChannel.foodpanda,
+};
+
+PosChannel _posChannelFor(MenuChannel channel) => switch (channel) {
+  MenuChannel.dineIn => PosChannel.dineIn,
+  MenuChannel.takeaway => PosChannel.takeaway,
+  MenuChannel.grabFood => PosChannel.grabFood,
+  MenuChannel.foodpanda => PosChannel.foodpanda,
+};
 
 class MenuHeader extends ConsumerWidget {
   const MenuHeader({
@@ -114,31 +129,17 @@ class MenuHeader extends ConsumerWidget {
       onPressed: () => _signOut(ref),
     );
 
-    Widget channelWidget;
+    final Widget channelWidget;
     if (onChannelChanged != null && channel != null) {
-      // Simple channel display when used by PosShell
-      channelWidget = IntrinsicWidth(
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: MenuSpace.md,
-            vertical: MenuSpace.sm,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(MenuRadius.md),
-            color: scheme.surface.withValues(alpha: 0.1),
-          ),
-          child: Text(
-            channel!.label,
-            style: text.labelLarge?.copyWith(color: scheme.onInverseSurface),
-          ),
-        ),
+      channelWidget = ChannelTabs(
+        inverted: true,
+        selected: _menuChannelFor(channel!),
+        onSelected: (selected) => onChannelChanged!(_posChannelFor(selected)),
       );
     } else {
-      channelWidget = IntrinsicWidth(
-        child: ChannelTabs(
-          inverted: true,
-          onSelected: (_) => _onChannelSelected(context),
-        ),
+      channelWidget = ChannelTabs(
+        inverted: true,
+        onSelected: (_) => _onChannelSelected(context),
       );
     }
 
@@ -146,7 +147,8 @@ class MenuHeader extends ConsumerWidget {
       color: scheme.inverseSurface,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isCompact = compact ?? constraints.maxWidth < MenuLayout.compactMax;
+          final isCompact =
+              compact ?? constraints.maxWidth < MenuLayout.compactMax;
 
           return Padding(
             padding: const EdgeInsets.all(MenuSpace.md),
