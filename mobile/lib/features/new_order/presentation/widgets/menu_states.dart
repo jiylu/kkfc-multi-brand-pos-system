@@ -150,4 +150,3 @@ class MenuMessageCard extends StatelessWidget {
     );
   }
 }
-
