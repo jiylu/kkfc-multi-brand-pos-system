@@ -14,7 +14,7 @@ import 'package:mobile/features/auth/presentation/pages/login_screen.dart';
 import 'package:mobile/features/auth/presentation/widgets/brand_panel.dart';
 import 'package:mobile/features/auth/presentation/widgets/login_form_card.dart';
 import 'package:mobile/features/auth/presentation/widgets/login_notice.dart';
-import 'package:mobile/features/auth/presentation/widgets/login_text_field.dart';
+import 'package:mobile/features/auth/presentation/widgets/login_password_field.dart';
 import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 import 'package:mobile/features/auth/presentation/widgets/session_expired/session_expired_copy.dart';
 import 'package:mobile/features/auth/presentation/widgets/session_expired/session_expired_dialog.dart';
