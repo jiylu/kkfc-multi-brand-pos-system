@@ -9,5 +9,6 @@ import { InventoryItemsModule } from '../../inventory/inventory-items/inventory-
   imports: [PrismaModule, InventoryItemsModule],
   controllers: [ModifiersController],
   providers: [ModifiersService, ModifiersRepository],
+  exports: [ModifiersRepository],
 })
 export class ModifiersModule {}
