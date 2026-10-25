@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { OrderChannel, Prisma, UserRole } from '@prisma/client';
 import { seedDatabase } from './seed';
 import { TEST_USERS, TEST_UNASSIGNED_OWNER } from './seed-test';
@@ -12,17 +13,60 @@ async function check() {
   const components = new Map();
   const menuItems = new Map();
   const menuItemChannels = new Map();
+  const modifiers = new Map();
+  const menuItemModifiers = new Map();
 
   function upsert(rows: Map<string, any>, key: string, args: any, id: string) {
+    assert.deepEqual(args.update, {}, 'Seeding must preserve existing records');
     const previous = rows.get(key);
     const row = previous
       ? { ...previous, ...args.update }
-      : { [id]: `${id}-${rows.size}`, is_active: true, ...args.create };
+      : { [id]: randomUUID(), is_active: true, ...args.create };
     rows.set(key, row);
     return row;
   }
 
   const database = {
+    modifier: {
+      upsert: async (args: Prisma.ModifierUpsertArgs) => {
+        const inventoryItemId = args.create.inventory_item_id;
+        if (inventoryItemId) {
+          assert(
+            [...inventory.values()].some(
+              (item) => item.inventory_item_id === inventoryItemId,
+            ),
+          );
+          assert(Number(args.create.quantity) > 0);
+        }
+        assert.equal('inventory_item_code' in args.create, false);
+        return upsert(modifiers, args.where.code!, args, 'modifier_id');
+      },
+    },
+    menuItemModifier: {
+      upsert: async (args: Prisma.MenuItemModifierUpsertArgs) => {
+        const { menu_item_id, modifier_id } =
+          args.where.menu_item_id_modifier_id!;
+        assert(
+          [...menuItems.values()].some(
+            (item) => item.menu_item_id === menu_item_id,
+          ),
+        );
+        assert(
+          [...modifiers.values()].some(
+            (modifier) => modifier.modifier_id === modifier_id,
+          ),
+        );
+        assert(Number(args.create.additional_price) >= 0);
+        assert.equal(typeof args.create.is_available, 'boolean');
+        assert.equal(args.create.menu_item_modifier_id, undefined);
+        return upsert(
+          menuItemModifiers,
+          `${menu_item_id}:${modifier_id}`,
+          args,
+          'menu_item_modifier_id',
+        );
+      },
+    },
     menuItemChannel: {
       upsert: async (args: Prisma.MenuItemChannelUpsertArgs) => {
         const { menu_item_id, order_channel } =
@@ -36,7 +80,6 @@ async function check() {
             order_channel === OrderChannel.FOODPANDA,
         );
         assert(Number(args.create.price) > item.base_price);
-        assert(Number(args.update.price) > item.base_price);
         return upsert(
           menuItemChannels,
           `${menu_item_id}:${order_channel}`,
@@ -115,7 +158,7 @@ async function check() {
 
   await seedDatabase(database);
   assert.equal(brands.size, 3);
-  assert.equal(users.size, 11);
+  assert.equal(users.size, 17);
   for (const user of [...TEST_USERS, TEST_UNASSIGNED_OWNER]) {
     assert(
       user.username.length <= 16,
@@ -139,12 +182,39 @@ async function check() {
       ).length,
       1,
     );
+    for (const role of [
+      UserRole.INVENTORY_STAFF,
+      UserRole.KITCHEN_STAFF,
+      UserRole.CASHIER_STAFF,
+    ]) {
+      assert.equal(
+        [...users.values()].filter(
+          (user) => user.role === role && user.brand_id === brand.brand_id,
+        ).length,
+        1,
+      );
+    }
   }
   assert.equal(inventory.size, 51);
   assert.equal(recipes.size, 22);
   assert.equal(components.size, 83);
   assert.equal(menuItems.size, 25);
+  assert([...menuItems.values()].every((row) => row.is_available === true));
   assert.equal(menuItemChannels.size, 50);
+  assert.equal(modifiers.size, 14);
+  assert.equal(menuItemModifiers.size, 34);
+  assert(
+    [...menuItemModifiers.values()].every((row) => row.is_available === true),
+  );
+  assert.equal(
+    new Set(
+      [...menuItemModifiers.values()].map((row) => row.menu_item_modifier_id),
+    ).size,
+    34,
+  );
+  const noOnions = modifiers.get('MOD-NO-ONIONS');
+  assert.equal(noOnions.inventory_item_id, null);
+  assert.equal(noOnions.quantity, null);
   for (const item of menuItems.values()) {
     assert(
       menuItemChannels.has(`${item.menu_item_id}:${OrderChannel.GRABFOOD}`),
@@ -193,53 +263,75 @@ async function check() {
   const rice = inventory.get('INV-RICE');
   rice.quantity_on_hand = 123;
   rice.is_active = false;
+  rice.name = 'Existing rice';
   const firstRecipe = recipes.get('RCP-PROD-COOKED-RICE:1');
   firstRecipe.is_active = false;
-  const counts = [brands.size, inventory.size, recipes.size, components.size];
-  const componentIds = [...components.values()].map(
-    (row) => row.recipe_component_id,
-  );
-  const menuIds = [...menuItems.values()].map((row) => row.menu_item_id);
-  const channelIds = [...menuItemChannels.values()].map(
-    (row) => row.menu_item_channel_id,
-  );
+  firstRecipe.instructions = 'Existing recipe instructions';
+  [...components.values()][0].quantity = 999;
+  brands.get('GC').name = 'Existing brand';
+  const staff = users.get('test_inventory');
+  staff.password_hash = await argon2.hash('ChangedPassword123!');
+  staff.brand_id = brands.get('KK').brand_id;
+  staff.is_active = false;
+  modifiers.get('MOD-EXTRA-RICE').name = 'Existing extra rice';
+  modifiers.get('MOD-EXTRA-RICE').is_active = false;
+  [...menuItemModifiers.values()][0].additional_price = 99;
+  [...menuItemModifiers.values()][0].is_available = false;
   const firstChannel = [...menuItemChannels.values()][0];
   firstChannel.is_available = false;
   firstChannel.price = 0;
   menuItems.get('GC-KIMCHI-FRIED-RICE').is_active = false;
+  menuItems.get('GC-KIMCHI-FRIED-RICE').is_available = false;
+  menuItems.get('GC-KIMCHI-FRIED-RICE').base_price = 100;
+  const tables = [
+    brands,
+    users,
+    inventory,
+    recipes,
+    components,
+    menuItems,
+    menuItemChannels,
+    modifiers,
+    menuItemModifiers,
+  ];
+  const snapshot = structuredClone(tables.map((rows) => [...rows.entries()]));
   await seedDatabase(database);
-  assert.equal(menuItems.size, 25);
-  assert.equal(menuItemChannels.size, 50);
   assert.deepEqual(
-    [...menuItemChannels.values()].map((row) => row.menu_item_channel_id),
-    channelIds,
+    tables.map((rows) => [...rows.entries()]),
+    snapshot,
   );
-  const savedChannel = menuItemChannels.get(
-    `${firstChannel.menu_item_id}:${firstChannel.order_channel}`,
+  assert(
+    await argon2.verify(
+      users.get('test_inventory').password_hash,
+      'ChangedPassword123!',
+    ),
   );
-  assert.equal(savedChannel.is_available, false);
-  assert(savedChannel.price > menuItems.get('GC-KIMCHI-FRIED-RICE').base_price);
-  assert.deepEqual(
-    [...menuItems.values()].map((row) => row.menu_item_id),
-    menuIds,
+
+  users.delete('test_ai_kitchen');
+  const packaging = [...inventory.values()].find(
+    (item) => item.type === 'PACKAGING',
   );
-  assert.equal(menuItems.get('GC-KIMCHI-FRIED-RICE').is_active, false);
-  assert.equal(users.size, 11);
-  assert.deepEqual(
-    [brands.size, inventory.size, recipes.size, components.size],
-    counts,
-  );
-  assert.deepEqual(
-    [...components.values()].map((row) => row.recipe_component_id),
-    componentIds,
-  );
+  assert(packaging);
+  inventory.delete(packaging.code);
+  recipes.delete('RCP-PROD-COOKED-RICE:1');
+  components.delete(`${firstRecipe.recipe_id}:${rice.inventory_item_id}`);
+  const firstAssignmentKey = menuItemModifiers.keys().next().value!;
+  menuItemModifiers.delete(firstAssignmentKey);
+  await seedDatabase(database);
+  assert.equal(users.size, 17);
   assert.equal(
-    inventory.get('INV-RICE').inventory_item_id,
-    rice.inventory_item_id,
+    users.get('test_ai_kitchen').brand_id,
+    brands.get('AI').brand_id,
   );
+  assert.equal(inventory.size, 51);
+  assert(inventory.has(packaging.code));
+  assert.equal(recipes.size, 22);
+  assert(recipes.has('RCP-PROD-COOKED-RICE:1'));
+  assert.equal(components.size, 83);
+  assert.equal(menuItemModifiers.size, 34);
+  assert(menuItemModifiers.has(firstAssignmentKey));
   assert.equal(inventory.get('INV-RICE').quantity_on_hand, 123);
-  assert.equal(inventory.get('INV-RICE').is_active, false);
-  assert.equal(recipes.get('RCP-PROD-COOKED-RICE:1').is_active, false);
+  assert.equal(modifiers.get('MOD-EXTRA-RICE').is_active, false);
   assert.deepEqual(
     new Set(TEST_USERS.map((user) => user.role)),
     new Set(Object.values(UserRole)),
@@ -247,10 +339,10 @@ async function check() {
   assert.equal(
     new Set([...TEST_USERS, TEST_UNASSIGNED_OWNER].map((user) => user.username))
       .size,
-    11,
+    17,
   );
   console.log(
-    `Seed checks passed: ${components.size} valid component links, ${menuItemChannels.size} delivery channel overrides above base price, brand ownership, stable reruns, preserved stock and availability, and all roles covered.`,
+    `Seed checks passed: ${users.size} users across brands, ${components.size} component links, ${menuItemChannels.size} delivery channels, ${modifiers.size} modifiers, ${menuItemModifiers.size} unique menu assignments, preserved existing records, and missing records restored.`,
   );
 }
 

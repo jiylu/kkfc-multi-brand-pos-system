@@ -4,7 +4,11 @@
 
 3 brands · 25 menu items · 14 modifiers · 22 recipes (6 production) · 51 inventory items
 
-The main seed inserts menu items, resolves their brand and recipe codes, and upserts their GrabFood and Foodpanda channel overrides. Delivery channel prices must exceed the menu item's base price. Dine-in and takeaway entries and modifier assignments remain fixture-only.
+The main seed inserts missing inventory, recipes, menu items, modifiers, menu item modifier assignments, and GrabFood and Foodpanda channel overrides. It resolves references by code and preserves existing records on reruns. Delivery channel fixture prices must exceed the menu item's fixture base price. Dine-in and takeaway channel entries remain fixture-only.
+
+Menu item modifier assignments default to `is_available: true`; individual fixtures can override this value. Reruns preserve existing modifier availability. Orders reject modifiers that are inactive or unavailable for the selected menu item.
+
+Menu items also default to `is_available: true`, independently of `is_active`. Fixtures may override availability, and reruns preserve existing values. Unavailable menu items cannot be ordered even when a channel override is available.
 
 Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-in.
 
@@ -75,8 +79,8 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 
 Apply the pending migrations to the intended database, then run `npm run prisma:generate`. The role migration preserves users by mapping OWNER to SUPERADMIN, KITCHEN_PREPARER to KITCHEN_STAFF and ORDER_STAFF to CASHIER_STAFF. The recipe migration backfills brands from menu items only when ownership is unambiguous; existing recipes without an unambiguous menu brand need explicit backfill mappings in that migration before it can succeed.
 
-- `npm run db:seed` upserts 3 brands, 11 users covering all 8 roles, 51 inventory items, 22 recipes and their recipe components, 25 menu items, and 50 delivery channel overrides in one transaction. Codes (and recipe versions) keep IDs stable on reruns; channels are keyed by menu item and order channel. Reruns refresh fixture prices while preserving existing channel availability, stock balances, and inactive catalog records. Seed users use `Password123!`; reruns reset their passwords and activate their accounts. Use this seed only in development or test databases.
-- `npm run db:seed:test` creates or updates users for all 8 roles, with one assigned manager per brand and an additional unassigned manager. Test users use `Password123!`; this script resets their passwords and activates their accounts on reruns. Use it only in a development or test database.
+- `npm run db:seed` inserts missing fixtures for 3 brands, 17 users covering all 8 roles, 51 inventory items, 22 recipes and 83 recipe components, 25 menu items, 50 delivery channel overrides, 14 modifiers, and 34 menu item modifier assignments in one transaction. Existing rows are never overwritten, including passwords, brand assignments, stock balances, recipe instructions and component quantities, prices, and inactive records. Codes (and recipe versions) keep IDs stable; modifier assignments have their own UUID and remain unique by menu item and modifier. New seed users use `Password123!`. Use this seed only in development or test databases.
+- `npm run db:seed:test` inserts missing brands and users for all 8 roles, including a manager, inventory staff, kitchen staff, and cashier staff for each brand, plus an unassigned manager. Existing users are preserved. New test users use `Password123!`. Use it only in a development or test database.
 
 | Role | Username |
 |---|---|
@@ -87,12 +91,18 @@ Apply the pending migrations to the intended database, then run `npm run prisma:
 | RECIPE_MANAGER | `test_recipe_mgr` |
 | SUPERVISOR | `test_supervisor` |
 | KITCHEN_HEAD | `test_chef` |
-| INVENTORY_STAFF | `test_inventory` |
-| KITCHEN_STAFF | `test_kitchen` |
-| CASHIER_STAFF | `test_order_staff` |
+| INVENTORY_STAFF (GC) | `test_inventory` |
+| KITCHEN_STAFF (GC) | `test_kitchen` |
+| CASHIER_STAFF (GC) | `test_order_staff` |
+| INVENTORY_STAFF (AI) | `test_ai_stock` |
+| KITCHEN_STAFF (AI) | `test_ai_kitchen` |
+| CASHIER_STAFF (AI) | `test_ai_cashier` |
+| INVENTORY_STAFF (KK) | `test_kk_stock` |
+| KITCHEN_STAFF (KK) | `test_kk_kitchen` |
+| CASHIER_STAFF (KK) | `test_kk_cashier` |
 
-All seed usernames fit the 16-character limit. Longer legacy usernames have been shortened for login fixtures. Each seed brand has one assigned manager. Other staff are assigned to GC; the superadmin and `test_unassigned` have no brand. Assignments resolve by brand code rather than seed order.
+All seed usernames fit the 16-character limit. Longer legacy usernames have been shortened for login fixtures. Each seed brand has one assigned manager, inventory staff, kitchen staff, and cashier staff. Recipe manager, supervisor, and kitchen head fixtures are assigned to GC; the superadmin and `test_unassigned` have no brand. Assignments resolve by brand code rather than seed order.
 
-`npm run db:seed:check` checks ingredient and output links, brand ownership, rerun behavior, stock preservation and role coverage without connecting to a database.
+`npm run db:seed:check` checks ingredient and output links, brand ownership, staff coverage per brand, modifier assignments, preservation of existing records on reruns, and restoration of missing fixtures without connecting to a database.
 
 Recipe ownership is required in the schema. There is currently no recipe viewing endpoint; when one is added, it must scope queries by the authenticated user's brand and validate any requested brand with the existing `BrandsGuard`. A foreign key alone does not restrict visibility.

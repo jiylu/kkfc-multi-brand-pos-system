@@ -1,20 +1,23 @@
 import { Test } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AppModule } from '../../../../app.module';
 import { InventoryItemsRepository } from '../../../inventory/inventory-items/inventory-items.repository';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
+import { StorageService } from '../../../../shared/storage/storage.service';
 import { ModifiersController } from '../modifiers.controller';
-import { ModifiersModule } from '../modifiers.module';
 import { ModifiersRepository } from '../modifiers.repository';
 import { ModifiersService } from '../modifiers.service';
 import { FindAllModifiersDTO } from '../dto/find-all-modifiers.dto';
 
 describe('ModifiersService', () => {
-  it('resolves the service, repository, and controller from ModifiersModule', async () => {
+  it('resolves the service, repository, and controller through the application module', async () => {
     const module = await Test.createTestingModule({
-      imports: [ModifiersModule],
+      imports: [AppModule],
     })
       .overrideProvider(PrismaService)
+      .useValue({})
+      .overrideProvider(StorageService)
       .useValue({})
       .compile();
 

@@ -25,6 +25,7 @@ describe('MenuItemsService mutations', () => {
     description: null,
     serving_description: null,
     base_price: new Prisma.Decimal(100),
+    is_available: true,
     is_active: true,
     created_at: now,
     modified_at: now,

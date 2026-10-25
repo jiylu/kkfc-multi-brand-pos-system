@@ -59,6 +59,7 @@ describe('Order lifecycle', () => {
       menuItem: {
         findFirst: jest.fn().mockResolvedValue({
           menu_item_id: 'menu',
+          is_available: true,
           name: 'Meal',
           base_price: new Prisma.Decimal(10),
           recipe_id: 'recipe',
@@ -69,6 +70,7 @@ describe('Order lifecycle', () => {
           menu_item_modifiers_menu_item: [
             {
               modifier_id: 'extra',
+              is_available: true,
               additional_price: new Prisma.Decimal(2),
               modifier: { name: 'Extra', is_active: true },
             },
@@ -129,6 +131,58 @@ describe('Order lifecycle', () => {
     expect(tx.order.update).not.toHaveBeenCalled();
     expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
   });
+
+  it.each([
+    { name: 'create', run: () => service.create('brand', 'actor', request) },
+    { name: 'verify', run: () => service.verify('brand', 'order', payment) },
+    {
+      name: 'confirm',
+      run: () => service.confirm('brand', 'order', 'actor', payment),
+    },
+  ])(
+    '$name rejects an unavailable menu modifier before writing',
+    async ({ run }) => {
+      const menu = (await tx.menuItem.findFirst()) as {
+        menu_item_modifiers_menu_item: { is_available: boolean }[];
+      };
+      menu.menu_item_modifiers_menu_item[0].is_available = false;
+      tx.menuItem.findFirst.mockResolvedValue(menu);
+
+      await expect(run()).rejects.toThrow(
+        'Modifier is unavailable for this menu item.',
+      );
+      expect(tx.order.create).not.toHaveBeenCalled();
+      expect(tx.orderItem.update).not.toHaveBeenCalled();
+      expect(tx.orderItemModifier.update).not.toHaveBeenCalled();
+      expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+      expect(tx.order.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { name: 'create', run: () => service.create('brand', 'actor', request) },
+    { name: 'verify', run: () => service.verify('brand', 'order', payment) },
+    {
+      name: 'confirm',
+      run: () => service.confirm('brand', 'order', 'actor', payment),
+    },
+  ])(
+    '$name rejects an unavailable menu item before writing',
+    async ({ run }) => {
+      const menu = (await tx.menuItem.findFirst()) as { is_available: boolean };
+      menu.is_available = false;
+      tx.menuItem.findFirst.mockResolvedValue(menu);
+
+      await expect(run()).rejects.toThrow(
+        'Menu item or recipe is unavailable.',
+      );
+      expect(tx.order.create).not.toHaveBeenCalled();
+      expect(tx.orderItem.update).not.toHaveBeenCalled();
+      expect(tx.orderItemModifier.update).not.toHaveBeenCalled();
+      expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+      expect(tx.order.update).not.toHaveBeenCalled();
+    },
+  );
 
   it('confirms with channel price, modifier and full recipe snapshots, with no stock effects', async () => {
     const result = await service.confirm('brand', 'order', 'actor', payment);
