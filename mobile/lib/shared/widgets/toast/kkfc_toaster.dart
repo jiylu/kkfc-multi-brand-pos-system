@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'kkfc_toast_host.dart';
+
 import 'package:mobile/shared/data/models/kkfc_toast_metrics.dart';
 import 'package:mobile/shared/data/models/kkfc_toast_tone.dart';
 
@@ -61,9 +62,9 @@ abstract final class KkfcToaster {
     final resolved = persistent
         ? null
         : (duration ??
-            (actionLabel != null
-                ? KkfcToastMetrics.actionDuration
-                : KkfcToastMetrics.defaultDuration));
+              (actionLabel != null
+                  ? KkfcToastMetrics.actionDuration
+                  : KkfcToastMetrics.defaultDuration));
 
     final key = GlobalKey<KkfcToastHostState>();
     late final KkfcToastHandle handle;
@@ -97,23 +98,21 @@ abstract final class KkfcToaster {
     BuildContext context, {
     required String message,
     IconData? icon,
-  }) =>
-      show(context, message: message, icon: icon);
+  }) => show(context, message: message, icon: icon);
 
   static KkfcToastHandle undo(
     BuildContext context, {
     required String message,
     required VoidCallback onUndo,
     String undoLabel = 'Undo',
-  }) =>
-      show(
-        context,
-        message: message,
-        tone: KkfcToastTone.inverse,
-        icon: Symbols.undo,
-        actionLabel: undoLabel,
-        onAction: onUndo,
-      );
+  }) => show(
+    context,
+    message: message,
+    tone: KkfcToastTone.inverse,
+    icon: Symbols.undo,
+    actionLabel: undoLabel,
+    onAction: onUndo,
+  );
 
   static KkfcToastHandle warning(
     BuildContext context, {
@@ -123,27 +122,25 @@ abstract final class KkfcToaster {
     VoidCallback? onAction,
     bool dismissOnAction = true,
     bool persistent = false,
-  }) =>
-      show(
-        context,
-        message: message,
-        tone: KkfcToastTone.warning,
-        icon: icon,
-        actionLabel: actionLabel,
-        onAction: onAction,
-        dismissOnAction: dismissOnAction,
-        persistent: persistent,
-      );
+  }) => show(
+    context,
+    message: message,
+    tone: KkfcToastTone.warning,
+    icon: icon,
+    actionLabel: actionLabel,
+    onAction: onAction,
+    dismissOnAction: dismissOnAction,
+    persistent: persistent,
+  );
 
   static KkfcToastHandle error(
     BuildContext context, {
     required String message,
     bool persistent = false,
-  }) =>
-      show(
-        context,
-        message: message,
-        tone: KkfcToastTone.danger,
-        persistent: persistent,
-      );
+  }) => show(
+    context,
+    message: message,
+    tone: KkfcToastTone.danger,
+    persistent: persistent,
+  );
 }

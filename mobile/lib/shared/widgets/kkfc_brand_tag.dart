@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 
 class KkfcBrandTag extends StatelessWidget {
-  const KkfcBrandTag({
-    super.key,
-    required this.label,
-    this.logoAsset,
-  });
+  const KkfcBrandTag({super.key, required this.label, this.logoAsset});
 
   final String label;
 

@@ -28,9 +28,12 @@ Future<void> loadGoldenFonts() async {
   await _loadFontFamily('MaterialIcons', const [
     'fonts/MaterialIcons-Regular.otf',
   ]);
-  await _loadFontFamily('packages/material_symbols_icons/MaterialSymbolsOutlined', const [
-    'packages/material_symbols_icons/lib/fonts/MaterialSymbolsOutlined.ttf',
-  ]);
+  await _loadFontFamily(
+    'packages/material_symbols_icons/MaterialSymbolsOutlined',
+    const [
+      'packages/material_symbols_icons/lib/fonts/MaterialSymbolsOutlined.ttf',
+    ],
+  );
   await _loadFontFamily(KkfcFonts.text, const [
     'assets/fonts/Atkinson_Hyperlegible_Next/AtkinsonHyperlegibleNext-Regular.ttf',
     'assets/fonts/Atkinson_Hyperlegible_Next/AtkinsonHyperlegibleNext-Medium.ttf',

@@ -74,9 +74,7 @@ class KitchenTicketBrandRow extends StatelessWidget {
         Expanded(
           child: Text(
             brand.name,
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
+            style: Theme.of(context).textTheme.titleSmall
                 ?.copyWith(fontWeight: FontWeight.w700),
           ),
         ),

@@ -123,10 +123,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       bg: Color(0xFF1F5FD6),
       fg: Color(0xFFFFFFFF),
     ), // blue.600 / white
-    actionReview: KkfcTone(
-      bg: Color(0xFFB0309A),
-      fg: Color(0xFFFFFFFF),
-    ),
+    actionReview: KkfcTone(bg: Color(0xFFB0309A), fg: Color(0xFFFFFFFF)),
     actionSuccess: KkfcTone(
       bg: Color(0xFF0E7A68),
       fg: Color(0xFFFFFFFF),
@@ -191,14 +188,8 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       fg: Color(0xFFE2A0D6),
       border: Color(0xFF6E1D60),
     ),
-    actionInfo: KkfcTone(
-      bg: Color(0xFF1F5FD6),
-      fg: Color(0xFFFFFFFF),
-    ),
-    actionReview: KkfcTone(
-      bg: Color(0xFFB0309A),
-      fg: Color(0xFFFFFFFF),
-    ),
+    actionInfo: KkfcTone(bg: Color(0xFF1F5FD6), fg: Color(0xFFFFFFFF)),
+    actionReview: KkfcTone(bg: Color(0xFFB0309A), fg: Color(0xFFFFFFFF)),
     actionSuccess: KkfcTone(
       bg: Color(0xFF0E7A68),
       fg: Color(0xFFFFFFFF),

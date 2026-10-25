@@ -41,7 +41,8 @@ class _KkfcRadioState<T> extends State<KkfcRadio<T>> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final focusColor = context.semanticColors.borderFocus; // verify the real name
+    final focusColor =
+        context.semanticColors.borderFocus; // verify the real name
 
     final disabledInk = scheme.onSurface.withValues(alpha: 0.38);
 
@@ -74,8 +75,9 @@ class _KkfcRadioState<T> extends State<KkfcRadio<T>> {
         child: FocusableActionDetector(
           enabled: _enabled,
           autofocus: widget.autofocus,
-          mouseCursor:
-              _enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+          mouseCursor: _enabled
+              ? SystemMouseCursors.click
+              : SystemMouseCursors.basic,
           onShowFocusHighlight: (v) => setState(() => _focused = v),
           onShowHoverHighlight: (v) => setState(() => _hovered = v),
           actions: {
@@ -90,14 +92,16 @@ class _KkfcRadioState<T> extends State<KkfcRadio<T>> {
             behavior: HitTestBehavior.opaque,
             onTapDown: _enabled ? (_) => setState(() => _pressed = true) : null,
             onTapUp: _enabled ? (_) => setState(() => _pressed = false) : null,
-            onTapCancel:
-                _enabled ? () => setState(() => _pressed = false) : null,
+            onTapCancel: _enabled
+                ? () => setState(() => _pressed = false)
+                : null,
             onTap: _enabled ? _select : null,
             // minHeight, not a fixed height, so large text scale still fits
             child: AnimatedContainer(
               duration: KkfcMotion.fast, // verify
-              constraints:
-                  const BoxConstraints(minHeight: KkfcSizing.controlLg),
+              constraints: const BoxConstraints(
+                minHeight: KkfcSizing.controlLg,
+              ),
               padding: const EdgeInsets.symmetric(horizontal: KkfcSpace.s16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(KkfcRadius.md),

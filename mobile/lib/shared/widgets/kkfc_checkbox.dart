@@ -39,8 +39,9 @@ class _KkfcCheckboxState extends State<KkfcCheckbox> {
     final semantic = context.semanticColors;
     final focusColor = semantic.borderFocus;
 
-    final disabledInk =
-        scheme.onSurface.withValues(alpha: KkfcOpacity.disabled);
+    final disabledInk = scheme.onSurface.withValues(
+      alpha: KkfcOpacity.disabled,
+    );
 
     // Box colors per state
     final Color fill;
@@ -70,8 +71,9 @@ class _KkfcCheckboxState extends State<KkfcCheckbox> {
         child: FocusableActionDetector(
           enabled: _enabled,
           autofocus: widget.autofocus,
-          mouseCursor:
-              _enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+          mouseCursor: _enabled
+              ? SystemMouseCursors.click
+              : SystemMouseCursors.basic,
           onShowFocusHighlight: (v) => setState(() => _focused = v),
           onShowHoverHighlight: (v) => setState(() => _hovered = v),
           actions: {
@@ -86,14 +88,16 @@ class _KkfcCheckboxState extends State<KkfcCheckbox> {
             behavior: HitTestBehavior.opaque,
             onTapDown: _enabled ? (_) => setState(() => _pressed = true) : null,
             onTapUp: _enabled ? (_) => setState(() => _pressed = false) : null,
-            onTapCancel:
-                _enabled ? () => setState(() => _pressed = false) : null,
+            onTapCancel: _enabled
+                ? () => setState(() => _pressed = false)
+                : null,
             onTap: _enabled ? _toggle : null,
             // minHeight, not a fixed height, so large text scale still fits
             child: AnimatedContainer(
               duration: KkfcMotion.fast, // verify
-              constraints:
-                  const BoxConstraints(minHeight: KkfcSizing.controlLg),
+              constraints: const BoxConstraints(
+                minHeight: KkfcSizing.controlLg,
+              ),
               padding: const EdgeInsets.symmetric(horizontal: KkfcSpace.s16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(KkfcRadius.md),

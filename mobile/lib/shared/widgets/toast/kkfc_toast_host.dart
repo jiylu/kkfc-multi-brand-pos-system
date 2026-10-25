@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'kkfc_toast.dart';
+
 import 'package:mobile/shared/data/models/kkfc_toast_metrics.dart';
 import 'package:mobile/shared/data/models/kkfc_toast_tone.dart';
 
@@ -170,8 +171,7 @@ class KkfcToastHostState extends State<KkfcToastHost>
           alignment: atBottom ? Alignment.bottomCenter : Alignment.topCenter,
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth:
-                  compact ? double.infinity : KkfcToastMetrics.maxWidth,
+              maxWidth: compact ? double.infinity : KkfcToastMetrics.maxWidth,
             ),
             child: toast,
           ),

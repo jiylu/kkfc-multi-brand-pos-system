@@ -6,11 +6,7 @@ import 'package:mobile/shared/widgets/status_badge/kkfc_status_badge_style.dart'
 
 /// A small pill showing an order, ticket, or payment status.
 class KkfcStatusBadge extends StatelessWidget {
-  const KkfcStatusBadge({
-    super.key,
-    required this.status,
-    this.label,
-  });
+  const KkfcStatusBadge({super.key, required this.status, this.label});
 
   final KkfcStatus status;
 
@@ -19,8 +15,7 @@ class KkfcStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors =
-        resolveBadgeColors(context, status.family, status.variant);
+    final colors = resolveBadgeColors(context, status.family, status.variant);
     final text = label ?? status.label;
     final icon = status.icon;
 
@@ -52,9 +47,7 @@ class KkfcStatusBadge extends StatelessWidget {
                 Flexible(
                   child: Text(
                     text,
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelLarge
+                    style: Theme.of(context).textTheme.labelLarge
                         ?.copyWith(color: colors.foreground),
                   ),
                 ),

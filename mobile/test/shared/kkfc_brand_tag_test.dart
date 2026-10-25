@@ -4,8 +4,9 @@ import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/shared/widgets/kkfc_brand_tag.dart';
 
 void main() {
-  testWidgets('shows the label and a placeholder when no logo is given',
-      (tester) async {
+  testWidgets('shows the label and a placeholder when no logo is given', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: counterTheme,

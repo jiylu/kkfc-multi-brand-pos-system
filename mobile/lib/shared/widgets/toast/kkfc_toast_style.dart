@@ -20,11 +20,11 @@ class KkfcToastStyle {
   final Color action;
 
   factory KkfcToastStyle.fromTone(KkfcTone tone) => KkfcToastStyle(
-        background: tone.bg,
-        foreground: tone.fg,
-        border: tone.border ?? Colors.transparent,
-        action: tone.fg,
-      );
+    background: tone.bg,
+    foreground: tone.fg,
+    border: tone.border ?? Colors.transparent,
+    action: tone.fg,
+  );
 
   factory KkfcToastStyle.resolve(BuildContext context, KkfcToastTone tone) {
     final colors = context.semanticColors;
@@ -47,9 +47,9 @@ class KkfcToastStyle {
   }
 
   static IconData defaultIcon(KkfcToastTone tone) => switch (tone) {
-        KkfcToastTone.success => Symbols.check_circle,
-        KkfcToastTone.inverse => Symbols.info,
-        KkfcToastTone.warning => Symbols.warning,
-        KkfcToastTone.danger => Symbols.error,
-      };
+    KkfcToastTone.success => Symbols.check_circle,
+    KkfcToastTone.inverse => Symbols.info,
+    KkfcToastTone.warning => Symbols.warning,
+    KkfcToastTone.danger => Symbols.error,
+  };
 }

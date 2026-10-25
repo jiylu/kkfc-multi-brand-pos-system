@@ -39,10 +39,12 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final focusColor = context.semanticColors.borderFocus; // verify the real name
+    final focusColor =
+        context.semanticColors.borderFocus; // verify the real name
 
-    final disabledInk =
-        scheme.onSurface.withValues(alpha: KkfcOpacity.disabled);
+    final disabledInk = scheme.onSurface.withValues(
+      alpha: KkfcOpacity.disabled,
+    );
 
     // Track and thumb colors per state
     final Color track;
@@ -59,7 +61,9 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
       trackBorder = scheme.primary;
       thumb = scheme.surface;
     } else {
-      track = _pressed ? scheme.surfaceContainerHighest : scheme.surfaceContainer;
+      track = _pressed
+          ? scheme.surfaceContainerHighest
+          : scheme.surfaceContainer;
       trackBorder = (_hovered || _pressed) ? scheme.onSurface : scheme.outline;
       thumb = scheme.outline;
     }
@@ -72,22 +76,24 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
     );
 
     // The thumb stretches a little while pressed
-    final thumbWidth =
-        KkfcSizing.thumb * (_pressed && _enabled ? 1.2 : 1.0);
+    final thumbWidth = KkfcSizing.thumb * (_pressed && _enabled ? 1.2 : 1.0);
 
     return Semantics(
       container: true,
       toggled: widget.value,
       enabled: _enabled,
-      label: [widget.title, if (widget.subtitle != null) widget.subtitle]
-          .join(', '),
+      label: [
+        widget.title,
+        if (widget.subtitle != null) widget.subtitle,
+      ].join(', '),
       onTap: _enabled ? _toggle : null,
       child: ExcludeSemantics(
         child: FocusableActionDetector(
           enabled: _enabled,
           autofocus: widget.autofocus,
-          mouseCursor:
-              _enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+          mouseCursor: _enabled
+              ? SystemMouseCursors.click
+              : SystemMouseCursors.basic,
           onShowFocusHighlight: (v) => setState(() => _focused = v),
           onShowHoverHighlight: (v) => setState(() => _hovered = v),
           actions: {
@@ -102,14 +108,16 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
             behavior: HitTestBehavior.opaque,
             onTapDown: _enabled ? (_) => setState(() => _pressed = true) : null,
             onTapUp: _enabled ? (_) => setState(() => _pressed = false) : null,
-            onTapCancel:
-                _enabled ? () => setState(() => _pressed = false) : null,
+            onTapCancel: _enabled
+                ? () => setState(() => _pressed = false)
+                : null,
             onTap: _enabled ? _toggle : null,
             // minHeight, not a fixed height, so large text scale still fits
             child: AnimatedContainer(
               duration: KkfcMotion.fast, // verify
-              constraints:
-                  const BoxConstraints(minHeight: KkfcSizing.controlLg),
+              constraints: const BoxConstraints(
+                minHeight: KkfcSizing.controlLg,
+              ),
               padding: const EdgeInsets.symmetric(
                 horizontal: KkfcSpace.s16,
                 vertical: KkfcSpace.s12,

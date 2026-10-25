@@ -11,7 +11,7 @@ abstract final class KkfcToastMetrics {
   static final double paddingX = KkfcSpace.s24;
   static final double paddingY = KkfcSpace.s16;
   static final double paddingEndWithAction = KkfcSpace.s8;
-  static final double gap = KkfcSpace.s16 ;
+  static final double gap = KkfcSpace.s16;
 
   // Shape
   static final double radius = KkfcRadius.md;

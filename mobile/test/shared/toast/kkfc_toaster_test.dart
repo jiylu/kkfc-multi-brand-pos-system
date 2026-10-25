@@ -42,7 +42,10 @@ void main() {
   testWidgets('action fires and dismisses', (tester) async {
     var undone = false;
     await tester.pumpWidget(
-      _app((c) => KkfcToaster.undo(c, message: 'Moved', onUndo: () => undone = true)),
+      _app(
+        (c) =>
+            KkfcToaster.undo(c, message: 'Moved', onUndo: () => undone = true),
+      ),
     );
     await tester.tap(find.byType(ElevatedButton));
     await tester.pump(const Duration(milliseconds: 500));
@@ -56,7 +59,13 @@ void main() {
   testWidgets('persistent toast stays until dismissed', (tester) async {
     late KkfcToastHandle handle;
     await tester.pumpWidget(
-      _app((c) => handle = KkfcToaster.warning(c, message: 'Offline', persistent: true)),
+      _app(
+        (c) => handle = KkfcToaster.warning(
+          c,
+          message: 'Offline',
+          persistent: true,
+        ),
+      ),
     );
     await tester.tap(find.byType(ElevatedButton));
     await tester.pump(const Duration(seconds: 30));
@@ -67,7 +76,9 @@ void main() {
     expect(find.byType(KkfcToast), findsNothing);
   });
 
-  testWidgets('long message at 2x text scale does not overflow', (tester) async {
+  testWidgets('long message at 2x text scale does not overflow', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _app(
         (c) => KkfcToaster.warning(

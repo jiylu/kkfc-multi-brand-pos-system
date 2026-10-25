@@ -33,7 +33,10 @@ class KitchenTicketCard extends StatelessWidget {
       color: scheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(KkfcRadius.md),
-        side: BorderSide(color: scheme.outlineVariant, width: KkfcBorderWidth.thin),
+        side: BorderSide(
+          color: scheme.outlineVariant,
+          width: KkfcBorderWidth.thin,
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(

@@ -52,11 +52,7 @@ const _ageCases = [
 ];
 
 const _defaultItems = [
-  KitchenTicketItem(
-    quantity: 2,
-    name: 'Paa Inasal',
-    modifiers: ['EXTRA rice'],
-  ),
+  KitchenTicketItem(quantity: 2, name: 'Paa Inasal', modifiers: ['EXTRA rice']),
   KitchenTicketItem(
     quantity: 1,
     name: 'Pecho Inasal',
@@ -125,35 +121,34 @@ void main() {
     for (final textScale in goldenTextScales) {
       // One sheet per age state, all six kitchen statuses on each.
       for (final c in _ageCases) {
-        testWidgets(
-          '${c.state} statuses @ ${viewport.name}, text $textScale',
-          (tester) async {
-            await pumpGoldenSheet(
-              tester,
-              viewport: viewport,
-              textScale: textScale,
-              maxHeight: _sheetMaxHeight,
-              child: _sheet([
-                for (final status in _kitchenStatuses)
-                  KitchenTicketCard(
-                    ticket: _ticket(
-                      age: c.age,
-                      elapsed: c.elapsed,
-                      status: status,
-                    ),
-                    onAction: () {},
+        testWidgets('${c.state} statuses @ ${viewport.name}, text $textScale', (
+          tester,
+        ) async {
+          await pumpGoldenSheet(
+            tester,
+            viewport: viewport,
+            textScale: textScale,
+            maxHeight: _sheetMaxHeight,
+            child: _sheet([
+              for (final status in _kitchenStatuses)
+                KitchenTicketCard(
+                  ticket: _ticket(
+                    age: c.age,
+                    elapsed: c.elapsed,
+                    status: status,
                   ),
-              ]),
-            );
+                  onAction: () {},
+                ),
+            ]),
+          );
 
-            await _expectSheetGolden(
-              tester,
-              state: c.state,
-              viewport: viewport,
-              textScale: textScale,
-            );
-          },
-        );
+          await _expectSheetGolden(
+            tester,
+            state: c.state,
+            viewport: viewport,
+            textScale: textScale,
+          );
+        });
       }
 
       // Loading, read-only, and long-content variants.

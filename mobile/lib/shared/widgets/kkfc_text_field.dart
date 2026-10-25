@@ -92,9 +92,9 @@ class KkfcTextField extends StatelessWidget {
     final focusColor = KkfcSemanticColors.light.borderFocus;
 
     OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(KkfcRadius.lg),
-          borderSide: BorderSide(color: color, width: width),
-        );
+      borderRadius: BorderRadius.circular(KkfcRadius.lg),
+      borderSide: BorderSide(color: color, width: width),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,8 +141,10 @@ class KkfcTextField extends StatelessWidget {
               focusedBorder: showError
                   ? border(scheme.error, KkfcBorderWidth.focus)
                   : border(focusColor, KkfcBorderWidth.focus),
-              disabledBorder:
-                  border(scheme.outlineVariant, KkfcBorderWidth.thin),
+              disabledBorder: border(
+                scheme.outlineVariant,
+                KkfcBorderWidth.thin,
+              ),
             ),
           ),
         ),
@@ -156,8 +158,9 @@ class KkfcTextField extends StatelessWidget {
                 message,
                 key: ValueKey(message),
                 style: text.bodyMedium?.copyWith(
-                  color:
-                      hasErrorMessage ? scheme.error : scheme.onSurfaceVariant,
+                  color: hasErrorMessage
+                      ? scheme.error
+                      : scheme.onSurfaceVariant,
                 ),
               ),
             ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:mobile/shared/data/models/kkfc_toast_metrics.dart';
+
 import 'kkfc_toast_style.dart';
+
 import 'package:mobile/shared/data/models/kkfc_toast_tone.dart';
 
 /// The toast visual. Use it inline, or via [KkfcToaster] for overlay toasts.
@@ -17,9 +19,9 @@ class KkfcToast extends StatelessWidget {
     this.elevated = false,
     this.entrance,
   }) : assert(
-          (actionLabel == null) == (onAction == null),
-          'actionLabel and onAction must be given together',
-        );
+         (actionLabel == null) == (onAction == null),
+         'actionLabel and onAction must be given together',
+       );
 
   final String message;
   final KkfcToastTone tone;
@@ -40,8 +42,8 @@ class KkfcToast extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = KkfcToastStyle.resolve(context, tone);
     final theme = Theme.of(context);
-    final iconSize =
-        MediaQuery.textScalerOf(context).scale(KkfcToastMetrics.iconSize);
+    final iconSize = MediaQuery.textScalerOf(context)
+        .scale(KkfcToastMetrics.iconSize);
     final hasAction = actionLabel != null;
 
     Widget iconWidget = ExcludeSemantics(
