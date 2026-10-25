@@ -8,6 +8,8 @@ The main seed inserts missing inventory, recipes, menu items, modifiers, menu it
 
 Menu item modifier assignments default to `is_available: true`; individual fixtures can override this value. Reruns preserve existing modifier availability. Orders reject modifiers that are inactive or unavailable for the selected menu item.
 
+Menu item modifier `created_at` and `modified_at` timestamps default to the database creation time. Repository updates, reactivation, and soft deletion explicitly advance `modified_at`; seed reruns preserve both timestamps.
+
 Menu items also default to `is_available: true`, independently of `is_active`. Fixtures may override availability, and reruns preserve existing values. Unavailable menu items cannot be ordered even when a channel override is available.
 
 Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-in.

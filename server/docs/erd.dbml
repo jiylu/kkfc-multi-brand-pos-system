@@ -270,6 +270,8 @@ Table menu_item_modifiers {
   modifier_id uuid [not null, ref: > modifiers.modifier_id]
   additional_price decimal(12,2) [not null, default: 0]
   is_available boolean [not null, default: true]
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
   indexes {
     (menu_item_id, modifier_id) [unique]
   }
