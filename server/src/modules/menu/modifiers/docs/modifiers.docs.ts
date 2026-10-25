@@ -1,5 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -10,7 +11,16 @@ import {
 export function ModifiersDocs() {
   return applyDecorators(
     ApiTags('Modifiers'),
+    ApiBearerAuth(),
     ApiResponse({ status: 400, description: 'Invalid parameters or payload.' }),
+    ApiResponse({
+      status: 401,
+      description: 'Missing, invalid, or expired bearer session.',
+    }),
+    ApiResponse({
+      status: 403,
+      description: 'Only superadmins and recipe managers can access modifiers.',
+    }),
   );
 }
 

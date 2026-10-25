@@ -193,6 +193,7 @@ export class BrandsGuard implements CanActivate {
   ) {
     const hasAccess =
       user.role === UserRole.SUPERADMIN ||
+      user.role === UserRole.RECIPE_MANAGER ||
       (user.brand_id != null && user.brand_id === brandId);
 
     if (!hasAccess) {

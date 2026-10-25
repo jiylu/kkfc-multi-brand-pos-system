@@ -6,6 +6,10 @@ import {
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { UserRole } from '@prisma/client';
+import { Authenticated } from '../../../auth/auth.guard';
+import { AuthService } from '../../../auth/auth.service';
+import { RolesGuard } from '../../../../shared/guards/roles.guard';
 import { ModifiersController } from '../modifiers.controller';
 import { ModifiersService } from '../modifiers.service';
 
@@ -18,6 +22,10 @@ describe('Modifiers HTTP endpoints', () => {
     inventory_item_id: inventoryItemId,
     quantity: 200,
   };
+  const headers = {
+    Authorization: 'Bearer test-session',
+    'Content-Type': 'application/json',
+  };
   const service = {
     create: jest.fn(),
     findOne: jest.fn(),
@@ -27,13 +35,65 @@ describe('Modifiers HTTP endpoints', () => {
     reactivate: jest.fn(),
     delete: jest.fn(),
   };
+  const auth = { validateSession: jest.fn() };
+  const protectedRoutes = [
+    { method: 'POST', path: '', body: create, status: 201, handler: 'create' },
+    {
+      method: 'GET',
+      path: '',
+      body: undefined,
+      status: 200,
+      handler: 'findAll',
+    },
+    {
+      method: 'GET',
+      path: `/${modifierId}`,
+      body: undefined,
+      status: 200,
+      handler: 'findOne',
+    },
+    {
+      method: 'GET',
+      path: `/inventory-item/${inventoryItemId}`,
+      body: undefined,
+      status: 200,
+      handler: 'findManyByInventoryItem',
+    },
+    {
+      method: 'PATCH',
+      path: `/${modifierId}`,
+      body: { name: 'Updated' },
+      status: 200,
+      handler: 'update',
+    },
+    {
+      method: 'PATCH',
+      path: `/reactivate/${modifierId}`,
+      body: undefined,
+      status: 200,
+      handler: 'reactivate',
+    },
+    {
+      method: 'DELETE',
+      path: `/${modifierId}`,
+      body: undefined,
+      status: 200,
+      handler: 'delete',
+    },
+  ] as const;
   let app: INestApplication;
   let url: string;
+  let role: UserRole;
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
       controllers: [ModifiersController],
-      providers: [{ provide: ModifiersService, useValue: service }],
+      providers: [
+        Authenticated,
+        RolesGuard,
+        { provide: AuthService, useValue: auth },
+        { provide: ModifiersService, useValue: service },
+      ],
     }).compile();
     app = module.createNestApplication();
     app.useLogger(false);
@@ -51,16 +111,20 @@ describe('Modifiers HTTP endpoints', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    role = UserRole.SUPERADMIN;
+    auth.validateSession.mockImplementation(() =>
+      Promise.resolve({ user: { role } }),
+    );
     for (const handler of Object.values(service))
       handler.mockResolvedValue({ ok: true });
   });
 
   afterAll(async () => app?.close());
 
-  it('documents every route, payload, and query without requiring authentication', () => {
+  it('documents every guarded route, payload, and query', () => {
     const document = SwaggerModule.createDocument(
       app,
-      new DocumentBuilder().build(),
+      new DocumentBuilder().addBearerAuth().build(),
     );
     const operations = [
       document.paths['/api/modifiers']?.post,
@@ -75,8 +139,10 @@ describe('Modifiers HTTP endpoints', () => {
       expect(typeof operation?.summary).toBe('string');
       expect(typeof operation?.description).toBe('string');
       expect(operation?.tags).toEqual(['Modifiers']);
-      expect(operation?.security).toBeUndefined();
+      expect(operation?.security).toEqual([{ bearer: [] }]);
       expect(operation?.responses).toHaveProperty('400.description');
+      expect(operation?.responses).toHaveProperty('401.description');
+      expect(operation?.responses).toHaveProperty('403.description');
     }
     expect(document.components?.schemas?.CreateModifierDTO).toMatchObject({
       required: ['code', 'name'],
@@ -183,20 +249,88 @@ describe('Modifiers HTTP endpoints', () => {
       args: [modifierId],
     },
   ] as const)(
-    '$method $path delegates to $handler without guards',
+    '$method $path delegates to $handler for an authenticated allowed role',
     async (route) => {
       const body = 'body' in route ? route.body : undefined;
       const response = await fetch(url + route.path, {
         method: route.method,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body),
       });
       expect(response.status).toBe(route.status);
       expect(await response.json()).toEqual({ ok: true });
       expect(service[route.handler]).toHaveBeenCalledTimes(1);
       expect(service[route.handler]).toHaveBeenCalledWith(...route.args);
+      expect(auth.validateSession).toHaveBeenCalledWith('test-session');
     },
   );
+
+  it.each(protectedRoutes)(
+    '$method $path rejects missing authentication',
+    async (route) => {
+      const response = await fetch(url + route.path, {
+        method: route.method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(route.body),
+      });
+      expect(response.status).toBe(401);
+      expect(auth.validateSession).not.toHaveBeenCalled();
+      for (const handler of Object.values(service))
+        expect(handler).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(protectedRoutes)(
+    '$method $path rejects invalid sessions',
+    async (route) => {
+      auth.validateSession.mockRejectedValueOnce(
+        new NotFoundException('Invalid session'),
+      );
+      const response = await fetch(url + route.path, {
+        method: route.method,
+        headers,
+        body: JSON.stringify(route.body),
+      });
+      expect(response.status).toBe(401);
+      for (const handler of Object.values(service))
+        expect(handler).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([UserRole.SUPERADMIN, UserRole.RECIPE_MANAGER])(
+    'allows %s on all modifier endpoints',
+    async (callerRole) => {
+      role = callerRole;
+      for (const route of protectedRoutes) {
+        const response = await fetch(url + route.path, {
+          method: route.method,
+          headers,
+          body: JSON.stringify(route.body),
+        });
+        expect(response.status).toBe(route.status);
+        expect(service[route.handler]).toHaveBeenCalledTimes(1);
+      }
+    },
+  );
+
+  it.each(
+    Object.values(UserRole).filter(
+      (value) =>
+        value !== UserRole.SUPERADMIN && value !== UserRole.RECIPE_MANAGER,
+    ),
+  )('denies %s on all modifier endpoints', async (callerRole) => {
+    role = callerRole;
+    for (const route of protectedRoutes) {
+      const response = await fetch(url + route.path, {
+        method: route.method,
+        headers,
+        body: JSON.stringify(route.body),
+      });
+      expect(response.status).toBe(403);
+      expect(await response.json()).toMatchObject({ code: 'ACCESS_DENIED' });
+      expect(service[route.handler]).not.toHaveBeenCalled();
+    }
+  });
 
   it.each([
     { method: 'POST', path: '', body: { code: 'EXTRA' } },
@@ -226,7 +360,7 @@ describe('Modifiers HTTP endpoints', () => {
       const body = 'body' in route ? route.body : undefined;
       const response = await fetch(url + route.path, {
         method: route.method,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body),
       });
       expect(response.status).toBe(400);
@@ -242,7 +376,7 @@ describe('Modifiers HTTP endpoints', () => {
         message: 'Modifier not found.',
       }),
     );
-    const response = await fetch(`${url}/${modifierId}`);
+    const response = await fetch(`${url}/${modifierId}`, { headers });
     expect(response.status).toBe(404);
     expect(await response.json()).toMatchObject({ code: 'MODIFIER_NOT_FOUND' });
   });
@@ -256,6 +390,7 @@ describe('Modifiers HTTP endpoints', () => {
     );
     const response = await fetch(`${url}/reactivate/${modifierId}`, {
       method: 'PATCH',
+      headers,
     });
     expect(response.status).toBe(409);
     expect(await response.json()).toMatchObject({
