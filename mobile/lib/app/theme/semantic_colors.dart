@@ -37,6 +37,9 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     required this.warning,
     required this.danger,
     required this.info,
+    required this.review,
+    required this.actionInfo,
+    required this.actionReview,
     required this.actionSuccess,
     required this.ageNormal,
     required this.ageCaution,
@@ -62,6 +65,9 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
   final KkfcTone warning;
   final KkfcTone danger;
   final KkfcTone info;
+  final KkfcTone review;
+  final KkfcTone actionInfo;
+  final KkfcTone actionReview;
   final KkfcTone actionSuccess;
   final KkfcTone ageNormal;
   final KkfcTone ageCaution;
@@ -86,6 +92,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     tag: KkfcTone(
       bg: Color(0xFFE3E7EF),
       fg: Color(0xFF283650),
+      border: Color(0xFFA5B1C6),
     ), // ink.100 / ink.700
     success: KkfcTone(
       bg: Color(0xFFD9F2EC),
@@ -106,6 +113,19 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       bg: Color(0xFFE1EAFB),
       fg: Color(0xFF173F8A),
       border: Color(0xFF93B4EE),
+    ),
+    review: KkfcTone(
+      bg: Color(0xFFF7E3F3),
+      fg: Color(0xFF6E1D60),
+      border: Color(0xFFEAB9E0),
+    ),
+    actionInfo: KkfcTone(
+      bg: Color(0xFF1F5FD6),
+      fg: Color(0xFFFFFFFF),
+    ), // blue.600 / white
+    actionReview: KkfcTone(
+      bg: Color(0xFFB0309A),
+      fg: Color(0xFFFFFFFF),
     ),
     actionSuccess: KkfcTone(
       bg: Color(0xFF0E7A68),
@@ -144,6 +164,7 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     tag: KkfcTone(
       bg: Color(0xFF1D2940),
       fg: Color(0xFFE3E7EF),
+      border: Color(0xFF374763),
     ), // ink.800 / ink.100
     success: KkfcTone(
       bg: Color(0xFF052A24),
@@ -164,6 +185,19 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       bg: Color(0xFF0C1D3F),
       fg: Color(0xFF93B4EE),
       border: Color(0xFF173F8A),
+    ),
+    review: KkfcTone(
+      bg: Color(0xFF330D2C),
+      fg: Color(0xFFE2A0D6),
+      border: Color(0xFF6E1D60),
+    ),
+    actionInfo: KkfcTone(
+      bg: Color(0xFF1F5FD6),
+      fg: Color(0xFFFFFFFF),
+    ),
+    actionReview: KkfcTone(
+      bg: Color(0xFFB0309A),
+      fg: Color(0xFFFFFFFF),
     ),
     actionSuccess: KkfcTone(
       bg: Color(0xFF0E7A68),
@@ -204,6 +238,9 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
     KkfcTone? warning,
     KkfcTone? danger,
     KkfcTone? info,
+    KkfcTone? review,
+    KkfcTone? actionInfo,
+    KkfcTone? actionReview,
     KkfcTone? actionSuccess,
     KkfcTone? ageNormal,
     KkfcTone? ageCaution,
@@ -229,6 +266,9 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       warning: warning ?? this.warning,
       danger: danger ?? this.danger,
       info: info ?? this.info,
+      review: review ?? this.review,
+      actionInfo: actionInfo ?? this.actionInfo,
+      actionReview: actionReview ?? this.actionReview,
       actionSuccess: actionSuccess ?? this.actionSuccess,
       ageNormal: ageNormal ?? this.ageNormal,
       ageCaution: ageCaution ?? this.ageCaution,
@@ -267,6 +307,9 @@ class KkfcSemanticColors extends ThemeExtension<KkfcSemanticColors> {
       warning: KkfcTone.lerp(warning, other.warning, t),
       danger: KkfcTone.lerp(danger, other.danger, t),
       info: KkfcTone.lerp(info, other.info, t),
+      review: KkfcTone.lerp(review, other.review, t),
+      actionInfo: KkfcTone.lerp(actionInfo, other.actionInfo, t),
+      actionReview: KkfcTone.lerp(actionReview, other.actionReview, t),
       actionSuccess: KkfcTone.lerp(actionSuccess, other.actionSuccess, t),
       ageNormal: KkfcTone.lerp(ageNormal, other.ageNormal, t),
       ageCaution: KkfcTone.lerp(ageCaution, other.ageCaution, t),
