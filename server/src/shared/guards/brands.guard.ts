@@ -37,7 +37,7 @@ export class BrandsGuard implements CanActivate {
       });
     }
 
-    const body = request.body as { brand_id?: unknown } | undefined;
+    const body = request.body as Record<string, unknown> | undefined;
     const paramBrandId = request.params.brandId;
     const bodyBrandId = body?.brand_id;
 
@@ -56,7 +56,10 @@ export class BrandsGuard implements CanActivate {
     let brandId: string | null;
 
     if (source) {
-      const identifier = request.params[source.param];
+      const identifier =
+        source.source === 'body'
+          ? body?.[source.param]
+          : request.params[source.param];
 
       if (typeof identifier !== 'string' || identifier.trim() === '') {
         throw new BadRequestException({

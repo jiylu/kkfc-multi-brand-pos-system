@@ -1,8 +1,26 @@
 import { Logger } from '@nestjs/common';
 import { OrderChannel, Prisma } from '@prisma/client';
+import { Test } from '@nestjs/testing';
+import { AppModule } from '../../../../app.module';
+import { PrismaService } from '../../../../shared/prisma/prisma.service';
+import { StorageService } from '../../../../shared/storage/storage.service';
 import { MenuItemsRepository } from '../../menu-items/menu-items.repository';
 import { MenuChannelsRepository } from '../menu-channels.repository';
 import { MenuChannelsService } from '../menu-channels.service';
+
+describe('MenuChannelsService module wiring', () => {
+  it('resolves the service through the application module', async () => {
+    const module = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(PrismaService)
+      .useValue({})
+      .overrideProvider(StorageService)
+      .useValue({})
+      .compile();
+
+    expect(module.get(MenuChannelsService)).toBeInstanceOf(MenuChannelsService);
+    await module.close();
+  });
+});
 
 describe('MenuChannelsService listing and mutations', () => {
   const channelId = 'channel-id';

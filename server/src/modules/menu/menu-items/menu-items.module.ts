@@ -11,5 +11,6 @@ import { AssetsModule } from '../../assets/assets.module';
   imports: [BrandsModule, UsersModule, PrismaModule, AssetsModule], // pati recipes soon
   controllers: [MenuItemsController],
   providers: [MenuItemsService, MenuItemsRepository],
+  exports: [MenuItemsRepository],
 })
 export class MenuItemsModule {}

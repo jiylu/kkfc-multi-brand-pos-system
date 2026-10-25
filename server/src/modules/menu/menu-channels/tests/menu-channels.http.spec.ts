@@ -1,5 +1,9 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Authenticated } from '../../../auth/auth.guard';
+import { BrandsGuard } from '../../../../shared/guards/brands.guard';
+import { RolesGuard } from '../../../../shared/guards/roles.guard';
 import { MenuChannelsController } from '../menu-channels.controller';
 import { MenuChannelsService } from '../menu-channels.service';
 
@@ -27,7 +31,14 @@ describe('Menu channels HTTP endpoints', () => {
     const module = await Test.createTestingModule({
       controllers: [MenuChannelsController],
       providers: [{ provide: MenuChannelsService, useValue: service }],
-    }).compile();
+    })
+      .overrideGuard(Authenticated)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(BrandsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     app = module.createNestApplication();
     app.useLogger(false);
     app.setGlobalPrefix('api');
@@ -49,6 +60,78 @@ describe('Menu channels HTTP endpoints', () => {
   });
 
   afterAll(async () => app?.close());
+
+  it('documents every channel route, query filters, and payload contract', () => {
+    const document = SwaggerModule.createDocument(
+      app,
+      new DocumentBuilder().addBearerAuth().build(),
+    );
+    const operations = [
+      document.paths['/api/menu-channels'].post,
+      document.paths['/api/menu-channels'].get,
+      document.paths['/api/menu-channels/menu-item/{menuItemId}'].get,
+      document.paths['/api/menu-channels/{id}'].get,
+      document.paths['/api/menu-channels/{id}'].patch,
+      document.paths['/api/menu-channels/{id}'].delete,
+      document.paths['/api/menu-channels/reactivate/{id}'].patch,
+    ];
+    for (const operation of operations) {
+      expect(typeof operation?.summary).toBe('string');
+      expect(typeof operation?.description).toBe('string');
+      expect(operation).toMatchObject({
+        tags: ['Menu channels'],
+        security: [{ bearer: [] }],
+      });
+      expect(operation?.responses).toHaveProperty('400.description');
+      expect(operation?.responses).toHaveProperty('401.description');
+      expect(operation?.responses).toHaveProperty('403.description');
+    }
+    expect(document.components?.schemas?.CreateMenuChannelDTO).toMatchObject({
+      required: ['menu_item_id', 'order_channel', 'price'],
+      properties: {
+        price: { minimum: 0, maximum: 9999999999.99, multipleOf: 0.01 },
+        is_available: { default: true },
+      },
+    });
+    const update = document.components?.schemas?.UpdateMenuItemChannelDTO;
+    expect(update).toHaveProperty('properties.price');
+    expect(update).not.toHaveProperty('required');
+    expect(update).not.toHaveProperty('properties.menu_item_id');
+    expect(update).not.toHaveProperty('properties.order_channel');
+    expect(update).not.toHaveProperty('properties.is_available');
+    const listParameters = document.paths['/api/menu-channels'].get?.parameters;
+    for (const [name, defaultValue] of [
+      ['page', 1],
+      ['limit', 10],
+      ['activeOnly', true],
+    ] as const) {
+      expect(
+        listParameters?.find(
+          (parameter) => 'name' in parameter && parameter.name === name,
+        ),
+      ).toMatchObject({
+        in: 'query',
+        required: false,
+        schema: { default: defaultValue },
+      });
+    }
+    expect(
+      listParameters?.find(
+        (parameter) => 'name' in parameter && parameter.name === 'orderChannel',
+      ),
+    ).toMatchObject({ in: 'query', required: false });
+    expect(
+      document.paths['/api/menu-channels/{id}'].get?.parameters?.find(
+        (parameter) => 'name' in parameter && parameter.name === 'id',
+      ),
+    ).toMatchObject({ in: 'path', schema: { format: 'uuid' } });
+    expect(document.paths['/api/menu-channels'].post?.responses).toHaveProperty(
+      '409.description',
+    );
+    expect(
+      document.paths['/api/menu-channels/reactivate/{id}'].patch?.responses,
+    ).toHaveProperty('409.description');
+  });
 
   it.each([
     {
@@ -126,7 +209,7 @@ describe('Menu channels HTTP endpoints', () => {
       args: [channelId],
     },
   ] as const)(
-    '$method $path forwards validated arguments without authentication',
+    '$method $path forwards validated arguments with guards bypassed',
     async (route) => {
       const response = await fetch(`${url}${route.path}`, {
         method: route.method,

@@ -25,26 +25,41 @@ import {
   BrandResource,
   BrandResourceType,
 } from '../../../shared/decorators/brand-resource.decorator';
+import {
+  MenuChannelsDocs,
+  CreateMenuChannelDocs,
+  FindAllMenuChannelsDocs,
+  FindMenuChannelsByMenuItemDocs,
+  FindOneMenuChannelDocs,
+  UpdateMenuChannelDocs,
+  ReactivateMenuChannelDocs,
+  DeleteMenuChannelDocs,
+} from './docs/menu-channels.docs';
 
 @Controller('menu-channels')
+@MenuChannelsDocs()
 @UseGuards(Authenticated, RolesGuard)
 export class MenuChannelsController {
   constructor(private readonly menuChannelsService: MenuChannelsService) {}
 
   @Post()
+  @CreateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseGuards(BrandsGuard)
+  @BrandResource(BrandResourceType.MENU_ITEM, 'menu_item_id', 'body')
   async create(@Body() dto: CreateMenuChannelDTO) {
     return this.menuChannelsService.create(dto);
   }
 
   @Get()
+  @FindAllMenuChannelsDocs()
   @Roles(UserRole.SUPERADMIN)
   async findAll(@Query() query: FindAllMenuChannelsDTO) {
     return this.menuChannelsService.findAll(query);
   }
 
   @Get('menu-item/:menuItemId')
+  @FindMenuChannelsByMenuItemDocs()
   @UseGuards(BrandsGuard)
   @BrandResource(BrandResourceType.MENU_ITEM, 'menuItemId')
   async findManyByMenuItem(
@@ -55,6 +70,7 @@ export class MenuChannelsController {
   }
 
   @Get(':id')
+  @FindOneMenuChannelDocs()
   @UseGuards(BrandsGuard)
   @BrandResource(BrandResourceType.MENU_ITEM_CHANNEL, 'id')
   async findOne(
@@ -68,6 +84,7 @@ export class MenuChannelsController {
   }
 
   @Patch(':id')
+  @UpdateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseGuards(BrandsGuard)
   @BrandResource(BrandResourceType.MENU_ITEM_CHANNEL, 'id')
@@ -79,6 +96,7 @@ export class MenuChannelsController {
   }
 
   @Patch('reactivate/:id')
+  @ReactivateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseGuards(BrandsGuard)
   @BrandResource(BrandResourceType.MENU_ITEM_CHANNEL, 'id')
@@ -87,6 +105,7 @@ export class MenuChannelsController {
   }
 
   @Delete(':id')
+  @DeleteMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseGuards(BrandsGuard)
   @BrandResource(BrandResourceType.MENU_ITEM_CHANNEL, 'id')

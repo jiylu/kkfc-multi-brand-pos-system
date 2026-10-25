@@ -14,7 +14,11 @@ export enum BrandResourceType {
 export interface BrandResourceMetadata {
   resource: BrandResourceType;
   param: string;
+  source?: 'params' | 'body';
 }
 
-export const BrandResource = (resource: BrandResourceType, param: string) =>
-  SetMetadata(BRAND_RESOURCE_KEY, { resource, param });
+export const BrandResource = (
+  resource: BrandResourceType,
+  param: string,
+  source: 'params' | 'body' = 'params',
+) => SetMetadata(BRAND_RESOURCE_KEY, { resource, param, source });

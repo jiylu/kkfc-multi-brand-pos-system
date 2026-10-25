@@ -4,7 +4,7 @@
 
 3 brands · 25 menu items · 14 modifiers · 22 recipes (6 production) · 51 inventory items
 
-The main seed inserts menu items and resolves their brand and recipe codes. Channel overrides and modifier assignments remain fixture-only.
+The main seed inserts menu items, resolves their brand and recipe codes, and upserts their GrabFood and Foodpanda channel overrides. Delivery channel prices must exceed the menu item's base price. Dine-in and takeaway entries and modifier assignments remain fixture-only.
 
 Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-in.
 
@@ -75,7 +75,7 @@ Price rule: Takeaway = Dine-in; GrabFood = foodpanda, a little higher than dine-
 
 Apply the pending migrations to the intended database, then run `npm run prisma:generate`. The role migration preserves users by mapping OWNER to SUPERADMIN, KITCHEN_PREPARER to KITCHEN_STAFF and ORDER_STAFF to CASHIER_STAFF. The recipe migration backfills brands from menu items only when ownership is unambiguous; existing recipes without an unambiguous menu brand need explicit backfill mappings in that migration before it can succeed.
 
-- `npm run db:seed` upserts 3 brands, 11 users covering all 8 roles, 51 inventory items, 22 recipes and their recipe components, and 25 menu items in one transaction. Codes (and recipe versions) keep IDs stable on reruns. Existing stock balances and inactive catalog records stay unchanged. Seed users use `Password123!`; reruns reset their passwords and activate their accounts. Use this seed only in development or test databases.
+- `npm run db:seed` upserts 3 brands, 11 users covering all 8 roles, 51 inventory items, 22 recipes and their recipe components, 25 menu items, and 50 delivery channel overrides in one transaction. Codes (and recipe versions) keep IDs stable on reruns; channels are keyed by menu item and order channel. Reruns refresh fixture prices while preserving existing channel availability, stock balances, and inactive catalog records. Seed users use `Password123!`; reruns reset their passwords and activate their accounts. Use this seed only in development or test databases.
 - `npm run db:seed:test` creates or updates users for all 8 roles, with one assigned manager per brand and an additional unassigned manager. Test users use `Password123!`; this script resets their passwords and activates their accounts on reruns. Use it only in a development or test database.
 
 | Role | Username |

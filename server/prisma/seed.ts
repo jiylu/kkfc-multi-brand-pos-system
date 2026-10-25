@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { config } from 'dotenv';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Prisma, PrismaClient, RecipeType } from '@prisma/client';
+import { OrderChannel, Prisma, PrismaClient, RecipeType } from '@prisma/client';
 import { getDatabaseUrl } from '../src/database/database.config';
 import { seedUsers } from './seed-test';
 
@@ -39,6 +39,11 @@ interface SeedMenuItem {
   base_price: number;
   img_url: string;
   is_active: boolean;
+  channels: {
+    order_channel: OrderChannel;
+    price: number;
+    is_available: boolean;
+  }[];
 }
 
 function loadSeedData() {
@@ -201,13 +206,39 @@ export async function seedDatabase(prisma: Prisma.TransactionClient) {
       base_price: item.base_price,
       img_url: item.img_url,
     };
-    await prisma.menuItem.upsert({
+    const saved = await prisma.menuItem.upsert({
       where: { code: item.code },
       update: { ...data, modified_at: new Date() },
       create: { ...data, is_active: item.is_active },
     });
+
+    for (const channel of item.channels) {
+      if (
+        channel.order_channel !== OrderChannel.GRABFOOD &&
+        channel.order_channel !== OrderChannel.FOODPANDA
+      ) {
+        continue;
+      }
+      if (!(channel.price > item.base_price)) {
+        throw new Error(
+          `Channel price must exceed base price for ${item.code}: ${channel.order_channel}`,
+        );
+      }
+      await prisma.menuItemChannel.upsert({
+        where: {
+          menu_item_id_order_channel: {
+            menu_item_id: saved.menu_item_id,
+            order_channel: channel.order_channel,
+          },
+        },
+        update: { price: channel.price, modified_at: new Date() },
+        create: { ...channel, menu_item_id: saved.menu_item_id },
+      });
+    }
   }
-  console.log(`Seeded ${menu_items.length} menu items.`);
+  console.log(
+    `Seeded ${menu_items.length} menu items with GrabFood and Foodpanda channel overrides.`,
+  );
 }
 
 async function main() {
