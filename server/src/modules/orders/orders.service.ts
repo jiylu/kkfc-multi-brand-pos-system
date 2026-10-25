@@ -137,6 +137,7 @@ export class OrdersService {
         });
         if (
           !menu ||
+          !menu.is_available ||
           !menu.recipe ||
           !menu.recipe.is_active ||
           menu.recipe.type !== 'MENU_ASSEMBLY'
@@ -160,7 +161,8 @@ export class OrdersService {
           );
         const modifiers = (line.modifier_ids ?? []).map((id) => {
           const link = menu.menu_item_modifiers_menu_item.find(
-            (m) => m.modifier_id === id && m.modifier.is_active,
+            (m) =>
+              m.modifier_id === id && m.is_available && m.modifier.is_active,
           );
           if (!link)
             throw new BadRequestException(

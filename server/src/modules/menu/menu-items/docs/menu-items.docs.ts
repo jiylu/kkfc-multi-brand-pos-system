@@ -39,7 +39,7 @@ export function CreateMenuItemDocs() {
     ApiOperation({
       summary: 'Create a menu item (manager or superadmin).',
       description:
-        'Managers can create menu items in their assigned brand; superadmins can create them in any active brand. Supply brand_id, recipe_id, img_url, a unique code, name, and base_price. Description and serving_description are optional and nullable. The item starts active.',
+        'Managers can create menu items in their assigned brand; superadmins can create them in any active brand. Supply brand_id, recipe_id, img_url, a unique code, name, and base_price. Description and serving_description are optional and nullable. The item starts active and available.',
     }),
     ApiResponse({ status: 201, description: 'Created menu item.' }),
     ApiResponse({ status: 404, description: 'Brand not found or inactive.' }),

@@ -12,7 +12,11 @@ import { AuditModule } from './modules/audit/audit.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { MenuItemsModule } from './modules/menu/menu-items/menu-items.module';
 import { MenuChannelsModule } from './modules/menu/menu-channels/menu-channels.module';
+import { ModifiersModule } from './modules/menu/modifiers/modifiers.module';
 import { AssetsModule } from './modules/assets/assets.module';
+import { InventoryItemsModule } from './modules/inventory/inventory-items/inventory-items.module';
+import { RecipesModule } from './modules/recipe/recipes/recipes.module';
+import { MenuItemModifiersModule } from './modules/menu/menu-item-modifiers/menu-item-modifiers.module';
 
 @Module({
   imports: [
@@ -33,7 +37,11 @@ import { AssetsModule } from './modules/assets/assets.module';
     OrdersModule,
     MenuItemsModule,
     MenuChannelsModule,
+    ModifiersModule,
     AssetsModule,
+    InventoryItemsModule,
+    RecipesModule,
+    MenuItemModifiersModule,
   ],
   controllers: [],
   providers: [

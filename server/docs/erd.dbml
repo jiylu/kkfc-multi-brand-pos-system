@@ -220,6 +220,7 @@ Table menu_items {
   description varchar(2000)
   serving_description varchar(255)
   base_price decimal(12,2) [not null]
+  is_available boolean [not null, default: true]
   is_active boolean [not null, default: true]
   created_at timestamp [not null, default: `now()`]
   modified_at timestamp [not null, default: `now()`]
@@ -264,11 +265,15 @@ Table modifiers {
 // Maps which modifiers are allowed for a specific menu item and defines any item-specific add-on price.
 // Restricts staff order entry to valid item-modifier combinations configured for that brand (FR-002, FR-005).
 Table menu_item_modifiers {
+  menu_item_modifier_id uuid [pk]
   menu_item_id uuid [not null, ref: > menu_items.menu_item_id]
   modifier_id uuid [not null, ref: > modifiers.modifier_id]
   additional_price decimal(12,2) [not null, default: 0]
+  is_available boolean [not null, default: true]
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
   indexes {
-    (menu_item_id, modifier_id) [pk]
+    (menu_item_id, modifier_id) [unique]
   }
 }
 

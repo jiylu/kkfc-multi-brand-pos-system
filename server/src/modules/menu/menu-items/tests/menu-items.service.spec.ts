@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { BrandsRepository } from '../../../brands/brands.repository';
 import { MenuItemsRepository } from '../menu-items.repository';
 import { MenuItemsService } from '../menu-items.service';
+import { RecipesRepository } from '../../../recipe/recipes/recipes.repository';
 
 describe('MenuItemsService mutations', () => {
   const now = new Date('2030-01-01T00:00:00Z');
@@ -25,6 +26,7 @@ describe('MenuItemsService mutations', () => {
     description: null,
     serving_description: null,
     base_price: new Prisma.Decimal(100),
+    is_available: true,
     is_active: true,
     created_at: now,
     modified_at: now,
@@ -67,6 +69,7 @@ describe('MenuItemsService mutations', () => {
     service = new MenuItemsService(
       menu as unknown as MenuItemsRepository,
       brands as unknown as BrandsRepository,
+      { findOne: jest.fn() } as unknown as RecipesRepository,
     );
   });
 

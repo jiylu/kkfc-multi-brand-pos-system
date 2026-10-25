@@ -6,6 +6,7 @@ export enum BrandResourceType {
   BRAND = 'brand',
   MENU_ITEM = 'menuItem',
   MENU_ITEM_CHANNEL = 'menuItemChannel',
+  MENU_ITEM_MODIFIER = 'menuItemModifier',
   ORDER = 'order',
   RECIPE = 'recipe',
   USER = 'user',
