@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { CreateModifierDTO } from './dto/create-modifier.dto';
+import { Prisma } from '@prisma/client';
 import { UpdateModifierDTO } from './dto/update-modifier.dto';
 
 @Injectable()
@@ -12,7 +12,9 @@ export class ModifiersRepository {
     dto: CreateModifierDTO,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
-    return tx.modifier.create({ data: dto });
+    return tx.modifier.create({
+      data: dto,
+    });
   }
 
   async findOneModifierByUID(
@@ -34,7 +36,10 @@ export class ModifiersRepository {
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.modifier.findUnique({
-      where: { code, is_active: activeOnly ? true : undefined },
+      where: {
+        code,
+        is_active: activeOnly ? true : undefined,
+      },
     });
   }
 
@@ -60,12 +65,14 @@ export class ModifiersRepository {
     const where: Prisma.ModifierWhereInput = {
       is_active: activeOnly ? true : undefined,
     };
+
     const itemsQuery = tx.modifier.findMany({
       where,
       skip,
       take,
       orderBy: [{ created_at: 'desc' }, { modifier_id: 'asc' }],
     });
+
     const totalQuery = tx.modifier.count({ where });
 
     const [modifiers, total] =
@@ -84,8 +91,30 @@ export class ModifiersRepository {
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.modifier.update({
-      where: { modifier_id: modifierId, is_active: true },
-      data: { ...dto, modified_at: new Date() },
+      where: {
+        modifier_id: modifierId,
+        is_active: true,
+      },
+      data: {
+        ...dto,
+        modified_at: new Date(),
+      },
+    });
+  }
+
+  async reactivateModifier(
+    modifierId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.modifier.update({
+      where: {
+        modifier_id: modifierId,
+        is_active: false,
+      },
+      data: {
+        is_active: true,
+        modified_at: new Date(),
+      },
     });
   }
 
@@ -94,8 +123,14 @@ export class ModifiersRepository {
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.modifier.update({
-      where: { modifier_id: modifierId, is_active: true },
-      data: { is_active: false, modified_at: new Date() },
+      where: {
+        modifier_id: modifierId,
+        is_active: true,
+      },
+      data: {
+        is_active: false,
+        modified_at: new Date(),
+      },
     });
   }
 }

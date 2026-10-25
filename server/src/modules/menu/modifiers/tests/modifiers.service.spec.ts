@@ -129,6 +129,17 @@ describe('Modifiers persistence', () => {
     },
   );
 
+  it('reactivates an inactive modifier and updates its modification timestamp', async () => {
+    await expect(repository.reactivateModifier('modifier-id')).resolves.toEqual(
+      modifier,
+    );
+
+    expect(prisma.modifier.update).toHaveBeenCalledWith({
+      where: { modifier_id: 'modifier-id', is_active: false },
+      data: { is_active: true, modified_at: expect.any(Date) as Date },
+    });
+  });
+
   it('soft deletes an active modifier without removing its references', async () => {
     await repository.deleteModifier('modifier-id');
 
