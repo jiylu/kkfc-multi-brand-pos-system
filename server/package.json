@@ -32,11 +32,14 @@
     "test": "jest",
     "test:unit": "jest --config jest-unit.json",
     "test:integration": "jest --config jest-integration.json --runInBand",
-    "test:e2e:robot": "robot --outputdir ../robot/results --xunit xunit.xml ../robot/tests/",
+    "test:e2e:robot": "robot --exclude storage --outputdir ../robot/results --xunit xunit.xml ../robot/tests/",
+    "test:e2e:prepare": "ts-node -P prisma/tsconfig.seed.json prisma/e2e-fixtures.ts prepare",
+    "test:e2e:cleanup": "ts-node -P prisma/tsconfig.seed.json prisma/e2e-fixtures.ts cleanup",
+    "test:e2e:storage": "robot --include storage --outputdir ../robot/results/storage ../robot/tests/",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "npm run test:e2e:robot"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.943.0",
