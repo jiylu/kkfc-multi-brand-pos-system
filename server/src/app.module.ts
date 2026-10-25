@@ -15,6 +15,7 @@ import { MenuChannelsModule } from './modules/menu/menu-channels/menu-channels.m
 import { ModifiersModule } from './modules/menu/modifiers/modifiers.module';
 import { AssetsModule } from './modules/assets/assets.module';
 import { InventoryItemsModule } from './modules/inventory/inventory-items/inventory-items.module';
+import { RecipesModule } from './modules/recipe/recipes/recipes.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { InventoryItemsModule } from './modules/inventory/inventory-items/invent
     ModifiersModule,
     AssetsModule,
     InventoryItemsModule,
+    RecipesModule,
   ],
   controllers: [],
   providers: [
