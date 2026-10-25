@@ -1,17 +1,8 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsBoolean } from 'class-validator';
+import { IntersectionType } from '@nestjs/swagger';
 import { PaginationDTO } from '../../../../shared/dto/pagination.dto';
+import { FindMenuItemModifierDTO } from './find-menu-item-modifier.dto';
 
-export class FindAllMenuItemModifiersDTO extends PaginationDTO {
-  @Transform(({ value }: { value: unknown }) =>
-    value === 'true' ? true : value === 'false' ? false : value,
-  )
-  @IsBoolean({ message: 'activeOnly must be true or false.' })
-  @ApiPropertyOptional({
-    default: true,
-    description:
-      'True returns only available menu item modifiers; false includes unavailable assignments.',
-  })
-  activeOnly: boolean = true;
-}
+export class FindAllMenuItemModifiersDTO extends IntersectionType(
+  PaginationDTO,
+  FindMenuItemModifierDTO,
+) {}

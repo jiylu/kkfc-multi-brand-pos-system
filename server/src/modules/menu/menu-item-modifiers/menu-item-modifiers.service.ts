@@ -40,6 +40,7 @@ export class MenuItemModifiersService {
       menuItemModifierId,
       activeOnly,
     );
+
     assertExists(
       menuItemModifier,
       'MenuItemModifier',
@@ -47,8 +48,20 @@ export class MenuItemModifiersService {
       this.logger,
     );
 
+    const modifierDetails = await this.modifiersRepository.findOneModifierByUID(
+      menuItemModifier.modifier_id,
+      activeOnly,
+    );
+
+    assertExists(
+      modifierDetails,
+      'Modifier',
+      menuItemModifier.modifier_id,
+      this.logger,
+    );
+
     this.logger.log(`Found menu item modifier ${menuItemModifierId}`);
-    return menuItemModifier;
+    return { menuItemModifier, modifierDetails };
   }
 
   async findAll({ page, limit, activeOnly }: FindAllMenuItemModifiersDTO) {

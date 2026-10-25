@@ -140,9 +140,16 @@ describe('MenuItemModifiersService operations', () => {
     async (activeOnly) => {
       await expect(
         service.findOne('assignment-id', activeOnly),
-      ).resolves.toEqual(assignment);
+      ).resolves.toEqual({
+        menuItemModifier: assignment,
+        modifierDetails: { modifier_id: 'modifier-id', is_active: true },
+      });
       expect(repository.findOne).toHaveBeenCalledWith(
         'assignment-id',
+        activeOnly ?? true,
+      );
+      expect(modifiers.findOneModifierByUID).toHaveBeenCalledWith(
+        'modifier-id',
         activeOnly ?? true,
       );
     },
