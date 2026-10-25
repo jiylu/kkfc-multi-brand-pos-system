@@ -73,7 +73,7 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
 
     // The thumb stretches a little while pressed
     final thumbWidth =
-        KkfcSizing.switchThumb * (_pressed && _enabled ? 1.2 : 1.0);
+        KkfcSizing.thumb * (_pressed && _enabled ? 1.2 : 1.0);
 
     return Semantics(
       container: true,

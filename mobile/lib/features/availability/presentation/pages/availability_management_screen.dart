@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:mobile/features/availability/data/models/availability_model.dart';
 import 'package:mobile/features/availability/data/seed/sample_availability_item.dart';
 import 'package:mobile/features/availability/presentation/widgets/availability_row.dart';
-import 'package:mobile/features/availability/presentation/widgets/availability_toggle.dart';
 import 'package:mobile/features/availability/presentation/widgets/note_banner.dart';
 import 'package:mobile/features/availability/presentation/widgets/operational_context_card.dart';
 import 'package:mobile/features/availability/presentation/widgets/pos_shell.dart';
+import 'package:mobile/shared/widgets/kkfc_switch.dart';
 
 class AvailabilityManagementScreen extends StatefulWidget {
   const AvailabilityManagementScreen({super.key});
@@ -40,16 +40,13 @@ class _AvailabilityManagementScreenState
               'and channel immediately; record the actor and time.',
         ),
         for (var i = 0; i < _items.length; i++)
-          InfoRow(
+          KkfcSwitch(
+            value: _items[i].available,
             title: '${_items[i].name} · ${_items[i].channel.label}',
             subtitle: _items[i].available
                 ? 'Available · switch ON'
                 : 'Manual: unavailable · OFF',
-            trailing: AvailabilityToggle(
-              value: _items[i].available,
-              semanticLabel: '${_items[i].name} on ${_items[i].channel.label}',
-              onChanged: (v) => _setAvailable(i, v),
-            ),
+            onChanged: (v) => _setAvailable(i, v),
           ),
         const InfoRow(
           title: 'Audit record',
