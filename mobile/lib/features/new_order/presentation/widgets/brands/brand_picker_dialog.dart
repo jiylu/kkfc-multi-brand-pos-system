@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/theme_context.dart';
-import 'package:mobile/features/new_order/data/models/brand_models.dart';
+import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_dialog.dart';
 import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
