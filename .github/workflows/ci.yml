@@ -126,6 +126,7 @@ jobs:
       - name: Run Jest Integration Tests
         env:
           DATABASE_URL: postgresql://pos_test_user:pos_test_password@localhost:5432/pos_test
+          RUN_DATABASE_TESTS: 'true'
         run: npm run test:integration
 
       - name: Upload Integration Test HTML report artifact

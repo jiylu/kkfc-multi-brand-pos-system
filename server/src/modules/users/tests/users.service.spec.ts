@@ -1,3 +1,5 @@
+import { UsersController } from '../users.controller';
+import type { AuthenticatedRequest } from '../../auth/auth.guard';
 import { Logger } from '@nestjs/common';
 import { Prisma, UserRole } from '@prisma/client';
 import { CreateUserDTO } from '../dto/create-user.dto';
@@ -486,5 +488,131 @@ describe('UsersService', () => {
 
       await expect(run()).rejects.toBe(error);
     },
+  );
+});
+
+// Real controller/service with mocked repositories and supplied caller context.
+// These assertions do not exercise HTTP authentication or database persistence.
+describe('Staff account creation permissions', () => {
+  const brandId = '00000000-0000-4000-8000-000000000020';
+  const repository = {
+    safeFindByUsername: jest.fn(),
+    create: jest.fn(),
+  };
+  let controller: UsersController;
+
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    repository.safeFindByUsername.mockReset().mockResolvedValue(null);
+    repository.create.mockReset().mockResolvedValue({ user_id: 'created' });
+    controller = new UsersController(
+      new UsersService(
+        repository as unknown as UsersRepository,
+        { findOneBrand: jest.fn() } as unknown as BrandsRepository,
+      ),
+    );
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  function create(caller: UserRole, target: UserRole, targetBrand = brandId) {
+    return controller.create(
+      {
+        username: 'staff_candidate',
+        first_name: 'QA',
+        last_name: 'Candidate',
+        password: 'Test-only-password!',
+        role: target,
+        brand_id: targetBrand,
+      },
+      {
+        session: {
+          user: {
+            user_id: '00000000-0000-4000-8000-000000000001',
+            role: caller,
+            brand_id: caller === UserRole.SUPERADMIN ? null : brandId,
+          },
+        },
+      } as AuthenticatedRequest,
+    );
+  }
+
+  const staffRoles = [
+    UserRole.CASHIER_STAFF,
+    UserRole.KITCHEN_STAFF,
+    UserRole.INVENTORY_STAFF,
+  ];
+  it.each(
+    staffRoles.flatMap((caller) =>
+      Object.values(UserRole).map((target) => ({ caller, target })),
+    ),
+  )(
+    'UT-USER-017: $caller cannot create $target',
+    async ({ caller, target }) => {
+      await expect(create(caller, target)).rejects.toMatchObject({
+        status: 403,
+      });
+      expect(repository.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([UserRole.MANAGER, UserRole.RECIPE_MANAGER, UserRole.SUPERADMIN])(
+    'UT-USER-018: Manager cannot create senior account %s',
+    async (target) => {
+      await expect(create(UserRole.MANAGER, target)).rejects.toMatchObject({
+        status: 403,
+      });
+      expect(repository.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([UserRole.MANAGER, UserRole.RECIPE_MANAGER, UserRole.SUPERVISOR])(
+    'UT-USER-019: Supervisor cannot create peer/senior account %s',
+    async (target) => {
+      await expect(create(UserRole.SUPERVISOR, target)).rejects.toMatchObject({
+        status: 403,
+      });
+      expect(repository.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([UserRole.MANAGER, UserRole.RECIPE_MANAGER, UserRole.SUPERVISOR])(
+    'UT-USER-020: %s cannot create across brands',
+    async (caller) => {
+      await expect(
+        create(
+          caller,
+          UserRole.CASHIER_STAFF,
+          '00000000-0000-4000-8000-000000000030',
+        ),
+      ).rejects.toMatchObject({ status: 403 });
+      expect(repository.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([UserRole.MANAGER, UserRole.RECIPE_MANAGER])(
+    'UT-USER-021: Superadmin can submit creation of %s',
+    async (target) => {
+      await expect(create(UserRole.SUPERADMIN, target)).resolves.toEqual({
+        user_id: 'created',
+      });
+      expect(repository.create).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  // Blocked until the corresponding policy and production workflow exist.
+  it.todo('UT-USER-022: Recipe Manager creation is limited to own department');
+  it.todo(
+    'UT-USER-023: higher-role approval denies self, same-rank and cross-scope approval, with approved owner exception',
+  );
+  it.todo(
+    'UT-USER-024: duplicate, concurrent and expired approvals preserve one transition and rejection reason',
+  );
+  it.todo(
+    'UT-USER-025: concurrent deactivation cannot remove the last active owner',
+  );
+  it.todo(
+    'UT-USER-026: successful and denied account changes write redacted audit events',
   );
 });

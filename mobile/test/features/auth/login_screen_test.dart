@@ -108,6 +108,18 @@ Finder get _dialogSignIn => find.descendant(
 
 void main() {
   group('LoginScreen layout', () {
+    for (final size in [const Size(412, 915), const Size(1024, 768)]) {
+      testWidgets('UI-AUTH-003: login remains usable at 2x text on $size', (
+        tester,
+      ) async {
+        await _pumpLogin(tester, size: size, textScale: 2);
+        await tester.ensureVisible(find.byType(LoginSubmitButton));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.byType(LoginSubmitButton).hitTestable(), findsOneWidget);
+      });
+    }
+
     testWidgets('shows both fields, the form card and the submit button', (
       tester,
     ) async {
@@ -148,6 +160,20 @@ void main() {
   });
 
   group('LoginScreen validation', () {
+    testWidgets(
+      'UI-AUTH-001: whitespace username never reaches authentication',
+      (tester) async {
+        final repo = _FakeAuthRepository((_, _) async => 'unexpected-token');
+        final container = await _pumpLogin(tester, authRepository: repo);
+        await tester.enterText(_username, '   ');
+        await tester.enterText(_password, 'Password123!');
+        await _tapSignIn(tester);
+        expect(_status(tester), LoginStatus.missingFields);
+        expect(repo.callCount, 0);
+        expect(container.read(sessionTokenProvider), isNull);
+      },
+    );
+
     testWidgets('empty submit shows the required-fields notice', (
       tester,
     ) async {
@@ -190,6 +216,39 @@ void main() {
   });
 
   group('LoginScreen submit', () {
+    testWidgets('UI-AUTH-004: keyboard Done submits login once', (
+      tester,
+    ) async {
+      final repo = _FakeAuthRepository((_, _) async => 'keyboard-token');
+      final container = await _pumpLogin(tester, authRepository: repo);
+      await tester.enterText(_username, 'qa_staff');
+      await tester.enterText(_password, 'Password123!');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await _finishSignIn(tester);
+      expect(repo.callCount, 1);
+      expect(container.read(sessionTokenProvider), 'keyboard-token');
+    });
+
+    testWidgets('UI-AUTH-002: denied login never grants a local session', (
+      tester,
+    ) async {
+      final repo = _FakeAuthRepository(
+        (_, _) async => throw const AuthException(
+          'Invalid username or password.',
+          kind: AuthFailure.invalidCredentials,
+        ),
+      );
+      final container = await _pumpLogin(tester, authRepository: repo);
+      await tester.enterText(_username, 'inactive_staff');
+      await tester.enterText(_password, 'Password123!');
+      await _tapSignIn(tester);
+      await _finishSignIn(tester);
+      expect(container.read(sessionTokenProvider), isNull);
+      expect(container.read(sessionProvider), isFalse);
+      expect(repo.callCount, 1);
+      expect(_status(tester), LoginStatus.invalidCredentials);
+    });
+
     testWidgets('a successful sign-in stores the session token', (
       tester,
     ) async {

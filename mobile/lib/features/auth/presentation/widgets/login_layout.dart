@@ -41,8 +41,13 @@ abstract final class LoginLayout {
   static const Duration stagger = KkfcMotion.stagger;
   static const Curve curve = Curves.easeOutCubic;
 
-  static bool isCompact(BuildContext context) =>
-      MediaQuery.sizeOf(context).width < wideBreakpoint;
+  static bool isCompact(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    // Enlarged text needs the same horizontal space as a narrower viewport.
+    // Keep the normal breakpoint when users choose smaller text.
+    final textScale = MediaQuery.textScalerOf(context).scale(16) / 16;
+    return width < wideBreakpoint || width < wideBreakpoint * textScale;
+  }
 
   /// Returns zero when the OS asks for reduced motion.
   static Duration motion(BuildContext context, Duration duration) =>

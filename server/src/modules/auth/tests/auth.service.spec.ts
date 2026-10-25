@@ -186,4 +186,10 @@ describe('AuthService', () => {
     });
     expect(authRepository.deleteMany).toHaveBeenCalledWith(user.user_id);
   });
+  it.todo(
+    'UT-AUTH-017: pending, rejected and unenrolled accounts cannot obtain or retain sessions',
+  );
+  it.todo(
+    'UT-AUTH-018: enrollment and reset invitations expire, allow one use and reject replay',
+  );
 });
