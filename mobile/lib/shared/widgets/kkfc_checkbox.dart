@@ -39,7 +39,8 @@ class _KkfcCheckboxState extends State<KkfcCheckbox> {
     final semantic = context.semanticColors;
     final focusColor = semantic.borderFocus;
 
-    final disabledInk = scheme.onSurface.withValues(alpha: 0.38);
+    final disabledInk =
+        scheme.onSurface.withValues(alpha: KkfcOpacity.disabled);
 
     // Box colors per state
     final Color fill;

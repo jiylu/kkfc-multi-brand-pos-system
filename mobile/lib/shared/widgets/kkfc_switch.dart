@@ -41,7 +41,8 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
     final textTheme = Theme.of(context).textTheme;
     final focusColor = context.semanticColors.borderFocus; // verify the real name
 
-    final disabledInk = scheme.onSurface.withValues(alpha: 0.38);
+    final disabledInk =
+        scheme.onSurface.withValues(alpha: KkfcOpacity.disabled);
 
     // Track and thumb colors per state
     final Color track;
@@ -50,9 +51,9 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
     if (!_enabled) {
       track = disabledInk;
       trackBorder = disabledInk;
-      thumb = widget.value ? scheme.surface : scheme.onSurface.withValues(
-            alpha: KkfcOpacity.disabled * 2,
-          );
+      thumb = widget.value
+          ? scheme.surface
+          : scheme.onSurface.withValues(alpha: KkfcOpacity.disabled * 2);
     } else if (widget.value) {
       track = scheme.primary;
       trackBorder = scheme.primary;

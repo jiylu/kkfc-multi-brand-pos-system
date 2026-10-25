@@ -62,6 +62,7 @@ abstract final class KkfcOpacity {
   static const scrim = 0.50;
   static const soft = 0.72;
   static const line = 0.20;
+  static const disabled = 0.38;
 }
 
 abstract final class KkfcKitchen {
