@@ -114,17 +114,19 @@ class _ChannelTab extends StatelessWidget {
                       )
                     : const SizedBox.shrink(),
               ),
-              AnimatedDefaultTextStyle(
-                duration: context.motion(MenuMotion.fast),
-                style: base.copyWith(
-                  color: selected
-                      ? (inverted ? scheme.inverseSurface : scheme.onSurface)
-                      : (inverted
-                            ? scheme.onInverseSurface.withValues(alpha: 0.7)
-                            : scheme.onSurfaceVariant),
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              Flexible(
+                child: AnimatedDefaultTextStyle(
+                  duration: context.motion(MenuMotion.fast),
+                  style: base.copyWith(
+                    color: selected
+                        ? (inverted ? scheme.inverseSurface : scheme.onSurface)
+                        : (inverted
+                              ? scheme.onInverseSurface.withValues(alpha: 0.7)
+                              : scheme.onSurfaceVariant),
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                  child: Text(channel.label),
                 ),
-                child: Text(channel.label),
               ),
             ],
           ),

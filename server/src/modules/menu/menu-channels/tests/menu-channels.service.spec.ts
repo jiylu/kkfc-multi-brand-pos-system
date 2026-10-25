@@ -178,3 +178,108 @@ describe('MenuChannelsService listing and mutations', () => {
     },
   );
 });
+
+describe('Menu channel creation and lookup (UT-MCH)', () => {
+  const itemId = 'menu-id';
+  const channelId = 'channel-id';
+  const channel = { menu_item_channel_id: channelId };
+  let repository: {
+    create: jest.Mock;
+    findOne: jest.Mock;
+    findManyByMenuItem: jest.Mock;
+  };
+  let menu: { findOneMenuItemByUID: jest.Mock };
+  let service: MenuChannelsService;
+
+  beforeEach(() => {
+    repository = {
+      create: jest.fn().mockResolvedValue(channel),
+      findOne: jest.fn().mockResolvedValue(channel),
+      findManyByMenuItem: jest.fn().mockResolvedValue([channel]),
+    };
+    menu = {
+      findOneMenuItemByUID: jest
+        .fn()
+        .mockResolvedValue({ menu_item_id: itemId }),
+    };
+    service = new MenuChannelsService(
+      repository as unknown as MenuChannelsRepository,
+      menu as unknown as MenuItemsRepository,
+    );
+  });
+
+  it.each([OrderChannel.GRABFOOD, OrderChannel.FOODPANDA])(
+    'UT-MCH-001 Given an active item When creating %s Then persist the override',
+    async (order_channel) => {
+      const dto = { menu_item_id: itemId, order_channel, price: 120 };
+      await expect(service.create(dto)).resolves.toEqual(channel);
+      expect(menu.findOneMenuItemByUID).toHaveBeenCalledWith(itemId);
+      expect(repository.create).toHaveBeenCalledWith(dto);
+    },
+  );
+
+  it.each([OrderChannel.DINE_IN, OrderChannel.TAKEAWAY])(
+    'UT-MCH-002 Given internal channel %s When creating an override Then reject without querying or writing',
+    async (order_channel) => {
+      await expect(
+        service.create({ menu_item_id: itemId, order_channel, price: 120 }),
+      ).rejects.toMatchObject({
+        status: 400,
+        response: { code: 'INVALID_ORDER_CHANNEL' },
+      });
+      expect(menu.findOneMenuItemByUID).not.toHaveBeenCalled();
+      expect(repository.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it('UT-MCH-003 Given no active parent item When creating a channel Then reject without inserting', async () => {
+    menu.findOneMenuItemByUID.mockResolvedValue(null);
+    await expect(
+      service.create({
+        menu_item_id: itemId,
+        order_channel: OrderChannel.GRABFOOD,
+        price: 120,
+      }),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(repository.create).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])(
+    'UT-MCH-004 Given activeOnly=%s When finding a channel Then preserve the filter and reject missing records',
+    async (activeOnly) => {
+      await expect(service.findOne(channelId, activeOnly)).resolves.toEqual(
+        channel,
+      );
+      expect(repository.findOne).toHaveBeenCalledWith(channelId, activeOnly);
+      repository.findOne.mockResolvedValue(null);
+      await expect(
+        service.findOne(channelId, activeOnly),
+      ).rejects.toMatchObject({ status: 404 });
+    },
+  );
+
+  it.each([true, false])(
+    'UT-MCH-005 Given an active parent and activeOnly=%s When listing its channels Then forward both filters',
+    async (activeOnly) => {
+      await expect(
+        service.findManyByMenuItem(itemId, {
+          activeOnly,
+          orderChannel: OrderChannel.FOODPANDA,
+        }),
+      ).resolves.toEqual([channel]);
+      expect(repository.findManyByMenuItem).toHaveBeenCalledWith(
+        itemId,
+        activeOnly,
+        OrderChannel.FOODPANDA,
+      );
+    },
+  );
+
+  it('UT-MCH-006 Given a missing parent When listing channels Then reject before querying channels', async () => {
+    menu.findOneMenuItemByUID.mockResolvedValue(null);
+    await expect(
+      service.findManyByMenuItem(itemId, { activeOnly: true }),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(repository.findManyByMenuItem).not.toHaveBeenCalled();
+  });
+});
