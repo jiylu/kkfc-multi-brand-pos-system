@@ -101,3 +101,17 @@ Feature: Authentication Service Unit Logic
     Given an incoming request where validateSession throws an unexpected error
     When Authenticated guard checks authorization
     Then it should rethrow the exception
+
+  @pending
+  Scenario: Pending, rejected and unenrolled accounts cannot authenticate
+    Test Case ID: UT-AUTH-017
+    Given an account that is pending approval, rejected or not securely enrolled
+    When login or session validation is attempted
+    Then the account cannot obtain or retain a session
+
+  @pending
+  Scenario: Enrollment and reset invitations cannot be replayed
+    Test Case ID: UT-AUTH-018
+    Given an expired, previously used or forged enrollment or reset invitation
+    When the invitation is submitted
+    Then it is rejected without exposing secrets

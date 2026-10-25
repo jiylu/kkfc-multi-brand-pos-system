@@ -1,3 +1,13 @@
+import { randomUUID } from 'node:crypto';
+import type { Server } from 'node:http';
+import * as argon2 from 'argon2';
+import request from 'supertest';
+import { UsersRepository } from '../users.repository';
+import { BrandsRepository } from '../../brands/brands.repository';
+import { AuthController } from '../../auth/auth.controller';
+import { AuthService } from '../../auth/auth.service';
+import { AuthRepository } from '../../auth/auth.repository';
+import { BrandsGuard } from '../../../shared/guards/brands.guard';
 import {
   ConflictException,
   ExecutionContext,
@@ -472,5 +482,189 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       200,
     );
     expect(service.deleteUser).toHaveBeenCalledWith(userId);
+  });
+});
+
+// Database cases require an explicitly opted-in disposable pos_test database.
+const describeDatabase =
+  process.env.RUN_DATABASE_TESTS === 'true' ? describe : describe.skip;
+describeDatabase('Users real PostgreSQL integration', () => {
+  let app: INestApplication | undefined;
+  let httpServer: Server;
+  let prisma: PrismaService;
+  let brandId: string;
+  let adminToken: string;
+  let callerToken: string;
+  const brandIds: string[] = [];
+  const fixtureIds: string[] = [];
+  const password = 'Staff-test-only!';
+
+  beforeAll(async () => {
+    if (
+      process.env.RUN_DATABASE_TESTS !== 'true' ||
+      !process.env.DATABASE_URL ||
+      !new URL(process.env.DATABASE_URL).pathname.endsWith('/pos_test')
+    ) {
+      throw new Error(
+        'Requires RUN_DATABASE_TESTS=true and explicit DATABASE_URL ending /pos_test. Migrate this disposable database first.',
+      );
+    }
+    const module = await Test.createTestingModule({
+      controllers: [UsersController, AuthController],
+      providers: [
+        PrismaService,
+        UsersService,
+        UsersRepository,
+        BrandsRepository,
+        AuthService,
+        AuthRepository,
+        Authenticated,
+        RolesGuard,
+        BrandsGuard,
+        { provide: APP_FILTER, useClass: AllExceptionsFilter },
+        { provide: APP_FILTER, useClass: PrismaExceptionFilter },
+      ],
+    }).compile();
+    app = module.createNestApplication();
+    app.useLogger(false);
+    app.setGlobalPrefix('api');
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+    await app.init();
+    httpServer = app.getHttpServer() as Server;
+    prisma = module.get(PrismaService);
+    await prisma.$connect();
+  });
+
+  beforeEach(async () => {
+    const brand = await prisma.brand.create({
+      data: {
+        code: randomUUID().slice(0, 4),
+        name: 'Staff disposable fixture',
+      },
+    });
+    brandId = brand.brand_id;
+    brandIds.push(brandId);
+    const passwordHash = await argon2.hash(password);
+    for (const role of [UserRole.SUPERADMIN, UserRole.CASHIER_STAFF]) {
+      const user = await prisma.user.create({
+        data: {
+          username: `user_${randomUUID().slice(0, 8)}`,
+          first_name: 'Staff',
+          last_name: 'Fixture',
+          password_hash: passwordHash,
+          role,
+          brand_id: brandId,
+        },
+      });
+      fixtureIds.push(user.user_id);
+      const login = await request(httpServer)
+        .post('/api/auth/login')
+        .send({ username: user.username, password })
+        .expect(200);
+      const body = login.body as { token: string };
+      if (role === UserRole.SUPERADMIN) adminToken = body.token;
+      else callerToken = body.token;
+    }
+  });
+
+  afterEach(async () => {
+    if (!prisma || brandIds.length === 0) return;
+    // Only delete users attached to this run's exact fixture IDs/brand UUIDs.
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [{ user_id: { in: fixtureIds } }, { brand_id: { in: brandIds } }],
+      },
+      select: { user_id: true },
+    });
+    const ids = users.map((user) => user.user_id);
+    await prisma.userSession.deleteMany({ where: { user_id: { in: ids } } });
+    await prisma.user.deleteMany({ where: { user_id: { in: ids } } });
+    await prisma.brand.deleteMany({ where: { brand_id: { in: brandIds } } });
+    fixtureIds.length = 0;
+    brandIds.length = 0;
+  });
+
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  function payload() {
+    return {
+      username: `user_${randomUUID().slice(0, 8)}`,
+      first_name: 'Staff',
+      last_name: 'Candidate',
+      password,
+      role: UserRole.MANAGER,
+      brand_id: brandId,
+    };
+  }
+
+  it('IT-USER-011: Cashier cannot create Manager or persist a new account', async () => {
+    const dto = payload();
+    await request(httpServer)
+      .post('/api/users')
+      .auth(callerToken, { type: 'bearer' })
+      .send(dto)
+      .expect(403);
+    expect(
+      await prisma.user.findUnique({ where: { username: dto.username } }),
+    ).toBeNull();
+  });
+
+  it('IT-USER-012: deactivation rejects both existing session and fresh login', async () => {
+    const dto = { ...payload(), role: UserRole.CASHIER_STAFF };
+    const created = await request(httpServer)
+      .post('/api/users')
+      .auth(adminToken, { type: 'bearer' })
+      .send(dto)
+      .expect(201);
+    expect(created.body).not.toHaveProperty('password_hash');
+    expect(created.body).not.toHaveProperty('password');
+    const login = await request(httpServer)
+      .post('/api/auth/login')
+      .send({ username: dto.username, password })
+      .expect(200);
+    const { token } = login.body as { token: string };
+    const { user_id: userId } = created.body as { user_id: string };
+    await request(httpServer)
+      .delete(`/api/users/${userId}`)
+      .auth(adminToken, { type: 'bearer' })
+      .expect(200);
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { user_id: userId } }))
+        .is_active,
+    ).toBe(false);
+    await request(httpServer)
+      .get('/api/auth/me')
+      .auth(token, { type: 'bearer' })
+      .expect(401);
+    await request(httpServer)
+      .post('/api/auth/login')
+      .send({ username: dto.username, password })
+      .expect(401);
+  });
+
+  it('IT-USER-013: concurrent duplicate usernames persist exactly one account', async () => {
+    const dto = { ...payload(), role: UserRole.CASHIER_STAFF };
+    const responses = await Promise.all(
+      [1, 2].map(() =>
+        request(httpServer)
+          .post('/api/users')
+          .auth(adminToken, { type: 'bearer' })
+          .send(dto),
+      ),
+    );
+    expect(responses.map((response) => response.status).sort()).toEqual([
+      201, 409,
+    ]);
+    expect(await prisma.user.count({ where: { username: dto.username } })).toBe(
+      1,
+    );
   });
 });

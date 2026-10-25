@@ -101,3 +101,74 @@ Feature: Users Service Unit Logic
     Given a generic database outage
     When any UsersService method is invoked
     Then it should rethrow the database error
+
+  Scenario Outline: Staff cannot create accounts
+    Test Case ID: UT-USER-017
+    Given mocked repositories and a caller with a staff role
+    When the real controller and service receive a creation request for any role
+    Then the operation is forbidden before any repository write
+    Examples:
+      | caller          |
+      | CASHIER_STAFF   |
+      | KITCHEN_STAFF   |
+      | INVENTORY_STAFF |
+
+  Scenario: Manager cannot create Manager, Recipe Manager or Superadmin
+    Test Case ID: UT-USER-018
+    Given mocked repositories and a Manager caller
+    When a senior account is requested
+    Then the operation is forbidden before any repository write
+
+  Scenario: Supervisor cannot create a peer or senior account
+    Test Case ID: UT-USER-019
+    Given mocked repositories and a Supervisor caller
+    When a Supervisor, Manager or Recipe Manager account is requested
+    Then the operation is forbidden before any repository write
+
+  Scenario: Creation cannot cross the assigned brand
+    Test Case ID: UT-USER-020
+    Given a Manager, Recipe Manager or Supervisor assigned to one brand
+    When a staff account is requested in another brand
+    Then the operation is forbidden before any repository write
+
+  Scenario: Superadmin can submit a senior account creation
+    Test Case ID: UT-USER-021
+    Given mocked repositories and a Superadmin caller
+    When a Manager or Recipe Manager account is requested
+    Then the creation reaches the repository once
+    And this does not certify approval, enrollment or activation
+
+  @pending
+  Scenario: Recipe Manager creation respects department boundaries
+    Test Case ID: UT-USER-022
+    Given an approved department membership and subordinate-role policy
+    When a Recipe Manager requests a subordinate in another department
+    Then the request is forbidden
+
+  @pending
+  Scenario: Higher-role approval respects the approved role matrix
+    Test Case ID: UT-USER-023
+    Given a pending account request and approved top-owner exception policy
+    When a self, same-rank or unauthorized cross-scope approval is attempted
+    Then the request is denied except for the explicitly approved exception
+
+  @pending
+  Scenario: Approval transitions remain consistent under conflicts
+    Test Case ID: UT-USER-024
+    Given duplicate, concurrent or expired approval requests
+    When approve or reject is attempted
+    Then only one valid transition is recorded with its rejection reason when required
+
+  @pending
+  Scenario: Protect the last active owner
+    Test Case ID: UT-USER-025
+    Given one remaining active owner or concurrent owner-deactivation requests
+    When deactivation would remove the final active owner
+    Then at least one active owner remains
+
+  @pending
+  Scenario: Record account mutations without secrets
+    Test Case ID: UT-USER-026
+    Given successful and denied staff-account changes
+    When account mutation audit events are written
+    Then actor, target and outcome are preserved without credentials or tokens
