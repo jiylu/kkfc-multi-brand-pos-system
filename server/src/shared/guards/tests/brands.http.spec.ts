@@ -31,6 +31,12 @@ class BrandAccessController {
     return { ok: true };
   }
 
+  @Get('menu-item-channels/:id')
+  @BrandResource(BrandResourceType.MENU_ITEM_CHANNEL, 'id')
+  menuItemChannel() {
+    return { ok: true };
+  }
+
   @Patch('menu-items/:identifier')
   @BrandResource(BrandResourceType.MENU_ITEM, 'identifier')
   updateMenuItem(@Body() dto: UpdateMenuItemDTO) {
@@ -95,6 +101,7 @@ describe('BrandsGuard HTTP access', () => {
   const prisma = {
     brand: { findUnique: jest.fn() },
     menuItem: { findUnique: jest.fn() },
+    menuItemChannel: { findUnique: jest.fn() },
     order: { findUnique: jest.fn() },
     recipe: { findUnique: jest.fn() },
     user: { findUnique: jest.fn() },
@@ -156,9 +163,87 @@ describe('BrandsGuard HTTP access', () => {
     );
     for (const model of Object.values(prisma))
       model.findUnique.mockResolvedValue({ brand_id: brandId });
+    prisma.menuItemChannel.findUnique.mockResolvedValue({
+      menu_item: { brand_id: brandId },
+    });
   });
 
   afterAll(async () => app?.close());
+
+  it.each([
+    { callerRole: UserRole.CASHIER_STAFF, brand: brandId, status: 200 },
+    { callerRole: UserRole.CASHIER_STAFF, brand: otherBrandId, status: 403 },
+    { callerRole: UserRole.MANAGER, brand: null, status: 403 },
+    { callerRole: UserRole.SUPERADMIN, brand: null, status: 200 },
+  ])(
+    'checks menu item channel access for $callerRole in brand $brand',
+    async ({ callerRole, brand, status }) => {
+      role = callerRole;
+      callerBrand = brand;
+      expect(
+        (await fetch(`${url}/menu-item-channels/${resourceId}`, { headers }))
+          .status,
+      ).toBe(status);
+      expect(prisma.menuItemChannel.findUnique).toHaveBeenCalledWith({
+        where: { menu_item_channel_id: resourceId },
+        select: { menu_item: { select: { brand_id: true } } },
+      });
+    },
+  );
+
+  it('rejects invalid menu item channel UUIDs before querying', async () => {
+    expect(
+      (await fetch(`${url}/menu-item-channels/invalid`, { headers })).status,
+    ).toBe(400);
+    expect(prisma.menuItemChannel.findUnique).not.toHaveBeenCalled();
+  });
+
+  it.each([UserRole.CASHIER_STAFF, UserRole.SUPERADMIN])(
+    'returns 404 for missing menu item channels for %s',
+    async (callerRole) => {
+      role = callerRole;
+      prisma.menuItemChannel.findUnique.mockResolvedValue(null);
+      const response = await fetch(`${url}/menu-item-channels/${resourceId}`, {
+        headers,
+      });
+      expect(response.status).toBe(404);
+      expect(await response.json()).toMatchObject({
+        message: 'MenuItemChannel not found.',
+      });
+    },
+  );
+
+  it('resolves unavailable menu item channels without filtering their state', async () => {
+    prisma.menuItemChannel.findUnique.mockResolvedValue({
+      menu_item: { brand_id: brandId },
+      is_available: false,
+    });
+    expect(
+      (await fetch(`${url}/menu-item-channels/${resourceId}`, { headers }))
+        .status,
+    ).toBe(200);
+    expect(prisma.menuItemChannel.findUnique).toHaveBeenCalledWith({
+      where: { menu_item_channel_id: resourceId },
+      select: { menu_item: { select: { brand_id: true } } },
+    });
+  });
+
+  it('requires authentication before looking up menu item channels', async () => {
+    expect(
+      (await fetch(`${url}/menu-item-channels/${resourceId}`)).status,
+    ).toBe(401);
+    expect(prisma.menuItemChannel.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('does not swallow menu item channel lookup failures', async () => {
+    prisma.menuItemChannel.findUnique.mockRejectedValue(
+      new Error('Database unavailable'),
+    );
+    expect(
+      (await fetch(`${url}/menu-item-channels/${resourceId}`, { headers }))
+        .status,
+    ).toBe(500);
+  });
 
   it.each(resources)(
     'resolves $model by UUID and selects only its brand',

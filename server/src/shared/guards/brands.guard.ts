@@ -113,6 +113,21 @@ export class BrandsGuard implements CanActivate {
         assertExists(menuItem, 'MenuItem', identifier);
         return menuItem.brand_id;
       }
+      case BrandResourceType.MENU_ITEM_CHANNEL: {
+        if (!isUUID(identifier)) {
+          throw new BadRequestException(
+            'Menu item channel ID must be a valid UUID.',
+          );
+        }
+
+        const menuItemChannel = await this.prisma.menuItemChannel.findUnique({
+          where: { menu_item_channel_id: identifier },
+          select: { menu_item: { select: { brand_id: true } } },
+        });
+
+        assertExists(menuItemChannel, 'MenuItemChannel', identifier);
+        return menuItemChannel.menu_item.brand_id;
+      }
       case BrandResourceType.ORDER: {
         if (!isUUID(identifier)) {
           throw new BadRequestException('Order ID must be a valid UUID.');
