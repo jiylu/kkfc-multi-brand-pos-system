@@ -22,6 +22,7 @@ const goldenViewports = [
 const goldenTextScales = [1.0, 2.0];
 
 const goldenBoundaryKey = ValueKey<String>('golden-boundary');
+const goldenSheetKey = ValueKey<String>('golden-sheet');
 
 Future<void> loadGoldenFonts() async {
   await _loadFontFamily(KkfcFonts.text, const [
@@ -79,6 +80,51 @@ Future<void> pumpGolden(
           color: counterTheme.scaffoldBackgroundColor,
           child: Scaffold(
             body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(KkfcSpace.s24),
+                child: child,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+}
+
+Future<void> pumpGoldenSheet(
+  WidgetTester tester, {
+  required GoldenViewport viewport,
+  required double textScale,
+  required Widget child,
+}) async {
+  tester.view.physicalSize = Size(viewport.size.width, 2400);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: counterTheme,
+      themeMode: ThemeMode.light,
+      builder: (context, appChild) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(textScale),
+            disableAnimations: true,
+          ),
+          child: TickerMode(enabled: false, child: appChild!),
+        );
+      },
+      home: Align(
+        alignment: Alignment.topLeft,
+        child: RepaintBoundary(
+          key: goldenSheetKey,
+          child: SizedBox(
+            width: viewport.size.width,
+            child: ColoredBox(
+              color: counterTheme.scaffoldBackgroundColor,
               child: Padding(
                 padding: const EdgeInsets.all(KkfcSpace.s24),
                 child: child,
