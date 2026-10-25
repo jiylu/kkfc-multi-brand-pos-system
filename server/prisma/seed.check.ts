@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { Prisma, UserRole } from '@prisma/client';
+import { OrderChannel, Prisma, UserRole } from '@prisma/client';
 import { seedDatabase } from './seed';
 import { TEST_USERS, TEST_UNASSIGNED_OWNER } from './seed-test';
 import * as argon2 from 'argon2';
@@ -11,6 +11,7 @@ async function check() {
   const recipes = new Map();
   const components = new Map();
   const menuItems = new Map();
+  const menuItemChannels = new Map();
 
   function upsert(rows: Map<string, any>, key: string, args: any, id: string) {
     const previous = rows.get(key);
@@ -22,6 +23,28 @@ async function check() {
   }
 
   const database = {
+    menuItemChannel: {
+      upsert: async (args: Prisma.MenuItemChannelUpsertArgs) => {
+        const { menu_item_id, order_channel } =
+          args.where.menu_item_id_order_channel!;
+        const item = [...menuItems.values()].find(
+          (row) => row.menu_item_id === menu_item_id,
+        );
+        assert(item);
+        assert(
+          order_channel === OrderChannel.GRABFOOD ||
+            order_channel === OrderChannel.FOODPANDA,
+        );
+        assert(Number(args.create.price) > item.base_price);
+        assert(Number(args.update.price) > item.base_price);
+        return upsert(
+          menuItemChannels,
+          `${menu_item_id}:${order_channel}`,
+          args,
+          'menu_item_channel_id',
+        );
+      },
+    },
     menuItem: {
       upsert: async (args: Prisma.MenuItemUpsertArgs) => {
         const recipe = [...recipes.values()].find(
@@ -121,6 +144,21 @@ async function check() {
   assert.equal(recipes.size, 22);
   assert.equal(components.size, 83);
   assert.equal(menuItems.size, 25);
+  assert.equal(menuItemChannels.size, 50);
+  for (const item of menuItems.values()) {
+    assert(
+      menuItemChannels.has(`${item.menu_item_id}:${OrderChannel.GRABFOOD}`),
+    );
+    assert(
+      menuItemChannels.has(`${item.menu_item_id}:${OrderChannel.FOODPANDA}`),
+    );
+  }
+  assert.equal(
+    menuItemChannels.get(
+      `${menuItems.get('AI-BATCHOY-SPECIAL').menu_item_id}:${OrderChannel.GRABFOOD}`,
+    ).is_available,
+    false,
+  );
   assert.equal(menuItems.get('GC-MANGO-BINGSU').is_active, false);
   for (const [code, count] of [
     ['GC', 9],
@@ -162,9 +200,25 @@ async function check() {
     (row) => row.recipe_component_id,
   );
   const menuIds = [...menuItems.values()].map((row) => row.menu_item_id);
+  const channelIds = [...menuItemChannels.values()].map(
+    (row) => row.menu_item_channel_id,
+  );
+  const firstChannel = [...menuItemChannels.values()][0];
+  firstChannel.is_available = false;
+  firstChannel.price = 0;
   menuItems.get('GC-KIMCHI-FRIED-RICE').is_active = false;
   await seedDatabase(database);
   assert.equal(menuItems.size, 25);
+  assert.equal(menuItemChannels.size, 50);
+  assert.deepEqual(
+    [...menuItemChannels.values()].map((row) => row.menu_item_channel_id),
+    channelIds,
+  );
+  const savedChannel = menuItemChannels.get(
+    `${firstChannel.menu_item_id}:${firstChannel.order_channel}`,
+  );
+  assert.equal(savedChannel.is_available, false);
+  assert(savedChannel.price > menuItems.get('GC-KIMCHI-FRIED-RICE').base_price);
   assert.deepEqual(
     [...menuItems.values()].map((row) => row.menu_item_id),
     menuIds,
@@ -196,7 +250,7 @@ async function check() {
     11,
   );
   console.log(
-    `Seed checks passed: ${components.size} valid component links, brand ownership, stable reruns, preserved stock, and all roles covered.`,
+    `Seed checks passed: ${components.size} valid component links, ${menuItemChannels.size} delivery channel overrides above base price, brand ownership, stable reruns, preserved stock and availability, and all roles covered.`,
   );
 }
 

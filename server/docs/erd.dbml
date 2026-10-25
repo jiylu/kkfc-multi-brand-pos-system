@@ -231,6 +231,7 @@ Table menu_items {
 // Configures channel-specific pricing and availability controls (Dine-In, Takeaway, GrabFood, foodpanda) for each menu item.
 // Allows staff to toggle item availability and apply platform-specific prices during order encoding (FR-003).
 Table menu_item_channels {
+  menu_item_channel_id uuid [pk]
   menu_item_id uuid [not null, ref: > menu_items.menu_item_id]
   order_channel order_channels [not null]
   price decimal(12,2) [not null]
@@ -238,7 +239,7 @@ Table menu_item_channels {
   created_at timestamp [not null, default: `now()`]
   modified_at timestamp [not null, default: `now()`]
   indexes {
-    (menu_item_id, order_channel) [pk]
+    (menu_item_id, order_channel) [unique]
   }
   Note: 'Channel-specific price and availability overrides (FR-003).'
 }
