@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:mobile/core/models/brand_models.dart';
-import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart'; // verify path
 
 enum KitchenTicketAge { onTime, dueSoon, late }
 
@@ -27,7 +27,6 @@ class KitchenTicketData {
     required this.channel,
     required this.reference,
     required this.brand,
-    required this.brandName,
     required this.items,
   });
 
@@ -37,7 +36,6 @@ class KitchenTicketData {
   final KkfcStatus status;
   final String channel; // "GrabFood"
   final String reference; // "#GF-1001"
-  final AssignedBrand brand;
-  final String brandName; // "Aurelia's Inasal"
+  final AssignedBrand brand; // brand.code -> tag, brand.name -> label
   final List<KitchenTicketItem> items;
 }

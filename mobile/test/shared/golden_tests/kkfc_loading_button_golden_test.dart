@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 
-import '../support/golden_harness.dart';
+import '../../support/golden_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

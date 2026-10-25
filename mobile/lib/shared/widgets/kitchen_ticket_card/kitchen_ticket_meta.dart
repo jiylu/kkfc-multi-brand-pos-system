@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
+import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/core/models/brand_models.dart';
-import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 import 'package:mobile/shared/widgets/kkfc_brand_tag.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status_badge.dart';
 
 /// "GrabFood  #GF-1001"
@@ -28,7 +29,7 @@ class KitchenTicketChannelLine extends StatelessWidget {
         Text(
           reference,
           style: text.labelMedium?.copyWith(
-            fontFamily: 'monospace', // swap for your mono token in KkfcFonts
+            fontFamily: KkfcFonts.mono,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -60,24 +61,19 @@ class KitchenTicketStatusRow extends StatelessWidget {
 
 /// [AI] Aurelia's Inasal
 class KitchenTicketBrandRow extends StatelessWidget {
-  const KitchenTicketBrandRow({
-    super.key,
-    required this.brand,
-    required this.brandName,
-  });
+  const KitchenTicketBrandRow({super.key, required this.brand});
 
   final AssignedBrand brand;
-  final String brandName;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        KkfcBrandTag(label: brand.name),
+        KkfcBrandTag(label: brand.code),
         const SizedBox(width: KkfcSpace.s8),
         Expanded(
           child: Text(
-            brandName,
+            brand.name,
             style: Theme.of(context)
                 .textTheme
                 .titleSmall

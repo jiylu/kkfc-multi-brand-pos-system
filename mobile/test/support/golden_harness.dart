@@ -25,6 +25,12 @@ const goldenBoundaryKey = ValueKey<String>('golden-boundary');
 const goldenSheetKey = ValueKey<String>('golden-sheet');
 
 Future<void> loadGoldenFonts() async {
+  await _loadFontFamily('MaterialIcons', const [
+    'fonts/MaterialIcons-Regular.otf',
+  ]);
+  await _loadFontFamily('packages/material_symbols_icons/MaterialSymbolsOutlined', const [
+    'packages/material_symbols_icons/lib/fonts/MaterialSymbolsOutlined.ttf',
+  ]);
   await _loadFontFamily(KkfcFonts.text, const [
     'assets/fonts/Atkinson_Hyperlegible_Next/AtkinsonHyperlegibleNext-Regular.ttf',
     'assets/fonts/Atkinson_Hyperlegible_Next/AtkinsonHyperlegibleNext-Medium.ttf',
@@ -98,8 +104,9 @@ Future<void> pumpGoldenSheet(
   required GoldenViewport viewport,
   required double textScale,
   required Widget child,
+  double maxHeight = 2400,
 }) async {
-  tester.view.physicalSize = Size(viewport.size.width, 2400);
+  tester.view.physicalSize = Size(viewport.size.width, maxHeight);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
@@ -146,5 +153,5 @@ String goldenPath({
 }) {
   final scale = textScale.toStringAsFixed(1).replaceAll('.', '_');
   final width = viewport.name.replaceAll('dp', '');
-  return 'goldens/$component/$state/${width}dp-text-$scale.png';
+  return '../goldens/$component/$state/${width}dp-text-$scale.png';
 }

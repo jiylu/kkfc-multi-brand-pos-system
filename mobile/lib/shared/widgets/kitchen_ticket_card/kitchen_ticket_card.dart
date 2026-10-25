@@ -57,10 +57,7 @@ class KitchenTicketCard extends StatelessWidget {
                 const SizedBox(height: KkfcSpace.s8),
                 KitchenTicketStatusRow(status: ticket.status),
                 const SizedBox(height: KkfcSpace.s8),
-                KitchenTicketBrandRow(
-                  brand: ticket.brand,
-                  brandName: ticket.brandName,
-                ),
+                KitchenTicketBrandRow(brand: ticket.brand),
                 const SizedBox(height: KkfcSpace.s16),
                 for (var i = 0; i < ticket.items.length; i++) ...[
                   if (i > 0) const SizedBox(height: KkfcSpace.s16),

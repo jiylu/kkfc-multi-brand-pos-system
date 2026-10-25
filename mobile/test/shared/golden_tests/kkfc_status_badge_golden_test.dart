@@ -6,7 +6,7 @@ import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 import 'package:mobile/shared/widgets/status_badge/kkfc_status_badge.dart';
 
-import '../support/golden_harness.dart';
+import '../../support/golden_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
