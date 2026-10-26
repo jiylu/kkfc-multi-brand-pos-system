@@ -42,6 +42,20 @@ export class PinRepository {
     });
   }
 
+  async findOneSafe(
+    userId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.userPinCredential.findFirst({
+      where: {
+        user_id: userId,
+      },
+      omit: {
+        pin_hash: true,
+      },
+    });
+  }
+
   async lockByUserId(
     userId: string,
     tx: Prisma.TransactionClient,
@@ -108,7 +122,7 @@ export class PinRepository {
 
       return lockedUntil
         ? { status: 'locked', until: lockedUntil }
-        : { status: 'invalid' };
+        : { status: 'invalid', validAttempts: 5 - attempts };
     });
   }
 
