@@ -47,6 +47,18 @@ Both must pass. After changing a model or enum with `freezed` or `json_serializa
 dart run build_runner build --delete-conflicting-outputs
 ```
 
+### Golden tests
+
+Golden tests use [Alchemist](https://pub.dev/packages/alchemist). CI compares the committed baselines in `test/**/goldens/ci/`. Locally, Alchemist also generates readable platform baselines in `test/**/goldens/<platform>/`; these are gitignored and are the place to inspect real font rendering, because CI baselines obscure text for cross-platform stability.
+
+Generate or update the CI baselines on Linux with the same Flutter version as CI:
+
+```sh
+flutter test --update-goldens
+```
+
+Commit only `test/**/goldens/ci/*.png`. Never pass `--update-goldens` in CI.
+
 ## Project folders and files
 
 | Path | Purpose |

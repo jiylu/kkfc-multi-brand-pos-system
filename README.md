@@ -231,6 +231,8 @@ flutter test
 
 Both commands must pass.
 
+Golden tests use [Alchemist](https://pub.dev/packages/alchemist). Commit only `mobile/test/**/goldens/ci/*.png`. Update the CI baselines on Linux with `flutter test --update-goldens` from `mobile/`; platform-specific goldens are local-only and gitignored.
+
 After changing a model or enum that uses `freezed` or `json_serializable`, regenerate and commit the generated output:
 
 ```sh

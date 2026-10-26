@@ -1,6 +1,5 @@
+import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_card.dart';
@@ -9,7 +8,6 @@ import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart'; // verify 
 import '../../support/golden_harness.dart';
 
 const _component = 'kitchen_ticket_card';
-const _sheetMaxHeight = 8000.0;
 const _cardMaxWidth = 320.0;
 
 const _aurelias = AssignedBrand(
@@ -80,56 +78,36 @@ KitchenTicketData _ticket({
 }
 
 Widget _sheet(List<Widget> cards) {
-  return Wrap(
-    spacing: KkfcSpace.s24,
-    runSpacing: KkfcSpace.s24,
-    crossAxisAlignment: WrapCrossAlignment.start,
-    children: [
-      for (final card in cards)
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: _cardMaxWidth),
-          child: card,
-        ),
-    ],
-  );
-}
-
-Future<void> _expectSheetGolden(
-  WidgetTester tester, {
-  required String state,
-  required GoldenViewport viewport,
-  required double textScale,
-}) {
-  return expectLater(
-    find.byKey(goldenSheetKey),
-    matchesGoldenFile(
-      goldenPath(
-        component: _component,
-        state: state,
-        viewport: viewport,
-        textScale: textScale,
-      ),
+  return SizedBox(
+    width: double.infinity,
+    child: Wrap(
+      spacing: KkfcSpace.s24,
+      runSpacing: KkfcSpace.s24,
+      crossAxisAlignment: WrapCrossAlignment.start,
+      children: [
+        for (final card in cards)
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _cardMaxWidth),
+            child: card,
+          ),
+      ],
     ),
   );
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(loadGoldenFonts);
-
   for (final viewport in goldenViewports) {
     for (final textScale in goldenTextScales) {
       // One sheet per age state, all six kitchen statuses on each.
       for (final c in _ageCases) {
-        testWidgets('${c.state} statuses @ ${viewport.name}, text $textScale', (
-          tester,
-        ) async {
-          await pumpGoldenSheet(
-            tester,
-            viewport: viewport,
-            textScale: textScale,
-            maxHeight: _sheetMaxHeight,
-            child: _sheet([
+        goldenTest(
+          '${c.state} statuses @ ${viewport.name}, text $textScale',
+          fileName: goldenFileName(_component, c.state, viewport, textScale),
+          textScaleFactor: textScale,
+          constraints: goldenSheetConstraints(viewport),
+          pumpBeforeTest: pumpOnce,
+          builder: () => withDisabledAnimations(
+            _sheet([
               for (final status in _kitchenStatuses)
                 KitchenTicketCard(
                   ticket: _ticket(
@@ -140,27 +118,19 @@ void main() {
                   onAction: () {},
                 ),
             ]),
-          );
-
-          await _expectSheetGolden(
-            tester,
-            state: c.state,
-            viewport: viewport,
-            textScale: textScale,
-          );
-        });
+          ),
+        );
       }
 
       // Loading, read-only, and long-content variants.
-      testWidgets('variants @ ${viewport.name}, text $textScale', (
-        tester,
-      ) async {
-        await pumpGoldenSheet(
-          tester,
-          viewport: viewport,
-          textScale: textScale,
-          maxHeight: _sheetMaxHeight,
-          child: _sheet([
+      goldenTest(
+        'variants @ ${viewport.name}, text $textScale',
+        fileName: goldenFileName(_component, 'variants', viewport, textScale),
+        textScaleFactor: textScale,
+        constraints: goldenSheetConstraints(viewport),
+        pumpBeforeTest: pumpOnce,
+        builder: () => withDisabledAnimations(
+          _sheet([
             // Action button in its loading state.
             KitchenTicketCard(
               ticket: _ticket(
@@ -203,15 +173,8 @@ void main() {
               onAction: () {},
             ),
           ]),
-        );
-
-        await _expectSheetGolden(
-          tester,
-          state: 'variants',
-          viewport: viewport,
-          textScale: textScale,
-        );
-      });
+        ),
+      );
     }
   }
 }
