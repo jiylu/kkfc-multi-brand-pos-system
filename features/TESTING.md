@@ -79,3 +79,14 @@ These are not passing/skipped placeholders: no executable tests are claimed for 
 | Device E2E covers real login through order submission | Wire submission, add Flutter `integration_test`, and provision device CI. |
 
 Tests must continue to be added with matching Gherkin scenarios and feature IDs. New tests should not encode stock deductions or reservations: current order confirmation deliberately does neither.
+
+## Brand and role isolation QA
+
+The proposed backend contract, regression matrix, execution runbook and evidence
+template for the 19 Oct 2026 brand/role isolation requirement are in
+[`server/docs/qa/brand-role-isolation-regression-matrix.md`](../server/docs/qa/brand-role-isolation-regression-matrix.md).
+Automated HTTP/PostgreSQL coverage lives in
+`server/src/shared/guards/tests/brand-role-isolation.http.spec.ts` and runs with
+`npm run test:integration`. The contract is still unapproved: denial audit
+logging (#83), the approved role/department/brand matrix (#49), and the
+recipe/inventory endpoints remain `todo`/blocked cases, not passing tests.
