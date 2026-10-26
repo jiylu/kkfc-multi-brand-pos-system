@@ -1,3 +1,4 @@
+import { PinGuard } from '../pin/pin.guard';
 import {
   Body,
   Controller,
@@ -47,7 +48,7 @@ export class BrandsController {
   ) {}
 
   @Post()
-  @UseGuards(RolesGuard)
+  @UseGuards(RolesGuard, PinGuard)
   @Roles(UserRole.SUPERADMIN)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -88,7 +89,7 @@ export class BrandsController {
   }
 
   @Patch(':brandId')
-  @UseGuards(RolesGuard, BrandsGuard)
+  @UseGuards(RolesGuard, BrandsGuard, PinGuard)
   @Roles(UserRole.SUPERADMIN)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -114,7 +115,7 @@ export class BrandsController {
   }
 
   @Delete(':brandId')
-  @UseGuards(RolesGuard, BrandsGuard)
+  @UseGuards(RolesGuard, BrandsGuard, PinGuard)
   @Roles(UserRole.SUPERADMIN)
   @DeleteBrandDocs()
   async delete(@Param('brandId', ParseUUIDPipe) brandId: string) {

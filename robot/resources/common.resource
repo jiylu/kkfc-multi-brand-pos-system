@@ -15,6 +15,7 @@ Initialize API Session
     ${manifest}=    Evaluate    json.loads($text)    modules=json
     Set Suite Variable    ${CATALOG}    ${manifest}[fixture]
     Set Suite Variable    ${CATALOG_PASSWORD}    ${manifest}[password]
+    Set Suite Variable    ${CATALOG_PIN}    ${manifest}[fixture][pin]
     Create Session    api    ${API_BASE_URL}
 
 The backend server is running against the test database

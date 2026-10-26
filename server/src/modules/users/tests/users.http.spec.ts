@@ -1,3 +1,4 @@
+import { PinGuard } from '../../pin/pin.guard';
 import {
   ConflictException,
   ExecutionContext,
@@ -10,6 +11,9 @@ import { Prisma, UserRole } from '@prisma/client';
 import { Authenticated } from '../../auth/auth.guard';
 import { UsersController } from '../users.controller';
 import { UsersService } from '../users.service';
+import { UsersRepository } from '../users.repository';
+import { BrandsRepository } from '../../brands/brands.repository';
+import { CreateUserDTO } from '../dto/create-user.dto';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { AllExceptionsFilter } from '../../../shared/filters/all-exceptions.filter';
@@ -80,6 +84,8 @@ describe('Users HTTP endpoints (IT-USER)', () => {
           return true;
         },
       })
+      .overrideGuard(PinGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     app = module.createNestApplication();
@@ -107,6 +113,165 @@ describe('Users HTTP endpoints (IT-USER)', () => {
 
   afterAll(async () => {
     await app?.close();
+  });
+
+  describe('creation brand policy', () => {
+    const repository = { safeFindByUsername: jest.fn(), create: jest.fn() };
+    const payload = {
+      username: 'new_user',
+      first_name: 'Test',
+      last_name: 'User',
+      password: 'Password123!',
+    };
+
+    beforeEach(() => {
+      repository.safeFindByUsername.mockReset().mockResolvedValue(null);
+      repository.create.mockReset();
+      repository.create.mockImplementation((dto: CreateUserDTO) =>
+        Promise.resolve({
+          user_id: userId,
+          role: dto.role,
+          brand_id: dto.brand_id ?? null,
+        }),
+      );
+      const users = new UsersService(
+        repository as unknown as UsersRepository,
+        {} as BrandsRepository,
+      );
+      service.createUser.mockImplementation(
+        (
+          dto: CreateUserDTO,
+          isSuperAdmin: boolean,
+          callerBrandId: string | null,
+        ) => users.createUser(dto, isSuperAdmin, callerBrandId),
+      );
+    });
+
+    it.each(
+      [
+        UserRole.SUPERADMIN,
+        UserRole.INVENTORY_STAFF,
+        UserRole.RECIPE_MANAGER,
+      ].flatMap((role) =>
+        [undefined, null].map((brand_id) => ({ role, brand_id })),
+      ),
+    )(
+      'allows a superadmin to create unassigned $role accounts ($brand_id)',
+      async ({ role, brand_id }) => {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, role, brand_id }),
+        });
+        expect(response.status).toBe(201);
+        expect(await response.json()).toMatchObject({ role, brand_id: null });
+        expect(repository.create).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it.each(
+      [
+        UserRole.MANAGER,
+        UserRole.SUPERVISOR,
+        UserRole.KITCHEN_HEAD,
+        UserRole.KITCHEN_STAFF,
+        UserRole.CASHIER_STAFF,
+      ].flatMap((role) =>
+        [undefined, null].map((brand_id) => ({ role, brand_id })),
+      ),
+    )(
+      'requires a brand for $role even for a superadmin ($brand_id)',
+      async ({ role, brand_id }) => {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, role, brand_id }),
+        });
+        expect(response.status).toBe(400);
+        expect(await response.json()).toMatchObject({
+          code: 'MISSING_BRAND_ID',
+        });
+        expect(repository.create).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(
+      [UserRole.INVENTORY_STAFF, UserRole.RECIPE_MANAGER].flatMap((role) =>
+        [undefined, null].map((brand_id) => ({ role, brand_id })),
+      ),
+    )(
+      'blocks a manager from creating an unassigned $role account ($brand_id)',
+      async ({ role, brand_id }) => {
+        currentRole = UserRole.MANAGER;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, role, brand_id }),
+        });
+        expect(response.status).toBe(403);
+        expect(repository.create).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([UserRole.INVENTORY_STAFF, UserRole.RECIPE_MANAGER])(
+      'allows a manager to create %s only in their brand',
+      async (role) => {
+        currentRole = UserRole.MANAGER;
+        const body = { ...payload, role, brand_id: brandId };
+        const ownBrand = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        expect(ownBrand.status).toBe(201);
+        const otherBrand = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...body,
+            brand_id: '00000000-0000-4000-8000-000000000030',
+          }),
+        });
+        expect(otherBrand.status).toBe(403);
+        expect(repository.create).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it.each(['', 'invalid', 123, {}, []])(
+      'still validates supplied brand IDs for brand-optional roles (%j)',
+      async (brand_id) => {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            role: UserRole.RECIPE_MANAGER,
+            brand_id,
+          }),
+        });
+        expect(response.status).toBe(400);
+        expect(repository.create).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      UserRole.INVENTORY_STAFF,
+      UserRole.RECIPE_MANAGER,
+      UserRole.SUPERVISOR,
+      UserRole.KITCHEN_HEAD,
+      UserRole.KITCHEN_STAFF,
+      UserRole.CASHIER_STAFF,
+    ])('does not let %s use the creation endpoint', async (role) => {
+      currentRole = role;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, role: UserRole.INVENTORY_STAFF }),
+      });
+      expect(response.status).toBe(403);
+      expect(service.createUser).not.toHaveBeenCalled();
+      expect(repository.create).not.toHaveBeenCalled();
+    });
   });
 
   it('reports current role names when a legacy role is supplied', async () => {

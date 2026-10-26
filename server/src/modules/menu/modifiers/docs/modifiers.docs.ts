@@ -1,3 +1,4 @@
+import { PinRequiredDocs } from '../../../pin/docs/pin.docs';
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -26,6 +27,7 @@ export function ModifiersDocs() {
 
 export function CreateModifierDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Create a modifier.',
       description:
@@ -112,6 +114,7 @@ export function FindOneModifierDocs() {
 
 export function UpdateModifierDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Update a modifier.',
       description:
@@ -132,6 +135,7 @@ export function UpdateModifierDocs() {
 
 export function ReactivateModifierDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Reactivate a modifier.',
       description:
@@ -146,6 +150,7 @@ export function ReactivateModifierDocs() {
 
 export function DeleteModifierDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Deactivate a modifier.',
       description:

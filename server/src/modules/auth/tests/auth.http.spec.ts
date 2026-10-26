@@ -1,3 +1,4 @@
+import { PinGuard } from '../../pin/pin.guard';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
@@ -159,6 +160,8 @@ describe('Auth HTTP endpoints', () => {
           return Promise.resolve({ count });
         }),
       })
+      .overrideGuard(PinGuard)
+      .useValue({ canActivate: () => true })
       .compile();
     app = module.createNestApplication();
     app.useLogger(false);

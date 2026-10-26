@@ -18,7 +18,7 @@ A staff account exists in the manager's brand
     The HTTP response status should be 201
 
 The client submits a new user payload with username "${username}" and role "${role}"
-    ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}    Content-Type=application/json
+    ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}    Content-Type=application/json    X-Action-Pin=${CATALOG_PIN}
     ${payload}=    Create Dictionary    username=${username}    first_name=Robot    last_name=Created    password=Password123!    role=${role}    brand_id=${SESSION_BRAND_ID}
     ${response}=   POST On Session      api    /api/users    headers=${headers}    json=${payload}    expected_status=any
     Set Test Variable    ${LAST_RESPONSE}    ${response}
@@ -57,7 +57,7 @@ The client retrieves the created user
     Set Test Variable    ${LAST_RESPONSE}    ${response}
 
 The client deactivates the created user
-    ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}
+    ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}    X-Action-Pin=${CATALOG_PIN}
     ${response}=   DELETE On Session    api    /api/users/${CREATED_USER_ID}    headers=${headers}    expected_status=any
     Set Test Variable    ${LAST_RESPONSE}    ${response}
 

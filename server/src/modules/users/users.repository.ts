@@ -105,6 +105,17 @@ export class UsersRepository {
     });
   }
 
+  async findCredentialsByUserId(
+    userId: string,
+    activeOnly = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.user.findUnique({
+      where: { user_id: userId, is_active: activeOnly ? true : undefined },
+      select: { user_id: true, password_hash: true },
+    });
+  }
+
   async findByUsername(
     username: string,
     activeOnly = true,

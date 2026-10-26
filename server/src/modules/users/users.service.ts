@@ -54,7 +54,12 @@ export class UsersService {
       });
     }
 
-    if (dto.brand_id == null && dto.role !== UserRole.SUPERADMIN) {
+    if (
+      dto.brand_id == null &&
+      dto.role !== UserRole.SUPERADMIN &&
+      dto.role !== UserRole.INVENTORY_STAFF &&
+      dto.role !== UserRole.RECIPE_MANAGER
+    ) {
       this.logger.warn(`Brand ID missing for role.`);
 
       throw new BadRequestException({

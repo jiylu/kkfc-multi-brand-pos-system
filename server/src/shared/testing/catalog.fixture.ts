@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { Brand } from '@prisma/client';
+import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
+import { PIN_ROLES } from '../../modules/pin/pin.roles';
 
 /** Never fall back to a developer database for destructive test cleanup. */
 export function requireTestDatabase() {
@@ -39,6 +41,16 @@ export async function createCatalogFixture(prisma: PrismaService) {
         }),
     ),
   );
+  const pin = '1234';
+  const pinHash = await argon2.hash(pin);
+  await prisma.userPinCredential.createMany({
+    data: users
+      .filter((user) => PIN_ROLES.includes(user.role))
+      .map((user) => ({
+        user_id: user.user_id,
+        pin_hash: pinHash,
+      })),
+  });
   const recipe = await prisma.recipe.create({
     data: {
       brand_id: brand.brand_id,
@@ -84,7 +96,7 @@ export async function createCatalogFixture(prisma: PrismaService) {
       additional_price: 25,
     },
   });
-  return { brand, otherBrand, users, recipe, item, modifier, ingredient };
+  return { brand, otherBrand, users, recipe, item, modifier, ingredient, pin };
 }
 
 export async function cleanupCatalogFixture(
@@ -132,6 +144,9 @@ export async function cleanupCatalogFixture(
   });
   const userIds = users.map((user) => user.user_id);
   await prisma.userSession.deleteMany({ where: { user_id: { in: userIds } } });
+  await prisma.userPinCredential.deleteMany({
+    where: { user_id: { in: userIds } },
+  });
   await prisma.user.deleteMany({ where: { user_id: { in: userIds } } });
   await prisma.brand.deleteMany({ where: { brand_id: { in: brandIds } } });
 }

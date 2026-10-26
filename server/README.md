@@ -104,7 +104,7 @@ Password hashes are excluded from API responses.
 | `GET /api/auth/me` | Any authenticated user; returns their current profile. |
 | `POST /api/auth/logout` | Revokes the current session; returns 204. |
 | `POST /api/auth/logout-all` | Revokes all sessions for the current user; returns 204. |
-| `POST /api/users` | Any authenticated user can create a non-superadmin account in their assigned brand. Superadmins can create any role across brands. All roles except SUPERADMIN require an active `brand_id`. |
+| `POST /api/users` | Managers can create non-superadmin accounts only in their assigned brand and must supply its `brand_id`. Superadmins can create any role across brands; SUPERADMIN, INVENTORY_STAFF, and RECIPE_MANAGER accounts may have no brand. Other roles require an active `brand_id`. |
 | `GET /api/users` | Superadmins only; lists users across all brands, including unassigned users. |
 | `GET /api/users/brand/:brandId` | Managers list users in their own active brand; superadmins list users in any active brand. |
 | `GET /api/users/:id` | Accepts username or user UUID. Any authenticated user can read users in their assigned brand; superadmins can read across brands. |
@@ -115,6 +115,15 @@ Password hashes are excluded from API responses.
 | `GET /api/brands/:brandId` | Any authenticated user can read their assigned brand; superadmins can read any active brand. |
 | `PATCH /api/brands/:brandId` | Superadmins only; updates any active brand using JSON or multipart form data. Optional `file` replaces the logo. Code is optional and is not generated on rename. |
 | `DELETE /api/brands/:brandId` | Superadmins only; deactivates the brand and its active users together. |
+
+Restricted create, update, reactivate, and deactivate operations for users,
+brands, menu items, menu channels, modifiers, and modifier assignments require
+the signed-in user's four-digit `X-Action-Pin` header on every request. Configure
+a PIN with `POST /api/pin`; use `PATCH /api/pin` with the current account password
+to reset it. Missing, incorrect, or unconfigured PINs return 403; cooldowns
+return 429 with `Retry-After`. Reads, orders, asset uploads, menu availability,
+and PIN setup/reset do not require an action PIN. Existing role and brand
+permissions still apply. See [PIN protection](docs/pin-guard/README.md).
 
 Menu endpoints are documented in Swagger under **Menu items**:
 
