@@ -1,8 +1,28 @@
 # PIN guard implementation guide
 
-This guide describes a proposed implementation. Each employee enters their own
+The PIN controller and exported `PinGuard` support SUPERADMIN, MANAGER,
+RECIPE_MANAGER, SUPERVISOR, and KITCHEN_HEAD only. Each employee enters their own
 PIN for every protected action. Manager approvals and temporary verification
-sessions are outside this guide.
+sessions are outside this guide. The guard is available for selected actions;
+existing business endpoints have not been changed to require it.
+
+## HTTP endpoints
+
+All endpoints require a bearer session and one of the five roles above. The user
+ID always comes from the session; callers cannot select another user.
+
+| Endpoint | Body | Behavior |
+| --- | --- | --- |
+| `POST /api/pin` | `{ "pin": "0123" }` | Creates the user's initial PIN; returns 409 if already configured. |
+| `GET /api/pin` | None | Reads credential metadata without the hash; returns an empty response if unconfigured. |
+| `PATCH /api/pin` | `{ "pin": "0456", "password": "current account password" }` | Changes the PIN after checking the account password. Resets are unlimited. |
+
+Setup, lookup, and reset do not require `X-Action-Pin`. Responses use
+`Cache-Control: no-store`. There is no standalone PIN verification endpoint.
+Import `PinModule` into modules that use the exported `PinGuard`, and run it
+after `Authenticated` and any role/brand guards. It accepts only a four-digit
+`X-Action-Pin` string, returns 403 for missing/invalid/unconfigured PINs, and
+returns 429 with a rounded-up `Retry-After` header during cooldowns.
 
 ## 1. Apply the PIN credentials schema
 
@@ -31,8 +51,8 @@ they set one.
 
 ## 2. Add secure PIN setup
 
-Add a dedicated `PinModule` under `src/modules/pin` with PIN setup/change handling. Require the
-current password, derive the user ID from the session, and hash the PIN with
+`PinModule` under `src/modules/pin` handles PIN setup and changes. Require the
+current password for changes, derive the user ID from the session, and hash the PIN with
 the existing `argon2` dependency. Require exactly four ASCII digits using
 `/^[0-9]{4}$/`. Treat PINs as strings to preserve leading zeros. Keep the hash
 column at 255 characters; a hash does not have the same length as its PIN.
@@ -44,8 +64,9 @@ responses, alongside `password_hash`. Exclude PINs, passwords, and the
 
 ## 3. Implement PIN verification
 
-Create `PinService` and `PinRepository` in `src/modules/pin` with the service method
-`verifyOrThrow(userId: string, pin: string): Promise<void>`.
+`PinService.verifyPin(userId, pin)` delegates verification to `PinRepository`.
+The repository returns a result after committing its transaction; `PinGuard`
+translates that result into an HTTP rejection or allows the action.
 
 Use one counter per user across all protected endpoints. Start with five
 consecutive failures followed by a five-minute cooldown:
@@ -70,7 +91,8 @@ cooldown check. PIN setup/change must use the same locking discipline.
 Create `src/modules/pin/pin.guard.ts`. Implement Nest's `CanActivate` interface:
 
 - Read `request.session.user.user_id`; reject missing authentication with `401`.
-- Read `X-Action-Pin`; require a string matching `/^[0-9]{4}$/` and call `verifyOrThrow()`.
+- Restrict access to the five PIN-enabled roles above.
+- Read `X-Action-Pin`; require a string matching `/^[0-9]{4}$/` and call `verifyPin()`.
 - Return `true` only after successful verification.
 - Return `403` for missing, unconfigured, or incorrect PINs.
 - Return `429` when a failure starts a cooldown or a cooldown is already active;

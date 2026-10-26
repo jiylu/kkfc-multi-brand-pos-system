@@ -54,7 +54,7 @@ export class CreateUserDTO {
     format: 'uuid',
     nullable: true,
     description:
-      'Required for every role except SUPERADMIN. Superadmins may omit it or use null for a SUPERADMIN account. Other callers must supply their own brand ID. Any supplied brand must exist and be active.',
+      'Required for every role except SUPERADMIN, INVENTORY STAFF, RECIPE MANAGER. Superadmins may omit it or use null for a SUPERADMIN account. Other callers must supply their own brand ID. Any supplied brand must exist and be active.',
   })
   brand_id?: string | null;
 }

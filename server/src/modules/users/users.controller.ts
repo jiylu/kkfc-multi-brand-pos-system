@@ -41,9 +41,10 @@ import {
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // TODO: FLEXIBLE creation ?
   @Post()
   @CreateUserDocs()
+  @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
+  @UseGuards(BrandsGuard)
   async create(
     @Body() dto: CreateUserDTO,
     @Req() request: AuthenticatedRequest,
