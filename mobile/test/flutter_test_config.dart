@@ -19,6 +19,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
         nameTextStyle: standardGoldenTheme.nameTextStyle,
         padding: const EdgeInsets.all(KkfcSpace.s24),
       ),
+      ciGoldensConfig: CiGoldensConfig(enabled: isCi && Platform.isLinux),
       platformGoldensConfig: PlatformGoldensConfig(enabled: !isCi),
     ),
     run: testMain,

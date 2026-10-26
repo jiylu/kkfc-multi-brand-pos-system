@@ -9,7 +9,7 @@ permissions:
 jobs:
   flutter-ci:
     name: Flutter CI Pipeline
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       CI: 'true'
     defaults:

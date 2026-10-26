@@ -49,15 +49,22 @@ dart run build_runner build --delete-conflicting-outputs
 
 ### Golden tests
 
-Golden tests use [Alchemist](https://pub.dev/packages/alchemist). CI compares the committed baselines in `test/**/goldens/ci/`. Locally, Alchemist also generates readable platform baselines in `test/**/goldens/<platform>/`; these are gitignored and are the place to inspect real font rendering, because CI baselines obscure text for cross-platform stability.
+Golden tests use [Alchemist](https://pub.dev/packages/alchemist). CI compares the committed Linux baselines in `test/**/goldens/ci/`. Locally, tests compare gitignored platform baselines in `test/**/goldens/<platform>/`, which show real font rendering and are useful for inspection. The two variants never run in the same environment.
 
-Generate or update the CI baselines on Linux with the same Flutter version as CI:
+Generate or update the CI baselines on Ubuntu 24.04 with the same Flutter version as CI:
+
+```sh
+CI=true flutter test --update-goldens
+CI=true flutter test
+```
+
+Generate local platform baselines without `CI=true`:
 
 ```sh
 flutter test --update-goldens
 ```
 
-Commit only `test/**/goldens/ci/*.png`. Never pass `--update-goldens` in CI.
+Commit only `test/**/goldens/ci/*.png`. Never pass `--update-goldens` in CI, and do not generate CI baselines on Windows or macOS.
 
 ## Project folders and files
 
