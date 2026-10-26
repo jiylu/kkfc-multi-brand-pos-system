@@ -46,6 +46,7 @@ jobs:
               - 'mobile/**'
               - 'features/mobile/**'
               - '.github/workflows/flutter-ci.yml'
+              - '.github/workflows/flutter-ci-platform.yml'
               - '.github/workflows/required-ci.yml'
 
   backend:

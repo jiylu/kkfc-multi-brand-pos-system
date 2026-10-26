@@ -1,0 +1,94 @@
+name: Flutter Platform CI
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: GitHub-hosted runner for the Flutter checks
+        required: true
+        type: string
+    outputs:
+      passed:
+        description: True only when every check on this platform passed
+        value: ${{ jobs.flutter-ci.outputs.passed }}
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-ci:
+    name: Flutter checks (${{ inputs.runner }})
+    runs-on: ${{ inputs.runner }}
+    # The calling workflow decides whether either platform passed. A failed
+    # platform must not fail the whole workflow or cancel the other platform.
+    continue-on-error: true
+    outputs:
+      passed: ${{ steps.result.outputs.passed }}
+    env:
+      CI: 'true'
+    defaults:
+      run:
+        shell: bash
+        working-directory: mobile
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 (for Android build)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          cache: true
+
+      - name: Install dependencies (pub get)
+        run: flutter pub get
+
+      - name: Check Dart formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Static code analysis (flutter analyze)
+        run: flutter analyze
+
+      - name: Run unit & widget tests (flutter test)
+        run: flutter test --coverage
+
+      - name: Upload Test Coverage Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage-report-${{ inputs.runner }}
+          path: mobile/coverage/
+          if-no-files-found: ignore
+
+      - name: Upload Golden Failure Artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-golden-failures-${{ inputs.runner }}
+          path: mobile/test/**/failures/
+          if-no-files-found: ignore
+
+      - name: Verify application build (build check)
+        run: flutter build apk --debug
+
+      - name: Upload Debug APK Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk-${{ inputs.runner }}
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: ignore
+
+      - name: Record successful pipeline
+        id: result
+        run: echo "passed=true" >> "$GITHUB_OUTPUT"

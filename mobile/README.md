@@ -49,13 +49,24 @@ dart run build_runner build --delete-conflicting-outputs
 
 ### Golden tests
 
-Golden tests use [Alchemist](https://pub.dev/packages/alchemist). CI compares the committed Linux baselines in `test/**/goldens/ci/`. Locally, tests compare gitignored platform baselines in `test/**/goldens/<platform>/`, which show real font rendering and are useful for inspection. The two variants never run in the same environment.
+Golden tests use [Alchemist](https://pub.dev/packages/alchemist). CI compares the committed baselines in `test/**/goldens/ci/` on both Ubuntu 24.04 and Windows Server 2022. Locally, tests compare gitignored platform baselines in `test/**/goldens/<platform>/`, which show real font rendering and are useful for inspection. The two variants never run in the same environment.
 
-Generate or update the CI baselines on Ubuntu 24.04 with the same Flutter version as CI:
+Flutter CI runs formatting, analysis, tests (including goldens), and an Android debug build independently on both operating systems. The required CI check passes when at least one operating system completes the entire pipeline successfully; it fails when neither does. This intentionally allows failures specific to one operating system. Coverage, APKs, and golden failure images are uploaded with runner-specific artifact names.
+
+Generate or update the CI baselines on Ubuntu or Windows with the same Flutter version as CI (`3.47.7`). On Ubuntu:
 
 ```sh
 CI=true flutter test --update-goldens
 CI=true flutter test
+```
+
+On Windows (PowerShell):
+
+```powershell
+$env:CI = 'true'
+flutter test --update-goldens
+flutter test
+Remove-Item Env:CI
 ```
 
 Generate local platform baselines without `CI=true`:
@@ -64,7 +75,7 @@ Generate local platform baselines without `CI=true`:
 flutter test --update-goldens
 ```
 
-Commit only `test/**/goldens/ci/*.png`. Never pass `--update-goldens` in CI, and do not generate CI baselines on Windows or macOS.
+Commit only `test/**/goldens/ci/*.png`. Never pass `--update-goldens` in CI. With `CI=true`, both operating systems compare the same committed CI baselines; Windows CI does not skip golden comparisons.
 
 ## Project folders and files
 

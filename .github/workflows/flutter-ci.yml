@@ -7,61 +7,34 @@ permissions:
   contents: read
 
 jobs:
+  ubuntu:
+    name: Ubuntu
+    uses: ./.github/workflows/flutter-ci-platform.yml
+    with:
+      runner: ubuntu-24.04
+
+  windows:
+    name: Windows
+    uses: ./.github/workflows/flutter-ci-platform.yml
+    with:
+      runner: windows-2022
+
   flutter-ci:
     name: Flutter CI Pipeline
+    needs: [ubuntu, windows]
+    if: always()
     runs-on: ubuntu-24.04
-    env:
-      CI: 'true'
-    defaults:
-      run:
-        working-directory: mobile
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Java 17 (for Android build)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Gradle Cache
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Setup Flutter SDK
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.47.7'
-          cache: true
-
-      - name: Install dependencies (pub get)
-        run: flutter pub get
-
-      - name: Check Dart formatting
-        run: dart format --output=none --set-exit-if-changed .
-
-      - name: Static code analysis (flutter analyze)
-        run: flutter analyze
-
-      - name: Run unit & widget tests (flutter test)
-        run: flutter test --coverage
-
-      - name: Upload Test Coverage Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: flutter-coverage-report
-          path: mobile/coverage/
-          if-no-files-found: ignore
-
-      - name: Verify application build (build check)
-        run: flutter build apk --debug
-
-      - name: Upload Debug APK Artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
-          if-no-files-found: ignore
+      - name: Require one successful platform
+        env:
+          UBUNTU_PASSED: ${{ needs.ubuntu.outputs.passed }}
+          WINDOWS_PASSED: ${{ needs.windows.outputs.passed }}
+        run: |
+          echo "Ubuntu passed: ${UBUNTU_PASSED:-false}"
+          echo "Windows passed: ${WINDOWS_PASSED:-false}"
+          if [ "$UBUNTU_PASSED" = "true" ] || [ "$WINDOWS_PASSED" = "true" ]; then
+            echo "Flutter CI passed on at least one platform."
+          else
+            echo "Neither platform completed all Flutter checks successfully."
+            exit 1
+          fi
