@@ -40,7 +40,9 @@ import {
   UpdateMenuItemDocs,
   ReactivateMenuItemDocs,
   DeleteMenuItemDocs,
+  UpdateMenuItemAvailabilityDocs,
 } from './docs/menu-items.docs';
+import { UpdateMenuItemAvailabilityDTO } from './dto/update-menu-item-availability.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   AssetsService,
@@ -137,6 +139,26 @@ export class MenuItemsController {
       dto = { ...dto, img_url: asset.key };
     }
     return this.menuItemsService.updateMenuItem(menuItemId, dto);
+  }
+
+  @Patch('availability/:id')
+  @UpdateMenuItemAvailabilityDocs()
+  @UseGuards(BrandsGuard)
+  @BrandResource(BrandResourceType.MENU_ITEM, 'id')
+  @Roles(
+    UserRole.SUPERADMIN,
+    UserRole.MANAGER,
+    UserRole.RECIPE_MANAGER,
+    UserRole.SUPERVISOR,
+    UserRole.KITCHEN_HEAD,
+    UserRole.KITCHEN_STAFF,
+    UserRole.INVENTORY_STAFF,
+  )
+  async updateAvailability(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateMenuItemAvailabilityDTO,
+  ) {
+    return this.menuItemsService.updateAvailability(id, dto.availability);
   }
 
   @Patch('reactivate/:id')
