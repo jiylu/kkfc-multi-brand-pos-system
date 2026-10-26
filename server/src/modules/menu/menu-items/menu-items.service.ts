@@ -7,6 +7,7 @@ import { assertExists } from '../../../shared/assertions/assert-exists';
 import { isUUID } from 'class-validator';
 import { FindAllMenuItemsDTO } from './dto/find-all-menu-items.dto';
 import { assertValidPagination } from '../../../shared/assertions/assert-valid-pagination';
+import { RecipesRepository } from '../../recipe/recipes/recipes.repository';
 
 @Injectable()
 export class MenuItemsService {
@@ -15,15 +16,16 @@ export class MenuItemsService {
   constructor(
     private readonly menuItemsRepository: MenuItemsRepository,
     private readonly brandsRepository: BrandsRepository,
+    private readonly recipesRepository: RecipesRepository,
   ) {}
 
   async createMenuItem(dto: CreateMenuItemDTO) {
     this.logger.debug(`Creating menu item ${dto.name} with code ${dto.code}.`);
     const brand = await this.brandsRepository.findOneBrand(dto.brand_id);
-    // const recipe
+    const recipe = await this.recipesRepository.findOne(dto.recipe_id);
 
     assertExists(brand, 'Brand', dto.brand_id, this.logger);
-    // assertExists(recipe)
+    assertExists(recipe, 'Recipe', dto.recipe_id, this.logger);
 
     return this.menuItemsRepository.createMenuItem(dto);
   }
@@ -163,6 +165,33 @@ export class MenuItemsService {
 
     this.logger.log(`Reactivated menu item ${menuItem.menu_item_id}`);
     return reactivated;
+  }
+
+  async updateAvailability(menuItemId: string, availability: boolean) {
+    this.logger.debug(`Updating availability for menu item ${menuItemId}`);
+
+    const menuItem = await this.findOneMenuItem(menuItemId);
+    assertExists(menuItem, 'MenuItem', menuItemId, this.logger);
+
+    if (menuItem.is_available === availability) {
+      this.logger.warn(`Menu item availability is already ${availability}`);
+
+      throw new ConflictException({
+        code: 'AVAILABILITY_CONFLICT',
+        message: `Availability already set to ${availability}`,
+      });
+    }
+
+    const updatedMenuItem = await this.menuItemsRepository.updateAvailability(
+      menuItemId,
+      availability,
+    );
+
+    this.logger.debug(
+      `Availability for menu item ${menuItem.menu_item_id} set to ${availability}`,
+    );
+
+    return updatedMenuItem;
   }
 
   async deleteMenuItem(menuItemId: string) {

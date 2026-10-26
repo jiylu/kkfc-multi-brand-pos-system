@@ -37,7 +37,7 @@ export class BrandsGuard implements CanActivate {
       });
     }
 
-    const body = request.body as { brand_id?: unknown } | undefined;
+    const body = request.body as Record<string, unknown> | undefined;
     const paramBrandId = request.params.brandId;
     const bodyBrandId = body?.brand_id;
 
@@ -56,7 +56,10 @@ export class BrandsGuard implements CanActivate {
     let brandId: string | null;
 
     if (source) {
-      const identifier = request.params[source.param];
+      const identifier =
+        source.source === 'body'
+          ? body?.[source.param]
+          : request.params[source.param];
 
       if (typeof identifier !== 'string' || identifier.trim() === '') {
         throw new BadRequestException({
@@ -113,6 +116,36 @@ export class BrandsGuard implements CanActivate {
         assertExists(menuItem, 'MenuItem', identifier);
         return menuItem.brand_id;
       }
+      case BrandResourceType.MENU_ITEM_CHANNEL: {
+        if (!isUUID(identifier)) {
+          throw new BadRequestException(
+            'Menu item channel ID must be a valid UUID.',
+          );
+        }
+
+        const menuItemChannel = await this.prisma.menuItemChannel.findUnique({
+          where: { menu_item_channel_id: identifier },
+          select: { menu_item: { select: { brand_id: true } } },
+        });
+
+        assertExists(menuItemChannel, 'MenuItemChannel', identifier);
+        return menuItemChannel.menu_item.brand_id;
+      }
+      case BrandResourceType.MENU_ITEM_MODIFIER: {
+        if (!isUUID(identifier)) {
+          throw new BadRequestException(
+            'Menu item modifier ID must be a valid UUID.',
+          );
+        }
+
+        const menuItemModifier = await this.prisma.menuItemModifier.findUnique({
+          where: { menu_item_modifier_id: identifier },
+          select: { menu_item: { select: { brand_id: true } } },
+        });
+
+        assertExists(menuItemModifier, 'MenuItemModifier', identifier);
+        return menuItemModifier.menu_item.brand_id;
+      }
       case BrandResourceType.ORDER: {
         if (!isUUID(identifier)) {
           throw new BadRequestException('Order ID must be a valid UUID.');
@@ -160,6 +193,7 @@ export class BrandsGuard implements CanActivate {
   ) {
     const hasAccess =
       user.role === UserRole.SUPERADMIN ||
+      user.role === UserRole.RECIPE_MANAGER ||
       (user.brand_id != null && user.brand_id === brandId);
 
     if (!hasAccess) {

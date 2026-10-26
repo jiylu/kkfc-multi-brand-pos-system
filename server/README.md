@@ -125,6 +125,7 @@ Menu endpoints are documented in Swagger under **Menu items**:
 | `GET /api/menu-items/brand/:brandId` | Any authenticated user in the requested active brand; superadmins across brands. |
 | `GET /api/menu-items/:id` | Accepts a code or UUID; same-brand users and superadmins. The item's brand must be active. |
 | `PATCH /api/menu-items/:id` | Managers in the item's brand and superadmins; active items only, UUID required. Accepts partial create fields except brand_id. |
+| `PATCH /api/menu-items/availability/:id` | Sets availability for an active item by UUID using `{ "availability": false }`. All roles except cashiers; brand access required except for superadmins and recipe managers. See [availability API](docs/menu-item-availability-api.md). |
 | `PATCH /api/menu-items/reactivate/:id` | Managers in the item's brand and superadmins; UUID required. Returns 409 if already active. |
 | `DELETE /api/menu-items/:id` | Managers in the item's brand and superadmins; deactivates an active item by UUID. |
 

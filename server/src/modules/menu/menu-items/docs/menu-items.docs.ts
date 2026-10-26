@@ -12,6 +12,36 @@ import {
   getSchemaPath,
 } from '@nestjs/swagger';
 import { UpdateMenuItemDTO } from '../dto/update-menu-item.dto';
+import { UpdateMenuItemAvailabilityDTO } from '../dto/update-menu-item-availability.dto';
+
+export function UpdateMenuItemAvailabilityDocs() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Set menu item availability.',
+      description:
+        'Available to SUPERADMIN, MANAGER, RECIPE_MANAGER, SUPERVISOR, KITCHEN_HEAD, KITCHEN_STAFF, and INVENTORY_STAFF; CASHIER_STAFF cannot change availability. Superadmins and recipe managers can access any brand; other allowed callers must belong to the item brand. Supply an active menu item UUID and a JSON object with a required boolean availability. Sets is_available without changing is_active or channel overrides. The item brand must be active. An unavailable item cannot be used for new orders, even when its channel override is available. Setting the current value returns 409.',
+    }),
+    ApiParam({
+      name: 'id',
+      format: 'uuid',
+      description: 'Active menu item UUID.',
+    }),
+    ApiBody({ type: UpdateMenuItemAvailabilityDTO }),
+    ApiResponse({
+      status: 200,
+      description: 'Updated menu item, including is_available.',
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Menu item or brand not found or inactive.',
+    }),
+    ApiResponse({
+      status: 409,
+      description:
+        'Availability already has the requested value (AVAILABILITY_CONFLICT).',
+    }),
+  );
+}
 
 export function MenuItemsDocs() {
   return applyDecorators(
@@ -39,7 +69,7 @@ export function CreateMenuItemDocs() {
     ApiOperation({
       summary: 'Create a menu item (manager or superadmin).',
       description:
-        'Managers can create menu items in their assigned brand; superadmins can create them in any active brand. Supply brand_id, recipe_id, img_url, a unique code, name, and base_price. Description and serving_description are optional and nullable. The item starts active.',
+        'Managers can create menu items in their assigned brand; superadmins can create them in any active brand. Supply brand_id, recipe_id, img_url, a unique code, name, and base_price. Description and serving_description are optional and nullable. The item starts active and available.',
     }),
     ApiResponse({ status: 201, description: 'Created menu item.' }),
     ApiResponse({ status: 404, description: 'Brand not found or inactive.' }),

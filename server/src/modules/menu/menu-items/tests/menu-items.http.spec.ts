@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   INestApplication,
   NotFoundException,
   ValidationPipe,
@@ -43,6 +44,7 @@ describe('Menu items HTTP endpoints', () => {
     findAll: jest.fn(),
     findAllByBrand: jest.fn(),
     updateMenuItem: jest.fn(),
+    updateAvailability: jest.fn(),
     reactivateMenuItem: jest.fn(),
     deleteMenuItem: jest.fn(),
   };
@@ -163,6 +165,7 @@ describe('Menu items HTTP endpoints', () => {
       document.paths['/api/menu-items/{id}'].delete,
       document.paths['/api/menu-items/brand/{brandId}'].get,
       document.paths['/api/menu-items/reactivate/{id}'].patch,
+      document.paths['/api/menu-items/availability/{id}'].patch,
     ];
     for (const operation of operations) {
       expect(typeof operation?.summary).toBe('string');
@@ -532,4 +535,158 @@ describe('Menu items HTTP endpoints', () => {
       expect(service.findAllByBrand).not.toHaveBeenCalled();
     },
   );
+  describe('availability toggle', () => {
+    const path = `/availability/${menuId}`;
+    const body = { availability: false };
+    const request = (
+      payload: unknown = body,
+      authorized = true,
+      identifier = menuId,
+    ) =>
+      fetch(`${url}/availability/${identifier}`, {
+        method: 'PATCH',
+        headers: authorized ? headers : { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+    it('documents a required boolean body and the success/error responses', () => {
+      const document = SwaggerModule.createDocument(
+        app,
+        new DocumentBuilder().addBearerAuth().build(),
+      );
+      const operation =
+        document.paths['/api/menu-items/availability/{id}'].patch;
+      expect(operation?.requestBody).toMatchObject({
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/UpdateMenuItemAvailabilityDTO',
+            },
+          },
+        },
+      });
+      expect(
+        document.components?.schemas?.UpdateMenuItemAvailabilityDTO,
+      ).toMatchObject({
+        required: ['availability'],
+        properties: { availability: { type: 'boolean', example: false } },
+      });
+      for (const status of [200, 400, 401, 403, 404, 409])
+        expect(operation?.responses).toHaveProperty(String(status));
+    });
+
+    it.each([true, false])(
+      'forwards boolean %s and returns the updated item',
+      async (availability) => {
+        const updated = {
+          menu_item_id: menuId,
+          is_available: availability,
+          is_active: true,
+        };
+        service.updateAvailability.mockResolvedValue(updated);
+        const response = await request({ availability });
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual(updated);
+        expect(service.updateAvailability).toHaveBeenCalledWith(
+          menuId,
+          availability,
+        );
+      },
+    );
+
+    it.each(
+      Object.values(UserRole).filter(
+        (value) => value !== UserRole.CASHIER_STAFF,
+      ),
+    )('allows %s', async (allowedRole) => {
+      role = allowedRole;
+      if (role === UserRole.SUPERADMIN || role === UserRole.RECIPE_MANAGER)
+        callerBrand = otherBrandId;
+      expect((await request()).status).toBe(200);
+      expect(service.updateAvailability).toHaveBeenCalledWith(menuId, false);
+    });
+
+    it('requires authentication', async () => {
+      expect((await request(body, false)).status).toBe(401);
+      expect(service.updateAvailability).not.toHaveBeenCalled();
+    });
+
+    it('denies cashiers', async () => {
+      role = UserRole.CASHIER_STAFF;
+      expect((await request()).status).toBe(403);
+      expect(service.updateAvailability).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      UserRole.MANAGER,
+      UserRole.SUPERVISOR,
+      UserRole.KITCHEN_HEAD,
+      UserRole.KITCHEN_STAFF,
+      UserRole.INVENTORY_STAFF,
+    ])('denies other-brand and unassigned %s', async (deniedRole) => {
+      role = deniedRole;
+      for (const brand of [otherBrandId, null]) {
+        callerBrand = brand;
+        expect((await request()).status).toBe(403);
+      }
+      expect(service.updateAvailability).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      false,
+      true,
+      null,
+      {},
+      { availability: null },
+      { availability: 'false' },
+      { availability: 0 },
+      { availability: [] },
+      { availability: {} },
+      { is_available: false },
+      { availability: false, is_active: false },
+    ])('rejects invalid payload %j', async (payload) => {
+      expect((await request(payload)).status).toBe(400);
+      expect(service.updateAvailability).not.toHaveBeenCalled();
+    });
+
+    it('rejects a code on the UUID-only route', async () => {
+      expect((await request(body, true, code)).status).toBe(400);
+      expect(service.updateAvailability).not.toHaveBeenCalled();
+    });
+
+    it('rejects a missing item before invoking the service', async () => {
+      expect((await request(body, true, recipeId)).status).toBe(404);
+      expect(service.updateAvailability).not.toHaveBeenCalled();
+    });
+
+    it('returns the availability conflict code', async () => {
+      service.updateAvailability.mockRejectedValue(
+        new ConflictException({
+          code: 'AVAILABILITY_CONFLICT',
+          message: 'Availability already set to false',
+        }),
+      );
+      const response = await request();
+      expect(response.status).toBe(409);
+      expect(await response.json()).toMatchObject({
+        code: 'AVAILABILITY_CONFLICT',
+      });
+    });
+
+    it('preserves service not-found errors for inactive items or brands', async () => {
+      service.updateAvailability.mockRejectedValue(
+        new NotFoundException({ code: 'MENU_ITEM_NOT_FOUND' }),
+      );
+      expect(
+        (
+          await fetch(url + path, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify(body),
+          })
+        ).status,
+      ).toBe(404);
+    });
+  });
 });

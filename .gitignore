@@ -2,6 +2,8 @@
 .env.*
 !.env.example
 robot/results/
+robot/.fixtures/
+.tmp/
 server/reports/
 server/jest-html-reporters-attach/
 Master-Backend-QA-Automation-Rules.md

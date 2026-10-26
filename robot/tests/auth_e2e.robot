@@ -15,7 +15,7 @@ E2E-AUTH-001: Successful login with valid credentials
     [Documentation]    Verify that an active user can authenticate and retrieve profile data.
     [Tags]             E2E    AUTH    E2E-AUTH-001    FR-AUTH-001
     Given the backend server is running against the test database
-    And a registered test user exists with role "OWNER"
+    And a registered test user exists with role "MANAGER"
     When the client submits valid login credentials to "/api/auth/login"
     Then the HTTP response status should be 200
     And the response should contain an active session token
@@ -26,7 +26,7 @@ E2E-AUTH-002: Login with an incorrect password
     [Documentation]    Verify that authentication fails when an invalid password is provided.
     [Tags]             E2E    AUTH    E2E-AUTH-002    FR-AUTH-001
     Given the backend server is running against the test database
-    And a registered test user exists with role "OWNER"
+    And a registered test user exists with role "MANAGER"
     When the client submits an invalid password to "/api/auth/login"
     Then the HTTP response status should be 401
     And the response should not contain a session token
@@ -42,7 +42,7 @@ E2E-AUTH-004: User logout and session invalidation
     [Documentation]    Verify that logging out revokes the session token.
     [Tags]             E2E    AUTH    E2E-AUTH-004    FR-AUTH-001
     Given the backend server is running against the test database
-    And a registered test user exists with role "OWNER"
+    And a registered test user exists with role "MANAGER"
     When the client submits valid login credentials to "/api/auth/login"
     Then the response should contain an active session token
     When the client logs out with the session token
