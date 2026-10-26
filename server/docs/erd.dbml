@@ -141,6 +141,16 @@ Table users {
   }
 }
 
+// Optional one-to-one credential; no row means a PIN has not been configured.
+Table user_pin_credentials {
+  user_id uuid [pk, not null, ref: - users.user_id]
+  pin_hash varchar(255) [not null, note: 'Argon2 hash of an exactly four-digit PIN (0-9); validate before hashing and preserve leading zeros. Never store the plaintext PIN.']
+  failed_attempts integer [not null, default: 0]
+  locked_until timestamp
+  created_at timestamp [not null, default: `now()`]
+  modified_at timestamp [not null, default: `now()`]
+}
+
 // Stores revocable sessions. The backend enforces expiration and records activity.
 Table user_sessions {
   session_id uuid [pk]

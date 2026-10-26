@@ -4,31 +4,38 @@ This guide describes a proposed implementation. Each employee enters their own
 PIN for every protected action. Manager approvals and temporary verification
 sessions are outside this guide.
 
-## 1. Add PIN fields
+## 1. Apply the PIN credentials schema
 
-Add these fields to `User` in `prisma/schema.prisma`:
+`UserPinCredential` in `prisma/schema.prisma` stores the following fields in
+`user_pin_credentials`, separately from user profiles:
 
 ```prisma
-pin_hash            String?   @db.VarChar(255)
-pin_failed_attempts Int       @default(0)
-pin_locked_until    DateTime? @db.Timestamp(6)
+user_id         String    @id @db.Uuid
+pin_hash        String    @db.VarChar(255)
+failed_attempts Int       @default(0)
+locked_until    DateTime? @db.Timestamp(6)
 ```
 
-Create the migration against your development database and regenerate the client:
+The user ID is both the primary key and foreign key: each user has at most one
+credential. Creation/modification timestamps follow the existing schema conventions;
+the application must explicitly update `modified_at`. Apply the included migration
+against your intended database and regenerate the client:
 
 ```sh
-npx prisma migrate dev --name add_user_pin
+npx prisma migrate deploy
 npm run prisma:generate
 ```
 
-Existing users start without a PIN; protected actions must reject them until
+Existing users have no credential row; protected actions must reject them until
 they set one.
 
 ## 2. Add secure PIN setup
 
-Add authenticated PIN setup/change handling in the auth module. Require the
+Add a dedicated `PinModule` under `src/modules/pin` with PIN setup/change handling. Require the
 current password, derive the user ID from the session, and hash the PIN with
-the existing `argon2` dependency. Treat PINs as strings to preserve leading zeros.
+the existing `argon2` dependency. Require exactly four ASCII digits using
+`/^[0-9]{4}$/`. Treat PINs as strings to preserve leading zeros. Keep the hash
+column at 255 characters; a hash does not have the same length as its PIN.
 Reset the failure counter and cooldown when the PIN changes.
 
 Exclude `pin_hash` from every user response, including login and session
@@ -37,15 +44,15 @@ responses, alongside `password_hash`. Exclude PINs, passwords, and the
 
 ## 3. Implement PIN verification
 
-Create `PinService` in `src/modules/auth` with
+Create `PinService` and `PinRepository` in `src/modules/pin` with the service method
 `verifyOrThrow(userId: string, pin: string): Promise<void>`.
 
 Use one counter per user across all protected endpoints. Start with five
 consecutive failures followed by a five-minute cooldown:
 
-1. Begin a database transaction and lock the active user's row with
-   `SELECT ... FOR UPDATE`, using a parameterized query.
-2. Reject an unconfigured PIN. If `pin_locked_until` is in the future, return
+1. Confirm the user is active, then begin a database transaction and lock their
+   credential row with `SELECT ... FOR UPDATE`, using a parameterized query.
+2. Reject an unconfigured PIN. If `locked_until` is in the future, return
    a locked result without hashing the supplied PIN.
 3. If the cooldown expired, clear it and reset the counter before checking.
 4. Verify the PIN using `argon2.verify(pin_hash, pin)`.
@@ -60,10 +67,10 @@ cooldown check. PIN setup/change must use the same locking discipline.
 
 ## 4. Create the guard
 
-Create `src/shared/guards/pin.guard.ts`. Implement Nest's `CanActivate` interface:
+Create `src/modules/pin/pin.guard.ts`. Implement Nest's `CanActivate` interface:
 
 - Read `request.session.user.user_id`; reject missing authentication with `401`.
-- Read `X-Action-Pin`; require a nonempty string and call `verifyOrThrow()`.
+- Read `X-Action-Pin`; require a string matching `/^[0-9]{4}$/` and call `verifyOrThrow()`.
 - Return `true` only after successful verification.
 - Return `403` for missing, unconfigured, or incorrect PINs.
 - Return `429` when a failure starts a cooldown or a cooldown is already active;
@@ -74,8 +81,10 @@ Set `Retry-After` on the HTTP response when handling the service's locked result
 
 ## 5. Register and apply it
 
-Add `PinService` and `PinGuard` to the existing `AuthModule` providers and exports.
-The module is already global.
+Register `PinService`, `PinRepository`, and `PinGuard` in `PinModule`, import
+`PrismaModule`, and export the guard and service. Import `PinModule` into modules
+containing protected controllers. Serialize first-time credential creation using
+the user row, since a missing credential row cannot be locked.
 
 For controllers that already use `Authenticated` and `RolesGuard` at class level,
 add the PIN guard after the brand guard on selected mutation methods:
@@ -96,6 +105,7 @@ each protected request. PIN verification supplements role and brand access.
 ## 6. Test the behavior
 
 - Correct PIN permits the action and resets previous failures; leading zeros work.
+- Reject PINs with fewer or more than four digits, non-digit characters, or numeric input.
 - Missing, incorrect, or unconfigured PIN blocks the handler; unauthorized roles
   and brands remain blocked even with a correct PIN.
 - Five incorrect PINs start the cooldown; blocked requests include `Retry-After`.

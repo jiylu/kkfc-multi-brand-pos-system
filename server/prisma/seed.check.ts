@@ -2,12 +2,23 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { OrderChannel, Prisma, UserRole } from '@prisma/client';
 import { seedDatabase } from './seed';
-import { TEST_USERS, TEST_UNASSIGNED_OWNER } from './seed-test';
+import {
+  TEST_USERS,
+  TEST_UNASSIGNED_OWNER,
+  TEST_PIN,
+  TEST_PIN_ROLES,
+} from './seed-test';
 import * as argon2 from 'argon2';
 
 async function check() {
+  assert.match(
+    TEST_PIN,
+    /^[0-9]{4}$/,
+    'Seed PIN must contain exactly four digits',
+  );
   const brands = new Map();
   const users = new Map();
+  const pinCredentials = new Map();
   const inventory = new Map();
   const recipes = new Map();
   const components = new Map();
@@ -27,6 +38,24 @@ async function check() {
   }
 
   const database = {
+    userPinCredential: {
+      upsert: async (args: Prisma.UserPinCredentialUpsertArgs) => {
+        assert.deepEqual(args.update, {});
+        const userId = args.where.user_id!;
+        assert.equal(args.create.user_id, userId);
+        const user = [...users.values()].find((row) => row.user_id === userId);
+        assert(user);
+        assert(TEST_PIN_ROLES.has(user.role));
+        if (!pinCredentials.has(userId)) {
+          pinCredentials.set(userId, {
+            failed_attempts: 0,
+            locked_until: null,
+            ...args.create,
+          });
+        }
+        return pinCredentials.get(userId);
+      },
+    },
     modifier: {
       upsert: async (args: Prisma.ModifierUpsertArgs) => {
         const inventoryItemId = args.create.inventory_item_id;
@@ -159,6 +188,7 @@ async function check() {
   await seedDatabase(database);
   assert.equal(brands.size, 3);
   assert.equal(users.size, 17);
+  assert.equal(pinCredentials.size, 8);
   for (const user of [...TEST_USERS, TEST_UNASSIGNED_OWNER]) {
     assert(
       user.username.length <= 16,
@@ -166,6 +196,16 @@ async function check() {
     );
     const saved = users.get(user.username);
     assert.equal(saved.role, user.role);
+    const credential = pinCredentials.get(saved.user_id);
+    if (TEST_PIN_ROLES.has(user.role)) {
+      assert(credential, `Missing PIN for ${user.username}`);
+      assert.notEqual(credential.pin_hash, TEST_PIN);
+      assert(await argon2.verify(credential.pin_hash, TEST_PIN));
+      assert.equal(credential.failed_attempts, 0);
+      assert.equal(credential.locked_until, null);
+    } else {
+      assert.equal(credential, undefined);
+    }
     assert(await argon2.verify(saved.password_hash, user.password));
     assert.equal(saved.password, undefined);
     assert.equal(saved.brand_code, undefined);
@@ -273,6 +313,10 @@ async function check() {
   staff.password_hash = await argon2.hash('ChangedPassword123!');
   staff.brand_id = brands.get('KK').brand_id;
   staff.is_active = false;
+  const existingPin = pinCredentials.get(users.get('test_superadmin').user_id);
+  existingPin.pin_hash = await argon2.hash('0432');
+  existingPin.failed_attempts = 4;
+  existingPin.locked_until = new Date('2030-01-01T00:00:00Z');
   modifiers.get('MOD-EXTRA-RICE').name = 'Existing extra rice';
   modifiers.get('MOD-EXTRA-RICE').is_active = false;
   [...menuItemModifiers.values()][0].additional_price = 99;
@@ -286,6 +330,7 @@ async function check() {
   const tables = [
     brands,
     users,
+    pinCredentials,
     inventory,
     recipes,
     components,
@@ -308,6 +353,8 @@ async function check() {
   );
 
   users.delete('test_ai_kitchen');
+  const missingPinUserId = users.get('test_owner').user_id;
+  pinCredentials.delete(missingPinUserId);
   const packaging = [...inventory.values()].find(
     (item) => item.type === 'PACKAGING',
   );
@@ -319,6 +366,19 @@ async function check() {
   menuItemModifiers.delete(firstAssignmentKey);
   await seedDatabase(database);
   assert.equal(users.size, 17);
+  assert.equal(pinCredentials.size, 8);
+  assert(
+    await argon2.verify(
+      pinCredentials.get(missingPinUserId).pin_hash,
+      TEST_PIN,
+    ),
+  );
+  assert(await argon2.verify(existingPin.pin_hash, '0432'));
+  assert.equal(existingPin.failed_attempts, 4);
+  assert.equal(
+    existingPin.locked_until.toISOString(),
+    '2030-01-01T00:00:00.000Z',
+  );
   assert.equal(
     users.get('test_ai_kitchen').brand_id,
     brands.get('AI').brand_id,

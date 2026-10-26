@@ -7,6 +7,7 @@ import { PrismaModule } from './shared/prisma/prisma.module';
 import { StorageModule } from './shared/storage/storage.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { PinModule } from './modules/pin/pin.module';
 import { BrandsModule } from './modules/brands/brands.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { OrdersModule } from './modules/orders/orders.module';
@@ -32,6 +33,7 @@ import { MenuItemModifiersModule } from './modules/menu/menu-item-modifiers/menu
     StorageModule,
     UsersModule,
     AuthModule,
+    PinModule,
     BrandsModule,
     AuditModule,
     OrdersModule,

@@ -6,6 +6,15 @@ import { getDatabaseUrl } from '../src/database/database.config';
 
 config({ path: ['.env', '../.env'], quiet: true });
 
+export const TEST_PIN = '1234';
+export const TEST_PIN_ROLES: ReadonlySet<UserRole> = new Set([
+  UserRole.SUPERADMIN,
+  UserRole.MANAGER,
+  UserRole.RECIPE_MANAGER,
+  UserRole.SUPERVISOR,
+  UserRole.KITCHEN_HEAD,
+]);
+
 export const TEST_USERS = [
   {
     username: 'test_superadmin',
@@ -169,6 +178,9 @@ export async function seedUsers(
   prisma: Prisma.TransactionClient,
   brandIds: ReadonlyMap<string, string>,
 ) {
+  if (!/^[0-9]{4}$/.test(TEST_PIN)) {
+    throw new Error('Seed PIN must contain exactly four digits.');
+  }
   for (const user of [...TEST_USERS, TEST_UNASSIGNED_OWNER]) {
     const { password, brand_code, ...data } = user;
     const brand_id = brand_code === null ? null : brandIds.get(brand_code);
@@ -181,11 +193,21 @@ export async function seedUsers(
       brand_id,
       is_active: true,
     };
-    await prisma.user.upsert({
+    const savedUser = await prisma.user.upsert({
       where: { username: user.username },
       update: {},
       create: values,
     });
+    if (TEST_PIN_ROLES.has(savedUser.role)) {
+      await prisma.userPinCredential.upsert({
+        where: { user_id: savedUser.user_id },
+        update: {},
+        create: {
+          user_id: savedUser.user_id,
+          pin_hash: await argon2.hash(TEST_PIN),
+        },
+      });
+    }
   }
   console.log(
     `Seeded ${TEST_USERS.length + 1} users covering all 8 roles, with manager, inventory, kitchen, and cashier staff per brand.`,
