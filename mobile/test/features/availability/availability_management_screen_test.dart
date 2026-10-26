@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/features/availability/presentation/pages/availability_management_screen.dart';
-import 'package:mobile/features/availability/presentation/widgets/availability_toggle.dart';
+import 'package:mobile/shared/widgets/kkfc_switch.dart';
 
 void main() {
   testWidgets(
@@ -21,23 +21,21 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final toggles = find.byType(AvailabilityToggle);
+      final toggles = find.byType(KkfcSwitch);
       final before = tester
-          .widgetList<AvailabilityToggle>(toggles)
+          .widgetList<KkfcSwitch>(toggles)
           .map((toggle) => toggle.value)
           .toList();
       expect(before, isNotEmpty);
-      final first = tester.widget<AvailabilityToggle>(toggles.first);
-      final label = first.semanticLabel;
-      final switchFinder = find.descendant(
-        of: toggles.first,
-        matching: find.byType(InkWell),
-      );
-      await tester.ensureVisible(switchFinder);
-      await tester.tap(switchFinder);
+      final first = tester.widget<KkfcSwitch>(toggles.first);
+      final subtitle = before.first
+          ? 'Manual: unavailable · OFF'
+          : 'Available · switch ON';
+      await tester.ensureVisible(toggles.first);
+      await tester.tap(toggles.first);
       await tester.pumpAndSettle();
       final after = tester
-          .widgetList<AvailabilityToggle>(toggles)
+          .widgetList<KkfcSwitch>(toggles)
           .map((toggle) => toggle.value)
           .toList();
       expect(after.first, !before.first);
@@ -47,13 +45,11 @@ void main() {
             .descendant(of: toggles.first, matching: find.byType(Semantics))
             .first,
       );
-      expect(semantics.properties.label, label);
+      expect(semantics.properties.label, '${first.title}, $subtitle');
       expect(semantics.properties.toggled, !before.first);
+      expect(semantics.properties.enabled, isTrue);
       expect(
-        find.descendant(
-          of: toggles.first,
-          matching: find.text(before.first ? 'Off' : 'On'),
-        ),
+        find.descendant(of: toggles.first, matching: find.text(subtitle)),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
@@ -80,7 +76,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byType(AvailabilityToggle).last);
+      await tester.ensureVisible(find.byType(KkfcSwitch).last);
+      expect(tester.takeException(), isNull);
     },
   );
 }

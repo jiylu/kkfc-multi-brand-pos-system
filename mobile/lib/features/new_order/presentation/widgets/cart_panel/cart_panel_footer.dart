@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
+import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 
 class CartPanelFooter extends StatelessWidget {
   const CartPanelFooter({
@@ -40,13 +41,11 @@ class CartPanelFooter extends StatelessWidget {
             ],
           ),
           const SizedBox(height: MenuSpace.md),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-            ),
-            // TODO: submit order once the backend exists.
+          KkfcLoadingButton(
+            label: 'Check and send',
+            loadingLabel: 'Sending…',
+            isLoading: false, // TODO: wire to the real sending state once the backend exists.
             onPressed: canSend ? onSend : null,
-            child: const Text('Check and send'),
           ),
           const SizedBox(height: MenuSpace.sm),
           Text(

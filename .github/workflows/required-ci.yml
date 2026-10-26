@@ -1,0 +1,97 @@
+name: CI
+
+# Keep this workflow free of path filters so every PR gets the required CI check.
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+permissions:
+  contents: read
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select required pipelines
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          # On pushes, compare with the previous commit on the same branch.
+          # PRs use the pull request's base automatically.
+          base: ${{ github.ref }}
+          filters: |
+            backend:
+              - 'server/**'
+              - 'robot/**'
+              - 'features/!(mobile)/**'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/required-ci.yml'
+            frontend:
+              - 'mobile/**'
+              - 'features/mobile/**'
+              - '.github/workflows/flutter-ci.yml'
+              - '.github/workflows/required-ci.yml'
+
+  backend:
+    name: Backend
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    uses: ./.github/workflows/ci.yml
+
+  frontend:
+    name: Flutter
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    uses: ./.github/workflows/flutter-ci.yml
+
+  ci:
+    name: CI
+    needs: [detect-changes, backend, frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required pipelines
+        env:
+          DETECTION_RESULT: ${{ needs.detect-changes.result }}
+          BACKEND_REQUIRED: ${{ needs.detect-changes.outputs.backend }}
+          FRONTEND_REQUIRED: ${{ needs.detect-changes.outputs.frontend }}
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+        run: |
+          if [ "$DETECTION_RESULT" != "success" ]; then
+            echo "Change detection did not succeed."
+            exit 1
+          fi
+
+          check_pipeline() {
+            local name="$1" required="$2" result="$3"
+            case "$required:$result" in
+              true:success|false:skipped)
+                echo "$name: $result"
+                ;;
+              *)
+                echo "$name did not complete as expected (required=$required, result=$result)."
+                return 1
+                ;;
+            esac
+          }
+
+          check_pipeline Backend "$BACKEND_REQUIRED" "$BACKEND_RESULT"
+          check_pipeline Flutter "$FRONTEND_REQUIRED" "$FRONTEND_RESULT"
+          echo "All required pipelines passed."

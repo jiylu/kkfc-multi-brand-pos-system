@@ -126,9 +126,12 @@ final TextTheme kkfcTextTheme = TextTheme(
   displayLarge: KkfcTypography.display,
   headlineMedium: KkfcTypography.headline,
   titleLarge: KkfcTypography.title,
+  titleMedium: KkfcTypography.kdsItemCompact,
+  titleSmall: KkfcTypography.kdsGroupCompact,
   bodyLarge: KkfcTypography.bodyLg,
   bodyMedium: KkfcTypography.body,
   labelLarge: KkfcTypography.labelLg,
   labelMedium: KkfcTypography.label,
+  labelSmall: KkfcTypography.caption,
   bodySmall: KkfcTypography.caption,
 );

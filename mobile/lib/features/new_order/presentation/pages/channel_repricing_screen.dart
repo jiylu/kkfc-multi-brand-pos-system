@@ -12,6 +12,7 @@ import 'package:mobile/features/new_order/presentation/widgets/repricing/operati
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_notice.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_row.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 
 class ChannelRepricingScreen extends StatelessWidget {
@@ -199,10 +200,11 @@ class _GotItBar extends StatelessWidget {
       elevation: 3,
       child: Padding(
         padding: const EdgeInsets.all(MenuSpace.md),
-        child: FilledButton(
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+        child: KkfcLoadingButton(
+          label: 'Got it',
+          loadingLabel: 'Clearing…',
+          isLoading: false, // TODO: wire to the real sending state once the backend exists.
           onPressed: () => context.go(AppRoutes.menu),
-          child: const Text('Got it'),
         ),
       ),
     );

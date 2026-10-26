@@ -6,6 +6,7 @@ import 'package:mobile/features/availability/data/models/availability_model.dart
 import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/shared/widgets/menu_header.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
+import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 
 /// Material 3 window-size boundary between "medium" and "expanded".
 const double kTabletBreakpoint = 840;
@@ -132,9 +133,11 @@ class _PosShellState extends State<PosShell> {
                 constraints: const BoxConstraints(maxWidth: 360),
                 child: SizedBox(
                   width: double.infinity,
-                  child: FilledButton(
+                  child: KkfcLoadingButton(
+                    label: widget.actionLabel,
+                    loadingLabel: 'Loading…',
+                    isLoading: false, // TODO: wire to the real sending state once the backend exists.
                     onPressed: widget.onAction,
-                    child: Text(widget.actionLabel),
                   ),
                 ),
               ),

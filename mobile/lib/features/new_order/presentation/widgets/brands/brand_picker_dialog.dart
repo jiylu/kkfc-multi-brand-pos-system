@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/theme_context.dart';
-import 'package:mobile/features/new_order/data/models/brand_models.dart';
+import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_dialog.dart';
+import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 
 /// Returns the brand the user continued with, or null if dismissed.
 Future<AssignedBrand?> showBrandPicker(
@@ -75,10 +76,11 @@ class _BrandPickerContentState extends State<_BrandPickerContent> {
           style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: MenuSpace.lg),
-        FilledButton(
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+        KkfcLoadingButton(
+          label: 'Continue with selected brand',
+          loadingLabel: 'Loading…',
+          isLoading: false, // TODO: wire to the real sending state once the backend exists.
           onPressed: () => Navigator.of(context).pop(_selected),
-          child: const Text('Continue with selected brand'),
         ),
       ],
     );

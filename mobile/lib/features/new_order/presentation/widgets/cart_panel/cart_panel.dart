@@ -1,31 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/shared/shared_layout.dart';
+import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_line_tile.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel_footer.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel_header.dart';
-import 'package:mobile/shared/widgets/fade_slide_in.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/shared/widgets/fade_slide_in.dart';
 
-class CartPanel extends ConsumerWidget {
+class CartPanel extends ConsumerStatefulWidget {
   const CartPanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartPanel> createState() => _CartPanelState();
+}
+
+class _CartPanelState extends ConsumerState<CartPanel> {
+  // The header's order reference field needs a controller that outlives
+  // rebuilds, so this widget owns it.
+  // TODO: move the reference into a provider once the order state exists.
+  final _referenceController = TextEditingController();
+
+  @override
+  void dispose() {
+    _referenceController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final lines = ref.watch(cartProvider);
     final channel = ref.watch(menuChannelProvider);
     final total = ref.watch(cartTotalProvider);
     final count = ref.watch(cartCountProvider);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     return Container(
       decoration: BoxDecoration(
         color: scheme.surface,
-        borderRadius: BorderRadius.circular(MenuRadius.sm),
+        borderRadius: BorderRadius.circular(KkfcRadius.md),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
+            color: scheme.primary.withValues(alpha: 0.12),
             blurRadius: 12,
             offset: const Offset(-4, 0),
           ),
@@ -39,17 +56,21 @@ class CartPanel extends ConsumerWidget {
           children: [
             CartPanelHeader(
               referenceLabel: channel.referenceLabel,
+              referenceController: _referenceController,
+              // TODO: set referenceHelperText, referenceErrorText,
+              // referenceEnabled and referenceDisabledText from the channel
+              // rules (e.g. "Not used for GrabFood") once they exist.
               canClear: lines.isNotEmpty,
               onClear: () => ref.read(cartProvider.notifier).clear(),
             ),
             Expanded(
               child: AnimatedSwitcher(
-                duration: context.motion(MenuMotion.medium),
+                duration: reduceMotion ? Duration.zero : KkfcMotion.base,
                 child: lines.isEmpty
                     ? Center(
                         key: const ValueKey('empty'),
                         child: Padding(
-                          padding: const EdgeInsets.all(MenuSpace.xl),
+                          padding: const EdgeInsets.all(KkfcSpace.s24),
                           child: Text(
                             'No items yet. Tap a menu item to add it.',
                             textAlign: TextAlign.center,
@@ -62,7 +83,7 @@ class CartPanel extends ConsumerWidget {
                     : ListView(
                         key: const ValueKey('lines'),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: MenuSpace.lg,
+                          horizontal: KkfcSpace.s16,
                         ),
                         children: [
                           for (final line in lines)
@@ -79,7 +100,7 @@ class CartPanel extends ConsumerWidget {
               count: count,
               total: total,
               canSend: lines.isNotEmpty,
-              onSend: () {},
+              onSend: () {}, // TODO: submit order once the backend exists.
             ),
           ],
         ),

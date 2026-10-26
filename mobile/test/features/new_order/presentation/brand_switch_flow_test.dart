@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app/theme/theme.dart';
-import 'package:mobile/features/new_order/data/models/brand_models.dart';
+import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/brand_switch_flow.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';

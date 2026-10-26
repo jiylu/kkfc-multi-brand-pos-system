@@ -1,6 +1,9 @@
 # Set default behavior for all files
 * text=auto
 
+# Golden images must remain byte-for-byte intact
+*.png binary
+
 # Enforce LF line endings across all OS platforms (crucial for Dart/Flutter formatter and POSIX tools)
 *.dart text eol=lf
 *.ts text eol=lf

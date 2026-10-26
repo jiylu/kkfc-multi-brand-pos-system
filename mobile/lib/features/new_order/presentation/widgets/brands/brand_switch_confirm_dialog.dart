@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/features/new_order/data/models/brand_models.dart';
+import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_dialog.dart';
+import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 
 // Unapproved policy copy from the design review. Remove once Product +
 // Backend confirm the switch/reset behavior.
@@ -93,10 +94,11 @@ class _ConfirmContent extends StatelessWidget {
           child: const Text('Keep current order'),
         ),
         const SizedBox(height: MenuSpace.sm),
-        FilledButton(
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+        KkfcLoadingButton(
+          label: 'Clear cart & switch',
+          loadingLabel: 'Switching…',
+          isLoading: false, // TODO: wire to the real sending state once the backend exists.
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Clear cart & switch'),
         ),
       ],
     );
