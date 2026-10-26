@@ -116,6 +116,22 @@ export class MenuItemsRepository {
     });
   }
 
+  async updateAvailability(
+    menuItemId: string,
+    availability: boolean,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.menuItem.update({
+      where: {
+        menu_item_id: menuItemId,
+        is_active: true,
+      },
+      data: {
+        is_available: availability,
+      },
+    });
+  }
+
   async reactivateMenuItem(
     menuItemId: string,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,

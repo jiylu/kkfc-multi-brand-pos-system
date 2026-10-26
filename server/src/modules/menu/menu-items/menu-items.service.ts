@@ -167,6 +167,33 @@ export class MenuItemsService {
     return reactivated;
   }
 
+  async updateAvailability(menuItemId: string, availability: boolean) {
+    this.logger.debug(`Updating availability for menu item ${menuItemId}`);
+
+    const menuItem = await this.findOneMenuItem(menuItemId);
+    assertExists(menuItem, 'MenuItem', menuItemId, this.logger);
+
+    if (menuItem.is_available === availability) {
+      this.logger.warn(`Menu item availability is already ${availability}`);
+
+      throw new ConflictException({
+        code: 'AVAILABILITY_CONFLICT',
+        message: `Availability already set to ${availability}`,
+      });
+    }
+
+    const updatedMenuItem = await this.menuItemsRepository.updateAvailability(
+      menuItemId,
+      availability,
+    );
+
+    this.logger.debug(
+      `Availability for menu item ${menuItem.menu_item_id} set to ${availability}`,
+    );
+
+    return updatedMenuItem;
+  }
+
   async deleteMenuItem(menuItemId: string) {
     this.logger.debug(`Deactivating menu item ${menuItemId}`);
     const menuItem =

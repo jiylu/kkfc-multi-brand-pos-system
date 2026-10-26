@@ -44,6 +44,7 @@ describe('MenuItemsService mutations', () => {
       | 'updateMenuItem'
       | 'reactivateMenuItem'
       | 'deleteMenuItem'
+      | 'updateAvailability'
     >
   >;
   let brands: jest.Mocked<Pick<BrandsRepository, 'findOneBrand'>>;
@@ -59,6 +60,7 @@ describe('MenuItemsService mutations', () => {
         .mockImplementation((_id: string, activeOnly: boolean = true) =>
           Promise.resolve({ ...item, is_active: activeOnly }),
         ),
+      updateAvailability: jest.fn(),
       updateMenuItem: jest.fn().mockResolvedValue({ ...item, ...dto }),
       reactivateMenuItem: jest.fn().mockResolvedValue(item),
       deleteMenuItem: jest
@@ -137,5 +139,95 @@ describe('MenuItemsService mutations', () => {
       response: { code: 'MENU_ITEM_ALREADY_ACTIVE' },
     });
     expect(menu.reactivateMenuItem).not.toHaveBeenCalled();
+  });
+  describe('availability', () => {
+    it.each([true, false])(
+      'sets availability to %s and returns the updated item',
+      async (availability) => {
+        // UUID-shaped IDs select the UID lookup rather than the code lookup.
+        const id = '00000000-0000-4000-8000-000000000003';
+        menu.findOneMenuItemByUID.mockResolvedValue({
+          ...item,
+          menu_item_id: id,
+          is_available: !availability,
+        });
+        const updated = {
+          ...item,
+          menu_item_id: id,
+          is_available: availability,
+        };
+        menu.updateAvailability.mockResolvedValue(updated);
+        await expect(
+          service.updateAvailability(id, availability),
+        ).resolves.toBe(updated);
+        expect(menu.findOneMenuItemByUID).toHaveBeenCalledWith(id, true);
+        expect(brands.findOneBrand).toHaveBeenCalledWith(item.brand_id);
+        expect(menu.updateAvailability).toHaveBeenCalledWith(id, availability);
+      },
+    );
+
+    it.each([true, false])(
+      'rejects unchanged availability %s without writing',
+      async (availability) => {
+        const id = '00000000-0000-4000-8000-000000000003';
+        menu.findOneMenuItemByUID.mockResolvedValue({
+          ...item,
+          is_available: availability,
+        });
+        await expect(
+          service.updateAvailability(id, availability),
+        ).rejects.toMatchObject({
+          status: 409,
+          response: {
+            code: 'AVAILABILITY_CONFLICT',
+            message: `Availability already set to ${availability}`,
+          },
+        });
+        expect(menu.updateAvailability).not.toHaveBeenCalled();
+      },
+    );
+
+    it('rejects missing or inactive items without writing', async () => {
+      menu.findOneMenuItemByUID.mockResolvedValue(null);
+      await expect(
+        service.updateAvailability(
+          '00000000-0000-4000-8000-000000000003',
+          false,
+        ),
+      ).rejects.toMatchObject({
+        status: 404,
+        response: { code: 'MENU_ITEM_NOT_FOUND' },
+      });
+      expect(brands.findOneBrand).not.toHaveBeenCalled();
+      expect(menu.updateAvailability).not.toHaveBeenCalled();
+    });
+
+    it('rejects a missing or inactive brand without writing', async () => {
+      brands.findOneBrand.mockResolvedValue(null);
+      await expect(
+        service.updateAvailability(
+          '00000000-0000-4000-8000-000000000003',
+          false,
+        ),
+      ).rejects.toMatchObject({
+        status: 404,
+        response: { code: 'BRAND_NOT_FOUND' },
+      });
+      expect(menu.updateAvailability).not.toHaveBeenCalled();
+    });
+
+    it('preserves persistence failures', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError(
+        'Item became inactive',
+        { code: 'P2025', clientVersion: '7.8.0' },
+      );
+      menu.updateAvailability.mockRejectedValue(error);
+      await expect(
+        service.updateAvailability(
+          '00000000-0000-4000-8000-000000000003',
+          false,
+        ),
+      ).rejects.toBe(error);
+    });
   });
 });
