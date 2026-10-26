@@ -7,15 +7,15 @@ class BrandLogo extends StatelessWidget {
   final AssignedBrand brand;
   final double height;
 
-  static const _assets = <String, String>{
-    'gamcheon': 'assets/images/gamcheon.png',
-    'aurelias-inasal': 'assets/images/aurelia.png',
-    'king-kungs-kafe': 'assets/images/king_kungs.png',
+  static const _assetsByCode = <String, String>{
+    'GC': 'assets/images/gamcheon.png',
+    'AI': 'assets/images/aurelia.png',
+    'KK': 'assets/images/king_kungs.png',
   };
 
   @override
   Widget build(BuildContext context) {
-    final asset = _assets[brand.id];
+    final asset = _assetsByCode[brand.code.toUpperCase()];
     if (asset == null) return Text(brand.name);
 
     return Image.asset(
