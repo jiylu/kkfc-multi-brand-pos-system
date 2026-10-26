@@ -43,7 +43,13 @@ class KkfcLoadingButton extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: KkfcSpace.s8),
-                  Text(loadingLabel),
+                  Flexible(
+                    child: Text(
+                      loadingLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               )
             : Text(label, key: const ValueKey('idle')),
