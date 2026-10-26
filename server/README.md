@@ -104,7 +104,7 @@ Password hashes are excluded from API responses.
 | `GET /api/auth/me` | Any authenticated user; returns their current profile. |
 | `POST /api/auth/logout` | Revokes the current session; returns 204. |
 | `POST /api/auth/logout-all` | Revokes all sessions for the current user; returns 204. |
-| `POST /api/users` | Any authenticated user can create a non-superadmin account in their assigned brand. Superadmins can create any role across brands. All roles except SUPERADMIN require an active `brand_id`. |
+| `POST /api/users` | Managers can create non-superadmin accounts only in their assigned brand and must supply its `brand_id`. Superadmins can create any role across brands; SUPERADMIN, INVENTORY_STAFF, and RECIPE_MANAGER accounts may have no brand. Other roles require an active `brand_id`. |
 | `GET /api/users` | Superadmins only; lists users across all brands, including unassigned users. |
 | `GET /api/users/brand/:brandId` | Managers list users in their own active brand; superadmins list users in any active brand. |
 | `GET /api/users/:id` | Accepts username or user UUID. Any authenticated user can read users in their assigned brand; superadmins can read across brands. |

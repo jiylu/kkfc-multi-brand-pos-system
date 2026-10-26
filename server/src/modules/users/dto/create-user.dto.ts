@@ -44,7 +44,7 @@ export class CreateUserDTO {
   @ApiProperty({
     enum: UserRole,
     description:
-      'Only superadmins can create SUPERADMIN accounts. Other authenticated users can create non-superadmin accounts in their own brand.',
+      'Only managers and superadmins can create users. Only superadmins can create SUPERADMIN accounts. Managers can create non-superadmin accounts in their own brand.',
   })
   role!: UserRole;
 
@@ -54,7 +54,7 @@ export class CreateUserDTO {
     format: 'uuid',
     nullable: true,
     description:
-      'Required for every role except SUPERADMIN, INVENTORY STAFF, RECIPE MANAGER. Superadmins may omit it or use null for a SUPERADMIN account. Other callers must supply their own brand ID. Any supplied brand must exist and be active.',
+      'Superadmins may omit brand_id or use null for SUPERADMIN, INVENTORY_STAFF, and RECIPE_MANAGER accounts. Other roles require a brand. Managers must supply their own brand ID for every account they create. Any supplied brand must exist and be active.',
   })
   brand_id?: string | null;
 }

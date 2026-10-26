@@ -23,7 +23,7 @@ export function CreateUserDocs() {
     ApiOperation({
       summary: 'Create a user.',
       description:
-        'Any authenticated user can create a non-superadmin account in their assigned brand. Only superadmins can create SUPERADMIN accounts or users in other brands. Every role except SUPERADMIN requires brand_id; SUPERADMIN accounts may be unassigned. Any supplied brand must exist and be active. Responses omit password_hash.',
+        'Only managers and superadmins can create users. Managers can create non-superadmin accounts only in their assigned brand and must supply its brand_id. Superadmins can create any role across brands and may omit brand_id or use null for SUPERADMIN, INVENTORY_STAFF, and RECIPE_MANAGER accounts. Other roles require a brand. Any supplied brand must exist and be active. Responses omit password_hash.',
     }),
     ApiResponse({
       status: 201,

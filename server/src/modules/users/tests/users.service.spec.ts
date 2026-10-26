@@ -123,10 +123,18 @@ describe('UsersService', () => {
   });
 
   describe('creation permissions', () => {
-    it.each([undefined, null])(
-      'allows superadmins to create superadmin accounts with brand_id=%s',
-      async (brand_id) => {
-        const dto = { ...createDTO, role: UserRole.SUPERADMIN, brand_id };
+    it.each(
+      [
+        UserRole.SUPERADMIN,
+        UserRole.INVENTORY_STAFF,
+        UserRole.RECIPE_MANAGER,
+      ].flatMap((role) =>
+        [undefined, null].map((brand_id) => ({ role, brand_id })),
+      ),
+    )(
+      'allows superadmins to create $role accounts with brand_id=$brand_id',
+      async ({ role, brand_id }) => {
+        const dto = { ...createDTO, role, brand_id };
         await service.createUser(dto, true);
         expect(repository.create).toHaveBeenCalledWith(dto);
       },
@@ -145,7 +153,12 @@ describe('UsersService', () => {
 
     it.each(
       Object.values(UserRole)
-        .filter((role) => role !== UserRole.SUPERADMIN)
+        .filter(
+          (role) =>
+            role !== UserRole.SUPERADMIN &&
+            role !== UserRole.INVENTORY_STAFF &&
+            role !== UserRole.RECIPE_MANAGER,
+        )
         .flatMap((role) =>
           [undefined, null].map((brand_id) => ({ role, brand_id })),
         ),
@@ -168,6 +181,20 @@ describe('UsersService', () => {
             false,
             callerBrandId,
           ),
+        ).rejects.toMatchObject({ status: 403 });
+        expect(repository.create).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(
+      [UserRole.INVENTORY_STAFF, UserRole.RECIPE_MANAGER].flatMap((role) =>
+        [undefined, null].map((brand_id) => ({ role, brand_id })),
+      ),
+    )(
+      'blocks managers from creating unassigned $role accounts ($brand_id)',
+      async ({ role, brand_id }) => {
+        await expect(
+          service.createUser({ ...createDTO, role, brand_id }, false, 'brand'),
         ).rejects.toMatchObject({ status: 403 });
         expect(repository.create).not.toHaveBeenCalled();
       },

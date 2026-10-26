@@ -44,7 +44,6 @@ export class UsersController {
   @Post()
   @CreateUserDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(BrandsGuard)
   async create(
     @Body() dto: CreateUserDTO,
     @Req() request: AuthenticatedRequest,
