@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/repositories/menu_repository.dart';
 import 'package:mobile/features/auth/providers/auth_profile_provider.dart';
@@ -56,8 +55,6 @@ class CartNotifier extends Notifier<List<CartLine>> {
   /// Pre-filled to match the design. Change to `const []` for a real start.
   @override
   List<CartLine> build() => [
-    CartLine(item: sampleMenu[0], quantity: 2, extraRice: true),
-    CartLine(item: sampleMenu[1], quantity: 1),
   ];
 
   void add(MenuItem item) {
