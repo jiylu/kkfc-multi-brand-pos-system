@@ -1,3 +1,4 @@
+import { PinRequiredDocs } from '../../pin/docs/pin.docs';
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,6 +25,7 @@ export function BrandsDocs() {
 
 export function CreateBrandDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Create a brand (superadmin).',
       description:
@@ -74,6 +76,7 @@ export function FindOneBrandDocs() {
 
 export function UpdateBrandDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Update an active brand (superadmin).',
       description:
@@ -126,6 +129,7 @@ export function UpdateBrandDocs() {
 
 export function DeleteBrandDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Deactivate a brand (superadmin).',
       description:

@@ -1,3 +1,4 @@
+import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
   Controller,
@@ -45,7 +46,7 @@ export class MenuItemModifiersController {
 
   @Post()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(BrandsGuard)
+  @UseGuards(BrandsGuard, PinGuard)
   @BrandResource(BrandResourceType.MENU_ITEM, 'menu_item_id', 'body')
   @CreateMenuItemModifierDocs()
   async create(@Body() dto: CreateMenuItemModifierDTO) {
@@ -91,7 +92,7 @@ export class MenuItemModifiersController {
   @Patch(':id')
   @UpdateMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(BrandsGuard)
+  @UseGuards(BrandsGuard, PinGuard)
   @BrandResource(BrandResourceType.MENU_ITEM_MODIFIER, 'id')
   async update(
     @Param('id', ParseUUIDPipe) menuItemModifierId: string,
@@ -103,7 +104,7 @@ export class MenuItemModifiersController {
   @Patch('reactivate/:id')
   @ReactivateMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(BrandsGuard)
+  @UseGuards(BrandsGuard, PinGuard)
   @BrandResource(BrandResourceType.MENU_ITEM_MODIFIER, 'id')
   async reactivate(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
     return this.menuItemModifiersService.reactivate(menuItemModifierId);
@@ -112,7 +113,7 @@ export class MenuItemModifiersController {
   @Delete(':id')
   @DeleteMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(BrandsGuard)
+  @UseGuards(BrandsGuard, PinGuard)
   @BrandResource(BrandResourceType.MENU_ITEM_MODIFIER, 'id')
   async delete(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
     return this.menuItemModifiersService.delete(menuItemModifierId);

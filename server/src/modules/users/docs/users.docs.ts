@@ -1,3 +1,4 @@
+import { PinRequiredDocs } from '../../pin/docs/pin.docs';
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,6 +21,7 @@ export function UsersDocs() {
 
 export function CreateUserDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Create a user.',
       description:
@@ -43,6 +45,7 @@ export function CreateUserDocs() {
 
 export function UpdateUserDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Update a user (manager or superadmin).',
       description:
@@ -110,6 +113,7 @@ export function FindOneUserDocs() {
 
 export function DeleteUserDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Deactivate a user (manager or superadmin).',
       description:

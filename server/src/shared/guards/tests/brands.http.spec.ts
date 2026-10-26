@@ -1,3 +1,4 @@
+import { PinGuard } from '../../../modules/pin/pin.guard';
 import {
   Body,
   Controller,
@@ -147,7 +148,10 @@ describe('BrandsGuard HTTP access', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: MenuChannelsService, useValue: menuChannels },
       ],
-    }).compile();
+    })
+      .overrideGuard(PinGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     app = module.createNestApplication();
     app.useLogger(false);
     app.useGlobalPipes(

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { PrismaModule } from '../../shared/prisma/prisma.module';
 import { PinController } from './pin.controller';
 import { PinRepository } from './pin.repository';
@@ -6,6 +6,7 @@ import { PinService } from './pin.service';
 import { UsersModule } from '../users/users.module';
 import { PinGuard } from './pin.guard';
 
+@Global()
 @Module({
   imports: [PrismaModule, UsersModule],
   controllers: [PinController],

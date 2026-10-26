@@ -1,3 +1,4 @@
+import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
   Controller,
@@ -38,6 +39,7 @@ export class ModifiersController {
   constructor(private readonly modifiersService: ModifiersService) {}
 
   @Post()
+  @UseGuards(PinGuard)
   @CreateModifierDocs()
   async create(@Body() dto: CreateModifierDTO) {
     return this.modifiersService.create(dto);
@@ -71,6 +73,7 @@ export class ModifiersController {
   }
 
   @Patch(':id')
+  @UseGuards(PinGuard)
   @UpdateModifierDocs()
   async update(
     @Param('id', ParseUUIDPipe) modifierId: string,
@@ -80,12 +83,14 @@ export class ModifiersController {
   }
 
   @Patch('reactivate/:id')
+  @UseGuards(PinGuard)
   @ReactivateModifierDocs()
   async reactivate(@Param('id', ParseUUIDPipe) modifierId: string) {
     return this.modifiersService.reactivate(modifierId);
   }
 
   @Delete(':id')
+  @UseGuards(PinGuard)
   @DeleteModifierDocs()
   async delete(@Param('id', ParseUUIDPipe) modifierId: string) {
     return this.modifiersService.delete(modifierId);

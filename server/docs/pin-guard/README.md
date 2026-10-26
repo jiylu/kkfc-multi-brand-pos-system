@@ -3,8 +3,28 @@
 The PIN controller and exported `PinGuard` support SUPERADMIN, MANAGER,
 RECIPE_MANAGER, SUPERVISOR, and KITCHEN_HEAD only. Each employee enters their own
 PIN for every protected action. Manager approvals and temporary verification
-sessions are outside this guide. The guard is available for selected actions;
-existing business endpoints have not been changed to require it.
+sessions are outside this guide. The guard protects the restricted write
+operations listed below without changing their existing role permissions.
+
+## Protected operations
+
+Every request to these 22 operations requires the signed-in user's four-digit
+`X-Action-Pin` header in addition to the bearer session:
+
+| Resource | Protected operations |
+| --- | --- |
+| `/api/users` | Create, update, deactivate |
+| `/api/brands` | Create, update, deactivate |
+| `/api/menu-items` | Create, update, reactivate, deactivate |
+| `/api/menu-channels` | Create, update, reactivate, deactivate |
+| `/api/modifiers` | Create, update, reactivate, deactivate |
+| `/api/menu-item-modifiers` | Create, update, reactivate, deactivate |
+
+GET endpoints, order operations, asset uploads, menu availability changes, and
+PIN setup/reset do not require an action PIN. Availability retains its existing
+kitchen/inventory staff access. Users without a PIN can configure one through
+`POST /api/pin` before using protected operations. Failed attempts share the
+same per-user counter across all protected routes.
 
 ## HTTP endpoints
 
@@ -19,8 +39,9 @@ ID always comes from the session; callers cannot select another user.
 
 Setup, lookup, and reset do not require `X-Action-Pin`. Responses use
 `Cache-Control: no-store`. There is no standalone PIN verification endpoint.
-Import `PinModule` into modules that use the exported `PinGuard`, and run it
-after `Authenticated` and any role/brand guards. It accepts only a four-digit
+`PinModule` is global and loaded once by `AppModule`, so feature modules can use
+its exported `PinGuard` without circular imports. Run it after `Authenticated`
+and any role/brand guards. It accepts only a four-digit
 `X-Action-Pin` string, returns 403 for missing/invalid/unconfigured PINs, and
 returns 429 with a rounded-up `Retry-After` header during cooldowns.
 
@@ -103,9 +124,9 @@ Set `Retry-After` on the HTTP response when handling the service's locked result
 
 ## 5. Register and apply it
 
-Register `PinService`, `PinRepository`, and `PinGuard` in `PinModule`, import
-`PrismaModule`, and export the guard and service. Import `PinModule` into modules
-containing protected controllers. Serialize first-time credential creation using
+`PinService`, `PinRepository`, and `PinGuard` are registered in the global
+`PinModule`, which imports `PrismaModule` and exports the guard and service.
+`AppModule` loads `PinModule` once. Serialize first-time credential creation using
 the user row, since a missing credential row cannot be locked.
 
 For controllers that already use `Authenticated` and `RolesGuard` at class level,

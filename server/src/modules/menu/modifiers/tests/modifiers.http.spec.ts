@@ -1,3 +1,4 @@
+import { PinGuard } from '../../../pin/pin.guard';
 import {
   INestApplication,
   NotFoundException,
@@ -94,7 +95,10 @@ describe('Modifiers HTTP endpoints', () => {
         { provide: AuthService, useValue: auth },
         { provide: ModifiersService, useValue: service },
       ],
-    }).compile();
+    })
+      .overrideGuard(PinGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     app = module.createNestApplication();
     app.useLogger(false);
     app.setGlobalPrefix('api');

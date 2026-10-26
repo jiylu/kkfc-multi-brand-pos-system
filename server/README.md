@@ -116,6 +116,15 @@ Password hashes are excluded from API responses.
 | `PATCH /api/brands/:brandId` | Superadmins only; updates any active brand using JSON or multipart form data. Optional `file` replaces the logo. Code is optional and is not generated on rename. |
 | `DELETE /api/brands/:brandId` | Superadmins only; deactivates the brand and its active users together. |
 
+Restricted create, update, reactivate, and deactivate operations for users,
+brands, menu items, menu channels, modifiers, and modifier assignments require
+the signed-in user's four-digit `X-Action-Pin` header on every request. Configure
+a PIN with `POST /api/pin`; use `PATCH /api/pin` with the current account password
+to reset it. Missing, incorrect, or unconfigured PINs return 403; cooldowns
+return 429 with `Retry-After`. Reads, orders, asset uploads, menu availability,
+and PIN setup/reset do not require an action PIN. Existing role and brand
+permissions still apply. See [PIN protection](docs/pin-guard/README.md).
+
 Menu endpoints are documented in Swagger under **Menu items**:
 
 | Endpoint | Access and behavior |

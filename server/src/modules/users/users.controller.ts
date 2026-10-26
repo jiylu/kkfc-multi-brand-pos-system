@@ -1,3 +1,4 @@
+import { PinGuard } from '../pin/pin.guard';
 import {
   UsersDocs,
   CreateUserDocs,
@@ -42,6 +43,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @UseGuards(PinGuard)
   @CreateUserDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async create(
@@ -87,7 +89,7 @@ export class UsersController {
   @Patch(':id')
   @UpdateUserDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(BrandsGuard)
+  @UseGuards(BrandsGuard, PinGuard)
   @BrandResource(BrandResourceType.USER, 'id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -99,7 +101,7 @@ export class UsersController {
   @Delete(':id')
   @DeleteUserDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(BrandsGuard)
+  @UseGuards(BrandsGuard, PinGuard)
   @BrandResource(BrandResourceType.USER, 'id')
   async delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.deleteUser(id);

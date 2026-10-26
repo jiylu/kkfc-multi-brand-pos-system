@@ -1,10 +1,44 @@
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiHeader,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+
+export function PinRequiredDocs() {
+  return applyDecorators(
+    ApiHeader({
+      name: 'X-Action-Pin',
+      required: true,
+      description:
+        'The signed-in user’s four-digit PIN, required for every request.',
+      schema: {
+        type: 'string',
+        pattern: '^[0-9]{4}$',
+        minLength: 4,
+        maxLength: 4,
+        example: '0123',
+      },
+    }),
+    ApiResponse({
+      status: 403,
+      description:
+        'Role or brand access denied, or PIN missing, incorrect, or not configured.',
+    }),
+    ApiResponse({
+      status: 429,
+      description: 'PIN verification is locked after repeated failures.',
+      headers: {
+        'Retry-After': {
+          description: 'Seconds remaining before another attempt is allowed.',
+          schema: { type: 'integer', minimum: 1 },
+        },
+      },
+    }),
+  );
+}
 
 export function PinDocs() {
   return applyDecorators(

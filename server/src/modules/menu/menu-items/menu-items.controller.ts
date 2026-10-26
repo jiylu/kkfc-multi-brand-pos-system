@@ -1,3 +1,4 @@
+import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
   Controller,
@@ -67,7 +68,7 @@ export class MenuItemsController {
       limits: { fileSize: MAX_ASSET_BYTES, files: 1 },
     }),
   )
-  @UseGuards(BrandsGuard)
+  @UseGuards(BrandsGuard, PinGuard)
   async create(
     @Body() dto: CreateMenuItemDTO,
     @UploadedFile() file: AssetUpload,
@@ -116,7 +117,7 @@ export class MenuItemsController {
 
   @Patch(':id')
   @UpdateMenuItemDocs()
-  @UseGuards(BrandsGuard)
+  @UseGuards(BrandsGuard, PinGuard)
   @BrandResource(BrandResourceType.MENU_ITEM, 'id')
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseInterceptors(
@@ -163,7 +164,7 @@ export class MenuItemsController {
 
   @Patch('reactivate/:id')
   @ReactivateMenuItemDocs()
-  @UseGuards(BrandsGuard)
+  @UseGuards(BrandsGuard, PinGuard)
   @BrandResource(BrandResourceType.MENU_ITEM, 'id')
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemId: string) {
@@ -172,7 +173,7 @@ export class MenuItemsController {
 
   @Delete(':id')
   @DeleteMenuItemDocs()
-  @UseGuards(BrandsGuard)
+  @UseGuards(BrandsGuard, PinGuard)
   @BrandResource(BrandResourceType.MENU_ITEM, 'id')
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async delete(@Param('id', ParseUUIDPipe) menuItemId: string) {

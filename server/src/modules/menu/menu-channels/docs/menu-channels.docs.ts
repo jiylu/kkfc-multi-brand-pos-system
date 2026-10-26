@@ -1,3 +1,4 @@
+import { PinRequiredDocs } from '../../../pin/docs/pin.docs';
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -30,6 +31,7 @@ export function MenuChannelsDocs() {
 
 export function CreateMenuChannelDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Create a menu item channel (manager or superadmin).',
       description:
@@ -108,6 +110,7 @@ export function FindOneMenuChannelDocs() {
 
 export function UpdateMenuChannelDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Update an available menu item channel (manager or superadmin).',
       description:
@@ -128,6 +131,7 @@ export function UpdateMenuChannelDocs() {
 
 export function ReactivateMenuChannelDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Reactivate a menu item channel (manager or superadmin).',
       description:
@@ -150,6 +154,7 @@ export function ReactivateMenuChannelDocs() {
 
 export function DeleteMenuChannelDocs() {
   return applyDecorators(
+    PinRequiredDocs(),
     ApiOperation({
       summary: 'Deactivate a menu item channel (manager or superadmin).',
       description:

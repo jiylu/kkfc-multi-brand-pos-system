@@ -1,3 +1,4 @@
+import { PinGuard } from '../../pin/pin.guard';
 import {
   ConflictException,
   ExecutionContext,
@@ -83,6 +84,8 @@ describe('Users HTTP endpoints (IT-USER)', () => {
           return true;
         },
       })
+      .overrideGuard(PinGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     app = module.createNestApplication();
