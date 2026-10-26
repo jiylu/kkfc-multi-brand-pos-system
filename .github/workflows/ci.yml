@@ -1,43 +1,14 @@
-name: CI
+name: Backend CI
 
 on:
-  push:
-    branches:
-      - main
-      - development
-  pull_request:
-    branches:
-      - main
-      - development
+  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
-  detect-changes:
-    name: Detect Changes
-    runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check for backend modifications
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'server/**'
-              - 'robot/**'
-              - 'features/!(mobile)/**'
-              - '.github/workflows/ci.yml'
-
   unit-tests:
     name: Stage 1 - Unit Tests (UT) & Build
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -81,8 +52,7 @@ jobs:
 
   integration-tests:
     name: Stage 2 - Integration Tests (IT)
-    needs: [detect-changes, unit-tests]
-    if: needs.detect-changes.outputs.backend == 'true'
+    needs: unit-tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -139,8 +109,7 @@ jobs:
   # Stage 3 - Robot Framework E2E Tests (temporarily commented out)
   # e2e-robot-tests:
   #   name: Stage 3 - Robot Framework E2E Tests (E2E)
-  #   needs: [detect-changes, integration-tests]
-  #   if: needs.detect-changes.outputs.backend == 'true'
+  #   needs: integration-tests
   #   runs-on: ubuntu-latest
   #   services:
   #     postgres:
@@ -217,24 +186,3 @@ jobs:
   #         name: robot-test-results
   #         path: robot/results/
   #         if-no-files-found: warn
-
-  ci:
-    name: CI
-    needs: [detect-changes, unit-tests, integration-tests]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Verify QA Automation Pipeline Completion
-        run: |
-          if [ "${{ needs.detect-changes.outputs.backend }}" != "true" ]; then
-            echo "No backend or QA test files were modified. Backend pipeline skipped."
-            echo "QA Pipeline Success: Mobile-only change satisfied branch protection."
-            exit 0
-          fi
-
-          if [ "${{ needs.unit-tests.result }}" != "success" ] || \
-             [ "${{ needs.integration-tests.result }}" != "success" ]; then
-            echo "QA Pipeline Failed: One or more test stages did not succeed."
-            exit 1
-          fi
-          echo "QA Pipeline Success: All unit and integration test stages passed."

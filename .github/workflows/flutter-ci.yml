@@ -1,25 +1,10 @@
 name: Flutter CI
 
 on:
-  push:
-    branches:
-      - main
-      - development
-    paths:
-      - 'mobile/**'
-      - 'features/mobile/**'
-      - '.github/workflows/flutter-ci.yml'
-  pull_request:
-    branches:
-      - main
-      - development
-    paths:
-      - 'mobile/**'
-      - 'features/mobile/**'
-      - '.github/workflows/flutter-ci.yml'
+  workflow_call:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   flutter-ci:
@@ -32,10 +17,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
 
       - name: Setup Java 17 (for Android build)
         uses: actions/setup-java@v4
@@ -57,19 +38,8 @@ jobs:
       - name: Install dependencies (pub get)
         run: flutter pub get
 
-      - name: Auto-format Dart files and commit if changed
-        run: |
-          dart format .
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "Formatting differences found. Committing formatted files..."
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "style: auto-format Dart files with dart format [skip ci]"
-            git push || echo "Unable to push formatted files automatically."
-          else
-            echo "All Dart files are cleanly formatted!"
-          fi
+      - name: Check Dart formatting
+        run: dart format --output=none --set-exit-if-changed .
 
       - name: Static code analysis (flutter analyze)
         run: flutter analyze
