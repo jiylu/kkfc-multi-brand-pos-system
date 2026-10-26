@@ -13,7 +13,7 @@ const _cardMaxWidth = 320.0;
 const _aurelias = AssignedBrand(
   id: 'brand-ai',
   code: 'AI',
-  name: "Aurelia's Inasal",
+  name: 'Aurelia\u2019s Inasal',
 );
 
 const _kingKungs = AssignedBrand(
