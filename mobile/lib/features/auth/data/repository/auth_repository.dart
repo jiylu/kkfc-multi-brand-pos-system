@@ -49,6 +49,22 @@ class AuthRepository {
     }
   }
 
+  /// Returns the signed-in user's assigned brand UUID.
+  ///
+  /// The POS API authorizes menu access by UUID; display-only brand slugs must
+  /// never be used in requests to brand-scoped endpoints.
+  Future<String?> getCurrentBrandId() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/auth/me');
+      final brandId = response.data?['brand_id'];
+      if (brandId == null) return null;
+      if (brandId is String && brandId.isNotEmpty) return brandId;
+      throw const AuthException('Server response has an invalid brand ID.');
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
   /// Ends the server session and clears the stored token.
   ///
   /// Contract: POST /auth/logout `Authorization: Bearer <token>` -> 204.

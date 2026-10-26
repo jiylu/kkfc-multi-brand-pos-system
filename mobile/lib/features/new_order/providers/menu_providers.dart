@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
+import 'package:mobile/features/new_order/data/repositories/menu_repository.dart';
+import 'package:mobile/features/auth/providers/auth_profile_provider.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 
 class MenuChannelNotifier extends Notifier<MenuChannel> {
@@ -27,9 +29,9 @@ final menuSearchProvider = NotifierProvider<MenuSearchNotifier, String>(
 final menuItemsProvider = FutureProvider.autoDispose<List<MenuItem>>((
   ref,
 ) async {
-  ref.watch(activeBrandProvider); // refetch on brand switch
-  await Future<void>.delayed(const Duration(milliseconds: 900));
-  return sampleMenu;
+  ref.watch(activeBrandProvider); // refetch when the displayed brand changes
+  final brandId = await ref.watch(authenticatedBrandIdProvider.future);
+  return ref.watch(menuRepositoryProvider).getByBrand(brandId);
 });
 
 final visibleMenuItemsProvider =
