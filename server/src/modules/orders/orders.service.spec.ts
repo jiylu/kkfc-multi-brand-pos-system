@@ -59,6 +59,7 @@ describe('Order lifecycle', () => {
       menuItem: {
         findFirst: jest.fn().mockResolvedValue({
           menu_item_id: 'menu',
+          is_available: true,
           name: 'Meal',
           base_price: new Prisma.Decimal(10),
           recipe_id: 'recipe',
@@ -69,6 +70,7 @@ describe('Order lifecycle', () => {
           menu_item_modifiers_menu_item: [
             {
               modifier_id: 'extra',
+              is_available: true,
               additional_price: new Prisma.Decimal(2),
               modifier: { name: 'Extra', is_active: true },
             },
@@ -96,6 +98,150 @@ describe('Order lifecycle', () => {
     };
     service = new OrdersService(prisma as unknown as PrismaService);
   });
+
+  it.each(['verify', 'confirm'] as const)(
+    'UT-ORD-001 Given no channel override When %s runs Then use the base price',
+    async (operation) => {
+      const menu = (await tx.menuItem.findFirst()) as Record<string, unknown>;
+      tx.menuItem.findFirst.mockResolvedValue({
+        ...menu,
+        menu_item_channels_menu_item: [],
+      });
+      if (operation === 'verify') {
+        const result = await service.verify('brand', 'order', payment);
+        expect(result.lines[0].unit_price.toString()).toBe('10');
+      } else {
+        await service.confirm('brand', 'order', 'actor', payment);
+        const saved = (tx.orderItem.update.mock.calls as unknown[][])[0][0] as {
+          data: { unit_price: Prisma.Decimal };
+        };
+        expect(saved.data.unit_price.toString()).toBe('10');
+      }
+    },
+  );
+
+  it.each(['verify', 'confirm'] as const)(
+    'UT-ORD-002 Given an unavailable override When %s runs Then reject before writing',
+    async (operation) => {
+      const menu = (await tx.menuItem.findFirst()) as Record<string, unknown>;
+      tx.menuItem.findFirst.mockResolvedValue({
+        ...menu,
+        menu_item_channels_menu_item: [
+          { price: new Prisma.Decimal(12), is_available: false },
+        ],
+      });
+      const result =
+        operation === 'verify'
+          ? service.verify('brand', 'order', payment)
+          : service.confirm('brand', 'order', 'actor', payment);
+      await expect(result).rejects.toThrow(
+        'Menu item is unavailable on this channel.',
+      );
+      expect(tx.orderItem.update).not.toHaveBeenCalled();
+      expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { name: 'missing', recipe: null },
+    { name: 'inactive', recipe: { ...recipe, is_active: false } },
+    { name: 'production', recipe: { ...recipe, type: 'PRODUCTION' } },
+    ...['0', '-1', 'NaN', 'Infinity'].map((quantity) => ({
+      name: `component quantity ${quantity}`,
+      recipe: {
+        ...recipe,
+        recipe_components_recipe: [
+          { inventory_item_id: 'ingredient', quantity },
+        ],
+      },
+    })),
+  ])(
+    'UT-ORD-003 Given a $name recipe When confirming Then reject without writes',
+    async ({ recipe: invalidRecipe }) => {
+      const menu = (await tx.menuItem.findFirst()) as Record<string, unknown>;
+      tx.menuItem.findFirst.mockResolvedValue({
+        ...menu,
+        recipe: invalidRecipe,
+      });
+      await expect(
+        service.confirm('brand', 'order', 'actor', payment),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(tx.orderItem.update).not.toHaveBeenCalled();
+      expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(
+    (['DINE_IN', 'TAKEAWAY'] as const).flatMap((channel) =>
+      (['CASH', 'E_WALLET', 'CARD'] as const).flatMap((payment_method) =>
+        (['UNPAID', 'PAID'] as const).map((payment_status) => ({
+          channel,
+          payment_method,
+          payment_status,
+        })),
+      ),
+    ),
+  )(
+    'UT-ORD-004 Given $channel with $payment_method/$payment_status When verifying Then preserve payment',
+    async ({ channel, ...inputs }) => {
+      tx.order.findFirst.mockResolvedValue({
+        ...draft,
+        order_channel: channel,
+      });
+      await expect(
+        service.verify('brand', 'order', inputs),
+      ).resolves.toMatchObject(inputs);
+      expect(tx.order.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    {
+      channel: 'TAKEAWAY',
+      payment_method: 'PLATFORM_SETTLED',
+      payment_status: 'PAID',
+    },
+    { channel: 'DINE_IN', payment_method: 'CASH', payment_status: 'REFUNDED' },
+    { channel: 'GRABFOOD', payment_method: 'CASH', payment_status: 'PAID' },
+    {
+      channel: 'FOODPANDA',
+      payment_method: 'PLATFORM_SETTLED',
+      payment_status: 'UNPAID',
+    },
+  ] as const)(
+    'UT-ORD-005 Given incompatible $channel payment When confirming Then reject without writes',
+    async ({ channel, ...inputs }) => {
+      tx.order.findFirst.mockResolvedValue({
+        ...draft,
+        order_channel: channel,
+      });
+      await expect(
+        service.confirm('brand', 'order', 'actor', inputs),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(tx.orderItem.update).not.toHaveBeenCalled();
+      expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { order_channel: 'DINE_IN', table_reference: '   ' },
+    { order_channel: 'GRABFOOD', merchant_store_reference: 'store' },
+    { order_channel: 'FOODPANDA', external_order_reference: 'external' },
+    {
+      order_channel: 'GRABFOOD',
+      merchant_store_reference: '  ',
+      external_order_reference: 'external',
+    },
+  ] as const)(
+    'UT-ORD-006 Given missing references for $order_channel When creating Then reject without inserting',
+    async (references) => {
+      tx.order.findFirst.mockResolvedValue(null);
+      await expect(
+        service.create('brand', 'actor', { ...request, ...references }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(tx.order.create).not.toHaveBeenCalled();
+    },
+  );
 
   it('creates a draft without a ticket, final recipe or stock writes', async () => {
     await service.create('brand', 'actor', request);
@@ -129,6 +275,58 @@ describe('Order lifecycle', () => {
     expect(tx.order.update).not.toHaveBeenCalled();
     expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
   });
+
+  it.each([
+    { name: 'create', run: () => service.create('brand', 'actor', request) },
+    { name: 'verify', run: () => service.verify('brand', 'order', payment) },
+    {
+      name: 'confirm',
+      run: () => service.confirm('brand', 'order', 'actor', payment),
+    },
+  ])(
+    '$name rejects an unavailable menu modifier before writing',
+    async ({ run }) => {
+      const menu = (await tx.menuItem.findFirst()) as {
+        menu_item_modifiers_menu_item: { is_available: boolean }[];
+      };
+      menu.menu_item_modifiers_menu_item[0].is_available = false;
+      tx.menuItem.findFirst.mockResolvedValue(menu);
+
+      await expect(run()).rejects.toThrow(
+        'Modifier is unavailable for this menu item.',
+      );
+      expect(tx.order.create).not.toHaveBeenCalled();
+      expect(tx.orderItem.update).not.toHaveBeenCalled();
+      expect(tx.orderItemModifier.update).not.toHaveBeenCalled();
+      expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+      expect(tx.order.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { name: 'create', run: () => service.create('brand', 'actor', request) },
+    { name: 'verify', run: () => service.verify('brand', 'order', payment) },
+    {
+      name: 'confirm',
+      run: () => service.confirm('brand', 'order', 'actor', payment),
+    },
+  ])(
+    '$name rejects an unavailable menu item before writing',
+    async ({ run }) => {
+      const menu = (await tx.menuItem.findFirst()) as { is_available: boolean };
+      menu.is_available = false;
+      tx.menuItem.findFirst.mockResolvedValue(menu);
+
+      await expect(run()).rejects.toThrow(
+        'Menu item or recipe is unavailable.',
+      );
+      expect(tx.order.create).not.toHaveBeenCalled();
+      expect(tx.orderItem.update).not.toHaveBeenCalled();
+      expect(tx.orderItemModifier.update).not.toHaveBeenCalled();
+      expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+      expect(tx.order.update).not.toHaveBeenCalled();
+    },
+  );
 
   it('confirms with channel price, modifier and full recipe snapshots, with no stock effects', async () => {
     const result = await service.confirm('brand', 'order', 'actor', payment);

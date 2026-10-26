@@ -87,6 +87,54 @@ export const TEST_USERS = [
     role: UserRole.INVENTORY_STAFF,
     brand_code: 'GC',
   },
+  {
+    username: 'test_ai_stock',
+    first_name: 'Mara',
+    last_name: 'Reyes',
+    password: 'Password123!',
+    role: UserRole.INVENTORY_STAFF,
+    brand_code: 'AI',
+  },
+  {
+    username: 'test_ai_kitchen',
+    first_name: 'Paolo',
+    last_name: 'Cruz',
+    password: 'Password123!',
+    role: UserRole.KITCHEN_STAFF,
+    brand_code: 'AI',
+  },
+  {
+    username: 'test_ai_cashier',
+    first_name: 'Nina',
+    last_name: 'Santos',
+    password: 'Password123!',
+    role: UserRole.CASHIER_STAFF,
+    brand_code: 'AI',
+  },
+  {
+    username: 'test_kk_stock',
+    first_name: 'Luis',
+    last_name: 'Garcia',
+    password: 'Password123!',
+    role: UserRole.INVENTORY_STAFF,
+    brand_code: 'KK',
+  },
+  {
+    username: 'test_kk_kitchen',
+    first_name: 'Ana',
+    last_name: 'Lim',
+    password: 'Password123!',
+    role: UserRole.KITCHEN_STAFF,
+    brand_code: 'KK',
+  },
+  {
+    username: 'test_kk_cashier',
+    first_name: 'Marco',
+    last_name: 'Tan',
+    password: 'Password123!',
+    role: UserRole.CASHIER_STAFF,
+    brand_code: 'KK',
+  },
 ];
 
 // Manager intentionally left without a brand so E2E tests can create one.
@@ -135,12 +183,12 @@ export async function seedUsers(
     };
     await prisma.user.upsert({
       where: { username: user.username },
-      update: { ...values, modified_at: new Date() },
+      update: {},
       create: values,
     });
   }
   console.log(
-    `Seeded ${TEST_USERS.length + 1} users covering all 8 roles, with one manager per brand.`,
+    `Seeded ${TEST_USERS.length + 1} users covering all 8 roles, with manager, inventory, kitchen, and cashier staff per brand.`,
   );
 }
 
@@ -156,11 +204,7 @@ async function seedTestDatabase() {
     for (const brand of TEST_BRANDS) {
       const b = await prisma.brand.upsert({
         where: { code: brand.code },
-        update: {
-          name: brand.name,
-          logo_url: brand.logo_url,
-          is_active: true,
-        },
+        update: {},
         create: {
           code: brand.code,
           name: brand.name,

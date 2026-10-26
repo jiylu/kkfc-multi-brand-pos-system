@@ -309,6 +309,7 @@ model MenuItem {
   description         String?  @db.VarChar(2000)
   serving_description String?  @db.VarChar(255)
   base_price          Decimal  @db.Decimal(12, 2)
+  is_available        Boolean  @default(true)
   is_active           Boolean  @default(true)
   created_at          DateTime @default(now()) @db.Timestamp(6)
   modified_at         DateTime @default(now()) @db.Timestamp(6)
@@ -325,16 +326,17 @@ model MenuItem {
 
 /// Channel-specific price and availability overrides.
 model MenuItemChannel {
-  menu_item_id  String       @db.Uuid
-  order_channel OrderChannel
-  price         Decimal      @db.Decimal(12, 2)
-  is_available  Boolean      @default(true)
-  created_at    DateTime     @default(now()) @db.Timestamp(6)
-  modified_at   DateTime     @default(now()) @db.Timestamp(6)
+  menu_item_channel_id String       @id @default(uuid()) @db.Uuid
+  menu_item_id         String       @db.Uuid
+  order_channel        OrderChannel
+  price                Decimal      @db.Decimal(12, 2)
+  is_available         Boolean      @default(true)
+  created_at           DateTime     @default(now()) @db.Timestamp(6)
+  modified_at          DateTime     @default(now()) @db.Timestamp(6)
 
   menu_item MenuItem @relation("MenuItemChannelMenuItem", fields: [menu_item_id], references: [menu_item_id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@id([menu_item_id, order_channel])
+  @@unique([menu_item_id, order_channel])
   @@map("menu_item_channels")
 }
 
@@ -359,14 +361,18 @@ model Modifier {
 }
 
 model MenuItemModifier {
-  menu_item_id     String  @db.Uuid
-  modifier_id      String  @db.Uuid
-  additional_price Decimal @default(0) @db.Decimal(12, 2)
+  menu_item_modifier_id String   @id @default(uuid()) @db.Uuid
+  menu_item_id          String   @db.Uuid
+  modifier_id           String   @db.Uuid
+  additional_price     Decimal  @default(0) @db.Decimal(12, 2)
+  is_available         Boolean  @default(true)
+  created_at           DateTime @default(now()) @db.Timestamp(6)
+  modified_at          DateTime @default(now()) @db.Timestamp(6)
 
   menu_item MenuItem @relation("MenuItemModifierMenuItem", fields: [menu_item_id], references: [menu_item_id], onDelete: NoAction, onUpdate: NoAction)
   modifier  Modifier @relation("MenuItemModifierModifier", fields: [modifier_id], references: [modifier_id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@id([menu_item_id, modifier_id])
+  @@unique([menu_item_id, modifier_id])
   @@map("menu_item_modifiers")
 }
 

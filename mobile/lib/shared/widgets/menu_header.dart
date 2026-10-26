@@ -160,7 +160,7 @@ class MenuHeader extends ConsumerWidget {
                         children: [
                           Flexible(child: themedBrand),
                           const SizedBox(width: MenuSpace.md),
-                          themedUser,
+                          Flexible(child: themedUser),
                           const SizedBox(width: MenuSpace.sm),
                           themedLogout,
                         ],
