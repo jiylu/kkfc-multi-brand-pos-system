@@ -71,7 +71,7 @@ class OrderEntryScreen extends StatelessWidget {
                   index: 2,
                   child: OrderContextCard(
                     brand: data.brandName,
-                    channelLine: 'Dine-in  ·  Table 3',
+                    channelLine: data.channelLine,
                     orderStatus: 'Draft',
                     paymentStatus: 'Unpaid',
                     note: 'Verify quantities, prices and modifiers. No kitchen ticket yet.',

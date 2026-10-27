@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/tokens.dart';
+import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_line_tile.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel_footer.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel_header.dart';
@@ -106,8 +107,21 @@ class _CartPanelState extends ConsumerState<CartPanel> {
               canSend: lines.isNotEmpty,
               onSend: () => context.push(
                 AppRoutes.orderEntry,
-                extra: OrderEntryViewData.checkBeforeSending.withBrand(
-                  ref.read(activeBrandProvider).name,
+                extra: OrderEntryViewData.checkBeforeSending.withOrderDetails(
+                  brandName: ref.read(activeBrandProvider).name,
+                  channel: channel.label,
+                  reference: _referenceController.text,
+                  itemCount: count,
+                  items: [
+                    for (final line in lines)
+                      OrderEntryItem(
+                        name: line.item.name,
+                        quantity: line.quantity,
+                        total: formatPeso(line.totalCentavos(channel)),
+                        modifiers: line.modifierSummary,
+                      ),
+                  ],
+                  total: formatPeso(total),
                 ),
               ),
             ),

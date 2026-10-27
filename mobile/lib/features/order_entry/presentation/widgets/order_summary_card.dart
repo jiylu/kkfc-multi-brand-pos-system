@@ -29,9 +29,65 @@ class OrderSummaryCard extends StatelessWidget {
           for (final row in data.rows) ...[
             _Row(label: row.label, value: row.value),
             const SizedBox(height: KkfcSpace.s8),
+            if (row.label == 'Items' && data.items.isNotEmpty) ...[
+              for (final item in data.items) ...[
+                _ItemRow(item: item),
+                const SizedBox(height: KkfcSpace.s8),
+              ],
+            ],
           ],
           Divider(height: KkfcSpace.s32 * 2, color: scheme.outlineVariant),
           _Row(label: data.totalLabel, value: data.total, emphasized: true),
+        ],
+      ),
+    );
+  }
+}
+
+class _ItemRow extends StatelessWidget {
+  const _ItemRow({required this.item});
+
+  final OrderEntryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: KkfcSpace.s16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  '${item.quantity} × ${item.name}',
+                  style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(width: KkfcSpace.s16),
+              Flexible(
+                child: Text(
+                  item.total,
+                  textAlign: TextAlign.end,
+                  style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          if (item.modifiers.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: KkfcSpace.s4),
+              child: Text(
+                item.modifiers.join(' · '),
+                style: text.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
         ],
       ),
     );
