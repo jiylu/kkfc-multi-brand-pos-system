@@ -27,11 +27,18 @@ class OrderEntryHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(title, style: text.headlineSmall),
+        Text(
+          title, 
+          style: text.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          )
+        ),
         const SizedBox(height: 4),
         Text(
           subtitle,
-          style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+          style: text.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant, 
+          ),
         ),
       ],
     );

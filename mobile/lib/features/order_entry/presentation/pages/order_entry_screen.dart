@@ -8,7 +8,7 @@ import 'package:mobile/shared/widgets/menu_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
 import '../widgets/order_entry_action_bar.dart';
 import '../widgets/order_entry_header.dart';
-import '../widgets/order_status_panel.dart';
+import '../widgets/order_context_card.dart';
 import '../widgets/order_summary_card.dart';
 
 class OrderEntryScreen extends StatelessWidget {
@@ -69,7 +69,13 @@ class OrderEntryScreen extends StatelessWidget {
                 );
                 final status = FadeSlideIn(
                   index: 2,
-                  child: OrderStatusPanel(data: data),
+                  child: OrderContextCard(
+                    brand: "Aurelia’s Inasal",
+                    channelLine: 'Dine-in  ·  Table 3',
+                    orderStatus: 'Draft',
+                    paymentStatus: 'Unpaid',
+                    note: 'Verify quantities, prices and modifiers. No kitchen ticket yet.',
+                  ),
                 );
 
                 return SingleChildScrollView(
