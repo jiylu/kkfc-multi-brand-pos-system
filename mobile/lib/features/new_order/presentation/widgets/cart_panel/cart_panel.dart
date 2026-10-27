@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_line_tile.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel_footer.dart';
@@ -100,7 +102,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
               count: count,
               total: total,
               canSend: lines.isNotEmpty,
-              onSend: () {}, // TODO: submit order once the backend exists.
+              onSend: () => context.push(AppRoutes.orderEntry),
             ),
           ],
         ),

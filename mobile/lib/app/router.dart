@@ -8,6 +8,7 @@ import '../features/new_order/presentation/pages/channel_repricing_screen.dart';
 import '../features/new_order/presentation/pages/menu_screen.dart';
 import '../features/orders/screens/orders_screen.dart';
 import '../features/availability/presentation/pages/availability_management_screen.dart';
+import '../features/order_entry/presentation/pages/order_entry_screen.dart';
 import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -50,6 +51,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.availability,
         builder: (context, state) => const AvailabilityManagementScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.orderEntry,
+        builder: (context, state) => const OrderEntryScreen(),
       ),
     ],
   );
