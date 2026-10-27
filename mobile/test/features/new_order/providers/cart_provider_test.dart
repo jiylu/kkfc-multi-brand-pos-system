@@ -10,10 +10,23 @@ const _meal = MenuItem(
   pricesCentavos: {MenuChannel.dineIn: 10000, MenuChannel.grabFood: 12000},
 );
 
+final _extraRice = ModifierGroup.addOn(
+  id: 'extra-rice',
+  name: 'Extra rice',
+  priceCentavos: 2500,
+);
+
+final _mealWithRice = _meal.withModifierGroups([_extraRice]);
+
 class _ModifiedCart extends CartNotifier {
   @override
   List<CartLine> build() => [
-    // const CartLine(item: _meal, quantity: 2, extraRice: true),
+    CartLine(
+      id: 'line-test',
+      item: _mealWithRice,
+      quantity: 2,
+      selections: {_extraRice.id: ModifierGroup.addOnOn},
+    ),
   ];
 }
 
@@ -43,9 +56,9 @@ void main() {
     cart.add(_meal);
     cart.decrementLine('unknown');
     expect(container.read(cartProvider).single.quantity, 2);
-    cart.decrementLine(_meal.id);
+    cart.decrementLine(container.read(cartProvider).first.id);
     expect(container.read(cartProvider).single.quantity, 1);
-    cart.decrementLine(_meal.id);
+    cart.decrementLine(container.read(cartProvider).first.id);
     expect(container.read(cartProvider), isEmpty);
     expect(container.read(cartCountProvider), 0);
     expect(container.read(cartTotalProvider), 0);
@@ -73,7 +86,10 @@ void main() {
     expect(modified.read(cartTotalProvider), 29000);
     expect(modified.read(cartCountProvider), 2);
     expect(modified.read(cartProvider), same(before));
-    expect(modified.read(cartProvider).single.extraRice, isTrue);
+    expect(modified.read(cartProvider).single.selections[_extraRice.id],
+        ModifierGroup.addOnOn);
+    expect(modified.read(cartProvider).single.modifierSummary,
+        ['Extra rice +₱25.00']);
   });
 
   for (final entry in {
