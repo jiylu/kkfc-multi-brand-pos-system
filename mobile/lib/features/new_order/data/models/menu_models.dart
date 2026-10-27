@@ -32,12 +32,40 @@ class ModifierGroup {
     required this.title,
     required this.options,
     required this.defaultOptionId,
+    this.isAddOn = false,
   });
+
+  /// Builds an optional add-on from a `menu_item_modifiers` row plus its
+  /// modifier name. Modelled as an off/on group so cart pricing is unchanged.
+  factory ModifierGroup.addOn({
+    required String id,
+    required String name,
+    required int priceCentavos,
+  }) => ModifierGroup(
+    id: id,
+    title: name,
+    isAddOn: true,
+    defaultOptionId: addOnOff,
+    options: [
+      const ModifierOption(id: addOnOff, label: 'None'),
+      ModifierOption(
+        id: addOnOn,
+        label: name,
+        priceDeltaCentavos: priceCentavos,
+      ),
+    ],
+  );
+
+  static const addOnOff = 'off';
+  static const addOnOn = 'on';
 
   final String id;
   final String title;
   final List<ModifierOption> options;
   final String defaultOptionId;
+
+  /// Rendered as a checkbox instead of a radio list.
+  final bool isAddOn;
 
   ModifierOption optionById(String optionId) => options.firstWhere(
     (o) => o.id == optionId,
@@ -62,6 +90,15 @@ class MenuItem {
   final Map<MenuChannel, MenuAvailability> availability;
   final List<ModifierGroup> modifierGroups;
 
+  MenuItem withModifierGroups(List<ModifierGroup> groups) => MenuItem(
+    id: id,
+    name: name,
+    description: description,
+    pricesCentavos: pricesCentavos,
+    availability: availability,
+    modifierGroups: groups,
+  );
+
   /// Maps the `/menu-items/brand/:brandId` payload to the UI model.
   /// Monetary values are sent by Prisma as decimal JSON values (typically
   /// strings), so they are converted to integer centavos at this boundary.
@@ -73,7 +110,7 @@ class MenuItem {
       throw const FormatException('Menu item is missing required fields.');
     }
 
-    final baseCentavos = _decimalToCentavos(basePrice);
+    final baseCentavos = decimalToCentavos(basePrice);
     final baseAvailable = json['is_available'] == true;
     final prices = <MenuChannel, int>{
       for (final channel in MenuChannel.values) channel: baseCentavos,
@@ -92,7 +129,7 @@ class MenuItem {
         final channel = _menuChannelFromApi(row['order_channel']);
         final price = row['price'];
         if (channel == null || price == null) continue;
-        prices[channel] = _decimalToCentavos(price);
+        prices[channel] = decimalToCentavos(price);
         availability[channel] = baseAvailable && row['is_available'] == true
             ? MenuAvailability.available
             : MenuAvailability.manualOff;
@@ -105,7 +142,6 @@ class MenuItem {
       description: json['description'] as String? ?? '',
       pricesCentavos: prices,
       availability: availability,
-      // TODO: map modifier groups once the API sends them.
     );
   }
 
@@ -124,7 +160,7 @@ MenuChannel? _menuChannelFromApi(Object? value) => switch (value) {
   _ => null,
 };
 
-int _decimalToCentavos(Object value) {
+int decimalToCentavos(Object value) {
   final text = value.toString();
   final match = RegExp(r'^(\d+)(?:\.(\d{1,2}))?$').firstMatch(text);
   if (match == null) throw FormatException('Invalid monetary value: $text');

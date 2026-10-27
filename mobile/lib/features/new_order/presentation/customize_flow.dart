@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
+import 'package:mobile/features/new_order/data/repositories/menu_item_modifier_repository.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/customize_item_panel.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
@@ -18,10 +19,28 @@ Future<void> openCustomize(
       ? lines.length + 1
       : lines.indexWhere((l) => l.id == editing.id) + 1;
 
+  // Add-ons come from the backend for the item being customized.
+  var customizable = item;
+  try {
+    final addOns = await ref
+        .read(menuItemModifierRepositoryProvider)
+        .getForMenuItem(item.id);
+    customizable = item.withModifierGroups(addOns);
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Couldn't load add-ons for this item. Showing none."),
+        ),
+      );
+    }
+  }
+  if (!context.mounted) return;
+
   final result = await _present(
     context,
     CustomizeItemPanel(
-      item: item,
+      item: customizable,
       channel: channel,
       brandCode: ref.read(activeBrandProvider).code,
       itemNumber: itemNumber,
@@ -32,9 +51,14 @@ Future<void> openCustomize(
 
   final cart = ref.read(cartProvider.notifier);
   if (editing == null) {
-    cart.addConfigured(item, result.selections, result.quantity);
+    cart.addConfigured(customizable, result.selections, result.quantity);
   } else {
-    cart.updateLine(editing.id, result.selections, result.quantity);
+    cart.updateLine(
+      editing.id,
+      result.selections,
+      result.quantity,
+      item: customizable,
+    );
   }
 }
 
@@ -58,7 +82,7 @@ Future<CustomizeResult?> _present(BuildContext context, Widget panel) {
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: scheme.scrim.withValues(alpha: 0.5),
     transitionDuration: context.motion(MenuMotion.medium),
-    pageBuilder: (context, _, __) => Align(
+    pageBuilder: (context, _, _) => Align(
       alignment: Alignment.centerRight,
       child: SizedBox(
         width: 440,

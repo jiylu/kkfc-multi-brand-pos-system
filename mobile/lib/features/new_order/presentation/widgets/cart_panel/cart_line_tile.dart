@@ -15,8 +15,7 @@ class CartLineTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final modifiers = [
-    ];
+    final modifiers = line.modifierSummary;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: MenuSpace.sm),

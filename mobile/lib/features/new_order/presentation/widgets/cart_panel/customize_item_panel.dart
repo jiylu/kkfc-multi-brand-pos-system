@@ -39,6 +39,22 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
 
   static const _maxQuantity = 99;
 
+  List<Widget> _addOnSection(MenuItem item) {
+    final addOns = item.modifierGroups.where((g) => g.isAddOn).toList();
+    if (addOns.isEmpty) return const [];
+    return [
+      const SizedBox(height: MenuSpace.md),
+      _AddOnsCard(
+        addOns: addOns,
+        selections: _selections,
+        onChanged: (group, on) => setState(
+          () => _selections[group.id] =
+              on ? ModifierGroup.addOnOn : ModifierGroup.addOnOff,
+        ),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -82,7 +98,8 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
                   name: item.name,
                   basePrice: base,
                 ),
-                for (final group in item.modifierGroups) ...[
+                ..._addOnSection(item),
+                for (final group in item.modifierGroups.where((g) => !g.isAddOn)) ...[
                   const SizedBox(height: MenuSpace.md),
                   _ModifierGroupCard(
                     group: group,
@@ -126,8 +143,7 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
                 ),
                 const SizedBox(height: MenuSpace.md),
                 Text(
-                  'Modifiers shown are illustrative. Server data defines '
-                  'available choices and allowed prices.',
+                  'Add-ons and prices are loaded from the server.',
                   style: text.bodySmall
                       ?.copyWith(color: scheme.onSurfaceVariant),
                 ),
@@ -209,6 +225,54 @@ class _ItemSummary extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AddOnsCard extends StatelessWidget {
+  const _AddOnsCard({
+    required this.addOns,
+    required this.selections,
+    required this.onChanged,
+  });
+
+  final List<ModifierGroup> addOns;
+  final Map<String, String> selections;
+  final void Function(ModifierGroup group, bool on) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(MenuRadius.md),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(MenuSpace.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('ADD-ONS',
+                style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
+            const SizedBox(height: MenuSpace.xs),
+            for (final group in addOns)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.trailing,
+                value: selections[group.id] == ModifierGroup.addOnOn,
+                onChanged: (v) => onChanged(group, v ?? false),
+                title: Text(
+                  '${group.title} · ${formatPesoDelta(group.options.last.priceDeltaCentavos)}',
+                  style: text.bodyMedium,
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

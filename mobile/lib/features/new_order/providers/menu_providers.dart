@@ -105,10 +105,22 @@ class CartNotifier extends Notifier<List<CartLine>> {
     ];
   }
 
-  void updateLine(String lineId, Map<String, String> selections, int quantity) {
+  void updateLine(
+    String lineId,
+    Map<String, String> selections,
+    int quantity, {
+    MenuItem? item,
+  }) {
     final i = state.indexWhere((l) => l.id == lineId);
     if (i == -1) return;
-    final line = state[i];
+    final line = item == null
+        ? state[i]
+        : CartLine(
+            id: state[i].id,
+            item: item,
+            quantity: state[i].quantity,
+            selections: state[i].selections,
+          );
     final sel = _normalize(line.item, selections);
 
     // If the edit makes this line identical to another, merge them.
@@ -125,7 +137,12 @@ class CartNotifier extends Notifier<List<CartLine>> {
     state = [
       for (final l in state)
         if (l.id == lineId)
-          l.copyWith(quantity: quantity, selections: sel)
+          CartLine(
+            id: line.id,
+            item: line.item,
+            quantity: quantity,
+            selections: sel,
+          )
         else
           l,
     ];
