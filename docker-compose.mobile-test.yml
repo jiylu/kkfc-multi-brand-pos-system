@@ -1,0 +1,17 @@
+# Standalone database for Flutter-to-API tests. No development volumes or ports.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: pos_mobile_test
+      POSTGRES_USER: pos
+      POSTGRES_PASSWORD: mobile-test-only
+    ports:
+      - "127.0.0.1:5544:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pos -d pos_mobile_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+    tmpfs:
+      - /var/lib/postgresql/data

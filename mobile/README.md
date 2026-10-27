@@ -47,6 +47,70 @@ Both must pass. After changing a model or enum with `freezed` or `json_serializa
 dart run build_runner build --delete-conflicting-outputs
 ```
 
+### Real API login integration tests
+
+`integration_test/auth_api_test.dart` runs the actual app on an Android emulator,
+using the real login API and platform secure storage. It checks successful login,
+the redirect to the menu, token persistence, acceptance of that token by
+`GET /auth/me`, and rejection of a wrong password without a local session.
+The menu currently uses sample data; these tests cover authentication only.
+
+Start the isolated, temporary PostgreSQL database from the repository root:
+
+```powershell
+docker compose -p kkfc-mobile-test -f docker-compose.mobile-test.yml up -d --wait
+```
+
+In a backend terminal, prepare the schema and seeded test accounts, then keep
+the API running on port 3001. Run these commands from `server/` (after `npm ci`
+on a fresh checkout):
+
+```powershell
+$env:DATABASE_URL = 'postgresql://pos:mobile-test-only@localhost:5544/pos_mobile_test'
+$env:NODE_ENV = 'test'
+$env:PORT = '3001'
+npx.cmd prisma generate
+npx.cmd prisma migrate deploy
+npx.cmd ts-node -P prisma/tsconfig.seed.json prisma/seed-test.ts
+npm.cmd run start
+```
+
+Use this dedicated database for the test API. The standalone Compose file does
+not use the development database or its volumes; its data disappears when the
+container stops. No AWS credentials are needed for these authentication tests.
+
+In another terminal, run from `mobile/`:
+
+```powershell
+flutter pub get
+flutter emulators
+flutter emulators --launch <emulator-id>
+flutter devices
+flutter test integration_test/auth_api_test.dart -d <device-id> --dart-define-from-file=env/test-emulator.json
+```
+
+The default test account is `test_order_staff` / `Password123!`, from
+`server/prisma/seed-test.ts`. Override it with `--dart-define=TEST_USERNAME=...`
+and `--dart-define=TEST_PASSWORD=...` if using other dedicated test fixtures.
+`ENV=test` and an explicit `API_URL` are required. For a physical device, replace
+the emulator URL with an address that reaches the test backend.
+
+The tests clear the app's saved token before each case and revoke sessions they
+create afterward, including when assertions fail. Use a test emulator or app
+installation. HTTP failures or an unavailable backend fail the tests; responses
+are never mocked. Waits for API results are bounded to 45 seconds.
+
+After testing, stop the API with Ctrl+C, close its terminal (to discard its
+test environment variables), and stop the temporary database from the root:
+
+```powershell
+docker compose -p kkfc-mobile-test -f docker-compose.mobile-test.yml down
+```
+
+These device tests run separately from `flutter test` and the existing unit/widget
+CI job. See the [Flutter integration test guide](https://docs.flutter.dev/testing/integration-tests)
+for the SDK runner used here.
+
 ### Golden tests
 
 Golden tests use [Alchemist](https://pub.dev/packages/alchemist). CI compares the committed Linux baselines in `test/**/goldens/ci/`. Locally, tests compare gitignored platform baselines in `test/**/goldens/<platform>/`, which show real font rendering and are useful for inspection. The two variants never run in the same environment.
