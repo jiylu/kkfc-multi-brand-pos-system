@@ -34,6 +34,20 @@ final menuItemsProvider = FutureProvider.autoDispose<List<MenuItem>>((
   return ref.watch(menuRepositoryProvider).getByBrand(brandId);
 });
 
+/// Channels to show as tabs: those the loaded menu items are sold on, in
+/// [MenuChannel] order. Falls back to every channel while the menu is
+/// loading, on error, or when the backend lists no channels.
+final availableChannelsProvider = Provider.autoDispose<List<MenuChannel>>((ref) {
+  final items = ref.watch(menuItemsProvider).asData?.value;
+  if (items == null) return MenuChannel.values;
+  final listed = {for (final item in items) ...item.channels};
+  if (listed.isEmpty) return MenuChannel.values;
+  return [
+    for (final channel in MenuChannel.values)
+      if (listed.contains(channel)) channel,
+  ];
+});
+
 final visibleMenuItemsProvider =
     Provider.autoDispose<AsyncValue<List<MenuItem>>>((ref) {
       final query = ref.watch(menuSearchProvider).trim().toLowerCase();

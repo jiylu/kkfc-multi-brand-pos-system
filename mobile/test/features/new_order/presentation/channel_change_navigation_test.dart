@@ -17,7 +17,7 @@ void main() {
     testWidgets('tapping a different channel updates state and notifies', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)]);
       addTearDown(container.dispose);
       MenuChannel? notified;
 
@@ -41,7 +41,7 @@ void main() {
     });
 
     testWidgets('tapping the current channel does not notify', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)]);
       addTearDown(container.dispose);
       MenuChannel? notified;
 

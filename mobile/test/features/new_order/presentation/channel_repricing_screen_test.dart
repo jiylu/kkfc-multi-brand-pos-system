@@ -22,9 +22,22 @@ Future<void> _pumpScreen(WidgetTester tester, Size size) async {
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
-  final container = ProviderContainer();
+  final container = ProviderContainer(overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)]);
   addTearDown(container.dispose);
   container.read(menuChannelProvider.notifier).select(MenuChannel.grabFood);
+
+  final extraRice = ModifierGroup.addOn(
+    id: 'extra-rice',
+    name: 'Extra rice',
+    priceCentavos: 2500,
+  );
+  final cart = container.read(cartProvider.notifier);
+  cart.addConfigured(
+    sampleMenu[0].withModifierGroups([extraRice]),
+    {extraRice.id: ModifierGroup.addOnOn},
+    2,
+  );
+  cart.addConfigured(sampleMenu[1], const {}, 1);
 
   await tester.pumpWidget(
     UncontrolledProviderScope(

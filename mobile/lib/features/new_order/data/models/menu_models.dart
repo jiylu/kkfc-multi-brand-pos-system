@@ -81,6 +81,7 @@ class MenuItem {
     required this.pricesCentavos,
     this.availability = const {},
     this.modifierGroups = const [],
+    this.channels = const {},
   });
 
   final String id;
@@ -90,6 +91,9 @@ class MenuItem {
   final Map<MenuChannel, MenuAvailability> availability;
   final List<ModifierGroup> modifierGroups;
 
+  /// Channels the backend lists this item under (empty when unknown).
+  final Set<MenuChannel> channels;
+
   MenuItem withModifierGroups(List<ModifierGroup> groups) => MenuItem(
     id: id,
     name: name,
@@ -97,6 +101,7 @@ class MenuItem {
     pricesCentavos: pricesCentavos,
     availability: availability,
     modifierGroups: groups,
+    channels: channels,
   );
 
   /// Maps the `/menu-items/brand/:brandId` payload to the UI model.
@@ -123,12 +128,14 @@ class MenuItem {
     };
 
     final channelRows = json['menu_item_channels_menu_item'];
+    final listed = <MenuChannel>{};
     if (channelRows is List) {
       for (final row in channelRows) {
         if (row is! Map<String, dynamic>) continue;
         final channel = _menuChannelFromApi(row['order_channel']);
         final price = row['price'];
         if (channel == null || price == null) continue;
+        listed.add(channel);
         prices[channel] = decimalToCentavos(price);
         availability[channel] = baseAvailable && row['is_available'] == true
             ? MenuAvailability.available
@@ -142,6 +149,7 @@ class MenuItem {
       description: json['description'] as String? ?? '',
       pricesCentavos: prices,
       availability: availability,
+      channels: listed,
     );
   }
 
