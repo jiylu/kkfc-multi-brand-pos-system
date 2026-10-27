@@ -7,6 +7,8 @@ import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_l
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel_footer.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel_header.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/providers/brand_providers.dart';
+import 'package:mobile/features/order_entry/data/models/order_entry_view_data.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
 
 class CartPanel extends ConsumerStatefulWidget {
@@ -102,7 +104,12 @@ class _CartPanelState extends ConsumerState<CartPanel> {
               count: count,
               total: total,
               canSend: lines.isNotEmpty,
-              onSend: () => context.push(AppRoutes.orderEntry),
+              onSend: () => context.push(
+                AppRoutes.orderEntry,
+                extra: OrderEntryViewData.checkBeforeSending.withBrand(
+                  ref.read(activeBrandProvider).name,
+                ),
+              ),
             ),
           ],
         ),

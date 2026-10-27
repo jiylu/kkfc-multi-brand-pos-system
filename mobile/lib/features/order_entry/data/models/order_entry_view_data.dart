@@ -33,6 +33,33 @@ class OrderEntryViewData {
   final String secondaryLabel;
   final String primaryLabel;
 
+  /// Value of the "Brand" summary row, or an empty string if absent.
+  String get brandName => rows
+      .firstWhere(
+        (r) => r.label == 'Brand',
+        orElse: () => const OrderEntryRow('Brand', ''),
+      )
+      .value;
+
+  /// Same data with the "Brand" summary row set to [brandName].
+  OrderEntryViewData withBrand(String brandName) => OrderEntryViewData(
+    eyebrow: eyebrow,
+    title: title,
+    subtitle: subtitle,
+    summaryTitle: summaryTitle,
+    rows: [
+      for (final row in rows)
+        row.label == 'Brand' ? OrderEntryRow('Brand', brandName) : row,
+    ],
+    totalLabel: totalLabel,
+    total: total,
+    statusTitle: statusTitle,
+    statusBadge: statusBadge,
+    statusMessage: statusMessage,
+    secondaryLabel: secondaryLabel,
+    primaryLabel: primaryLabel,
+  );
+
   // Static placeholder. Replace copy with the exact text from Figma.
   static const checkBeforeSending = OrderEntryViewData(
     eyebrow: 'BEFORE SENDING',

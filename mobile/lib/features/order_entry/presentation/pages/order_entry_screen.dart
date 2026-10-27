@@ -70,7 +70,7 @@ class OrderEntryScreen extends StatelessWidget {
                 final status = FadeSlideIn(
                   index: 2,
                   child: OrderContextCard(
-                    brand: "Aurelia’s Inasal",
+                    brand: data.brandName,
                     channelLine: 'Dine-in  ·  Table 3',
                     orderStatus: 'Draft',
                     paymentStatus: 'Unpaid',
