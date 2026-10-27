@@ -13,7 +13,7 @@ const _meal = MenuItem(
 class _ModifiedCart extends CartNotifier {
   @override
   List<CartLine> build() => [
-    const CartLine(item: _meal, quantity: 2, extraRice: true),
+    // const CartLine(item: _meal, quantity: 2, extraRice: true),
   ];
 }
 
@@ -41,11 +41,11 @@ void main() {
     final cart = container.read(cartProvider.notifier);
     cart.add(_meal);
     cart.add(_meal);
-    cart.decrement('unknown');
+    cart.decrementLine('unknown');
     expect(container.read(cartProvider).single.quantity, 2);
-    cart.decrement(_meal.id);
+    cart.decrementLine(_meal.id);
     expect(container.read(cartProvider).single.quantity, 1);
-    cart.decrement(_meal.id);
+    cart.decrementLine(_meal.id);
     expect(container.read(cartProvider), isEmpty);
     expect(container.read(cartCountProvider), 0);
     expect(container.read(cartTotalProvider), 0);

@@ -13,8 +13,37 @@ enum MenuChannel {
 
 enum MenuAvailability { available, stockout, manualOff, inactive }
 
-/// Replace with the server value later.
-const int kExtraRiceCentavos = 2500;
+class ModifierOption {
+  const ModifierOption({
+    required this.id,
+    required this.label,
+    this.priceDeltaCentavos = 0,
+  });
+
+  final String id;
+  final String label;
+  final int priceDeltaCentavos;
+}
+
+/// Single-choice group (radio). Server data will define these later.
+class ModifierGroup {
+  const ModifierGroup({
+    required this.id,
+    required this.title,
+    required this.options,
+    required this.defaultOptionId,
+  });
+
+  final String id;
+  final String title;
+  final List<ModifierOption> options;
+  final String defaultOptionId;
+
+  ModifierOption optionById(String optionId) => options.firstWhere(
+    (o) => o.id == optionId,
+    orElse: () => options.firstWhere((o) => o.id == defaultOptionId),
+  );
+}
 
 class MenuItem {
   const MenuItem({
@@ -23,6 +52,7 @@ class MenuItem {
     required this.description,
     required this.pricesCentavos,
     this.availability = const {},
+    this.modifierGroups = const [],
   });
 
   final String id;
@@ -30,6 +60,7 @@ class MenuItem {
   final String description;
   final Map<MenuChannel, int> pricesCentavos;
   final Map<MenuChannel, MenuAvailability> availability;
+  final List<ModifierGroup> modifierGroups;
 
   /// Maps the `/menu-items/brand/:brandId` payload to the UI model.
   /// Monetary values are sent by Prisma as decimal JSON values (typically
@@ -74,6 +105,7 @@ class MenuItem {
       description: json['description'] as String? ?? '',
       pricesCentavos: prices,
       availability: availability,
+      // TODO: map modifier groups once the API sends them.
     );
   }
 
@@ -101,27 +133,59 @@ int _decimalToCentavos(Object value) {
   return whole * 100 + (fraction.isEmpty ? 0 : int.parse(fraction));
 }
 
+String formatPesoDelta(int centavos) =>
+    centavos < 0 ? '−${formatPeso(-centavos)}' : '+${formatPeso(centavos)}';
+
+/// Sum of price changes for a set of selections.
+int modifiersCentavosFor(MenuItem item, Map<String, String> selections) {
+  var sum = 0;
+  for (final g in item.modifierGroups) {
+    sum += g.optionById(selections[g.id] ?? g.defaultOptionId).priceDeltaCentavos;
+  }
+  return sum;
+}
+
 class CartLine {
   const CartLine({
+    required this.id,
     required this.item,
     required this.quantity,
-    this.extraRice = false,
+    this.selections = const {},
   });
 
+  final String id;
   final MenuItem item;
   final int quantity;
-  final bool extraRice;
+  final Map<String, String> selections; // groupId -> optionId
 
-  CartLine copyWith({int? quantity}) => CartLine(
-    item: item,
-    quantity: quantity ?? this.quantity,
-    extraRice: extraRice,
-  );
+  CartLine copyWith({int? quantity, Map<String, String>? selections}) =>
+      CartLine(
+        id: id,
+        item: item,
+        quantity: quantity ?? this.quantity,
+        selections: selections ?? this.selections,
+      );
 
   int unitCentavos(MenuChannel channel) =>
-      item.priceFor(channel) + (extraRice ? kExtraRiceCentavos : 0);
+      item.priceFor(channel) + modifiersCentavosFor(item, selections);
 
   int totalCentavos(MenuChannel channel) => unitCentavos(channel) * quantity;
+
+  /// Only choices that differ from the default, so a plain line shows nothing.
+  List<String> get modifierSummary {
+    final out = <String>[];
+    for (final g in item.modifierGroups) {
+      final id = selections[g.id] ?? g.defaultOptionId;
+      if (id == g.defaultOptionId) continue;
+      final o = g.optionById(id);
+      out.add(
+        o.priceDeltaCentavos == 0
+            ? o.label
+            : '${o.label} ${formatPesoDelta(o.priceDeltaCentavos)}',
+      );
+    }
+    return out;
+  }
 }
 
 String formatPeso(int centavos) {

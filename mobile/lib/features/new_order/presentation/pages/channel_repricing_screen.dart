@@ -90,8 +90,12 @@ class _RepricingBody extends ConsumerWidget {
 
   String _lineDetail(CartLine line, MenuChannel channel) {
     final unit = formatPeso(line.item.priceFor(channel));
-    if (!line.extraRice) return '${line.quantity} × $unit';
-    return '${line.quantity} × ($unit + ${formatPeso(kExtraRiceCentavos)})';
+    final delta = modifiersCentavosFor(line.item, line.selections);
+
+    if (delta == 0) return '${line.quantity} × $unit';
+
+    final sign = delta > 0 ? '+' : '−';
+    return '${line.quantity} × ($unit $sign ${formatPeso(delta.abs())})';
   }
 
   void _undo(BuildContext context) {
