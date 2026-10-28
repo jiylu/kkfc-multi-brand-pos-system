@@ -11,6 +11,7 @@ import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_states.dart';
 import 'package:mobile/shared/widgets/responsive_card_grid.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/shared/widgets/kkfc_pagination.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 
 class MenuScreen extends StatelessWidget {
@@ -186,6 +187,11 @@ class _MenuBodyState extends ConsumerState<_MenuBody> {
             switchInCurve: MenuMotion.curve,
             child: body,
           ),
+        ),
+        KkfcPagination(
+          currentPage: 1,
+          totalPages: 1,
+          onPageChanged: (_) {},
         ),
       ],
     );
