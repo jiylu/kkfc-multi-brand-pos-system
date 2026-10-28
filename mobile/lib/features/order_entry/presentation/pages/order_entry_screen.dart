@@ -8,6 +8,7 @@ import 'package:mobile/features/auth/providers/auth_profile_provider.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/features/order_entry/data/models/order_confirmed_view_data.dart';
 import 'package:mobile/features/order_entry/data/models/order_entry_view_data.dart';
 import 'package:mobile/features/order_entry/data/repositories/order_entry_repository.dart';
 import 'package:mobile/shared/shared_layout.dart';
@@ -142,7 +143,7 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
     setState(() => _isSending = true);
     try {
       final brandId = await _resolveBrandId();
-      await ref.read(orderEntryRepositoryProvider).createOrder(
+      final created = await ref.read(orderEntryRepositoryProvider).createOrder(
             brandId: brandId,
             orderId: _orderId,
             channel: channel,
@@ -150,6 +151,14 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
             reference: reference,
             merchantStoreReference: brand.code,
           );
+      final confirmedData = OrderConfirmedViewData.fromOrder(
+        brand: brand.name,
+        channel: channel.label,
+        isPlatform: channel.isPlatform,
+        reference: reference,
+        orderStatus: created['status'] as String?,
+        paymentStatus: created['payment_status'] as String?,
+      );
 
       ref.read(cartProvider.notifier).clear();
       ref.read(orderReferenceProvider.notifier).clear();
@@ -158,11 +167,11 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
       _showSuccess('Order sent to kitchen.');
       final router = GoRouter.maybeOf(context);
       if (router != null) {
-        router.go(AppRoutes.orderConfirmed);
+        router.go(AppRoutes.orderConfirmed, extra: confirmedData);
       } else {
         Navigator.maybeOf(context)?.pushReplacement(
           MaterialPageRoute<void>(
-            builder: (_) => const OrderConfirmedScreen(),
+            builder: (_) => OrderConfirmedScreen(data: confirmedData),
           ),
         );
       }
