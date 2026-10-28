@@ -176,7 +176,7 @@ class _PageHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: text.headlineSmall),
+        Text(title, style: text.headlineLarge),
         SizedBox(height: MenuSpace.xs),
         Text(subtitle, style: text.bodySmall),
       ],

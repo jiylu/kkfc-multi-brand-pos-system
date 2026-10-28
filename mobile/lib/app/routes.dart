@@ -6,5 +6,6 @@ abstract final class AppRoutes {
   static const availability = '/availability';
   static const orderEntry = '/order-entry';
   static const orderConfirmed = '/order-confirmed';
+  static const orderNotSent = '/order-not-sent';
   static const platformReference = '/platform-reference';
 }

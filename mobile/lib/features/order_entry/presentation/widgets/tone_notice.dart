@@ -5,18 +5,20 @@ import 'package:mobile/app/theme/tokens.dart';
 class ToneNotice extends StatelessWidget {
   const ToneNotice({
     super.key,
-    required this.title,
+    this.title,
     required this.body,
     required this.tone,
   });
 
-  final String title;
+  final String? title;
   final String body;
   final KkfcTone tone;
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final hasTitle = title != null && title!.trim().isNotEmpty;
+
     return SizedBox(
       width: double.infinity,
       child: DecoratedBox(
@@ -29,16 +31,24 @@ class ToneNotice extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (hasTitle) ...[
+                Text(
+                  title!.toUpperCase(),
+                  style: text.labelMedium?.copyWith(
+                    color: tone.fg,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: KkfcSpace.s4),
+              ],
               Text(
-                title.toUpperCase(),
-                style: text.labelMedium?.copyWith(
+                body,
+                style: (hasTitle ? text.bodySmall : text.bodyMedium)?.copyWith(
                   color: tone.fg,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
+                  fontWeight: hasTitle ? null : FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: KkfcSpace.s4),
-              Text(body, style: text.bodySmall?.copyWith(color: tone.fg)),
             ],
           ),
         ),

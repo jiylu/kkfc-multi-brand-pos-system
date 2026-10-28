@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/app/theme/tokens.dart';
 
 class OrderEntryHeader extends StatelessWidget {
   const OrderEntryHeader({
@@ -7,18 +8,21 @@ class OrderEntryHeader extends StatelessWidget {
     required this.subtitle,
     this.eyebrow,
     this.tag,
+    this.trailing,
   });
 
   final String title;
   final String subtitle;
   final String? eyebrow;
   final Widget? tag; // e.g. the green "✓ ORDER CONFIRMED" pill
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
-    return Column(
+
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (tag != null) ...[
@@ -48,6 +52,17 @@ class OrderEntryHeader extends StatelessWidget {
             color: scheme.onSurfaceVariant,
           ),
         ),
+      ],
+    );
+
+    if (trailing == null) return content;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: content),
+        const SizedBox(width: KkfcSpace.s16),
+        trailing!,
       ],
     );
   }
