@@ -17,6 +17,7 @@ import '../features/order_entry/presentation/pages/order_not_sent_screen.dart';
 import '../features/order_entry/presentation/pages/duplicate_platform_order_screen.dart';
 import '../features/order_entry/presentation/pages/order_entry_screen.dart';
 import '../features/order_entry/presentation/pages/platform_reference_screen.dart';
+import '../features/orders/cancel/presentation/pages/cancel_order_screen.dart';
 import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -55,6 +56,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.orders,
         builder: (context, state) => const OrdersScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.cancelOrder,
+        builder: (context, state) => const CancelOrderScreen(),
       ),
       GoRoute(
         path: AppRoutes.availability,

@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/shared/shared_layout.dart';
@@ -36,7 +38,18 @@ class OrdersScreen extends ConsumerWidget {
               Expanded(
                 child: Column(
                   children: [
-                    const Expanded(child: Center(child: Text('Orders'))),
+                    const Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Orders'),
+                            SizedBox(height: MenuSpace.md),
+                            _CancelOrderEntry(),
+                          ],
+                        ),
+                      ),
+                    ),
                     if (!showRail) const MenuBottomNav(),
                   ],
                 ),
@@ -57,5 +70,20 @@ class OrdersScreen extends ConsumerWidget {
     unawaited(ref.read(authRepositoryProvider).logout(token));
     ref.read(sessionExpiredProvider.notifier).set(false);
     ref.read(sessionTokenProvider.notifier).setToken(null);
+  }
+}
+
+/// Prototype entry point into the cancel-order workflow. The order list is not
+/// implemented yet, so QA opens the cancel screens from here.
+class _CancelOrderEntry extends StatelessWidget {
+  const _CancelOrderEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: () => context.go(AppRoutes.cancelOrder),
+      icon: const Icon(Icons.cancel_outlined),
+      label: const Text('Open cancel order (prototype)'),
+    );
   }
 }
