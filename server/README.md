@@ -178,6 +178,17 @@ than signed URLs.
 
 ## Run tests
 
+HTTP integration tests require a separate PostgreSQL database with `test` in its
+name. In `.env.test`, set both `DATABASE_URL` and `TEST_DATABASE_URL` to that
+database. Apply committed migrations before the first run and whenever new
+migrations are added:
+
+```bash
+node --env-file=.env.test node_modules/prisma/build/index.js migrate deploy
+```
+
+Generating the Prisma client or building the server does not apply migrations.
+
 ```bash
 # all tests
 $ npm test

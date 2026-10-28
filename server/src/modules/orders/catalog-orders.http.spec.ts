@@ -2,6 +2,9 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { OrderChannel } from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { Client } from 'pg';
 import sharp from 'sharp';
 import { AppModule } from '../../app.module';
 import { PrismaService } from '../../shared/prisma/prisma.service';
@@ -418,6 +421,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
       },
     },
     { name: 'unknown field', change: { unexpected: true } },
+    { name: 'client-supplied code', change: { order_code: 'GC-00001' } },
     ...[0, -1, 1.5, 10000].map((quantity) => ({
       name: `quantity ${quantity}`,
       change: { lines: [{ menu_item_id: randomUUID(), quantity }] },
@@ -455,6 +459,11 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
       ).toBe(400);
       expect(
         await prisma.order.count({
+          where: { brand_id: fixture.brand.brand_id },
+        }),
+      ).toBe(0);
+      expect(
+        await prisma.orderDailyCounter.count({
           where: { brand_id: fixture.brand.brand_id },
         }),
       ).toBe(0);
@@ -543,6 +552,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     );
     expect(confirmed.status).toBe(200);
     const response = await json(confirmed);
+    expect(response.order_code).toBe(before.order_code);
     expect(JSON.stringify(response)).not.toContain(
       'Restricted fixture instructions',
     );
@@ -662,6 +672,169 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     expect(await savedOrder(order.order_id)).toEqual(before);
   });
 
+  it('assigns consecutive daily codes across channels and keeps cancelled draft numbers', async () => {
+    const first = await draft();
+    const saved = await savedOrder(first.order_id);
+    expect(saved.order_code).toBe(`${fixture.brand.code.trim()}-00001`);
+    expect(saved.order_number).toBe(1);
+    const [{ order_date }] = await prisma.$queryRaw<
+      { order_date: Date }[]
+    >`SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date AS order_date`;
+    expect(saved.order_date).toEqual(order_date);
+    await prisma.order.update({
+      where: { order_id: first.order_id },
+      data: { status: 'CANCELLED' },
+    });
+    const second = await request(ordersPath(), 'POST', orderBody('DINE_IN'), 1);
+    expect(second.status).toBe(201);
+    expect(await json(second)).toMatchObject({
+      order_code: `${fixture.brand.code.trim()}-00002`,
+      order_number: 2,
+    });
+    const platform = await request(
+      ordersPath(),
+      'POST',
+      orderBody('GRABFOOD'),
+      1,
+    );
+    expect(platform.status).toBe(201);
+    expect(await json(platform)).toMatchObject({
+      order_code: `${fixture.brand.code.trim()}-00003`,
+      order_number: 3,
+    });
+  });
+
+  it('starts a separate sequence for another brand', async () => {
+    await draft();
+    const recipe = await prisma.recipe.create({
+      data: {
+        brand_id: fixture.otherBrand.brand_id,
+        code: randomUUID(),
+        name: 'Other brand assembly',
+        type: 'MENU_ASSEMBLY',
+      },
+    });
+    const item = await prisma.menuItem.create({
+      data: {
+        brand_id: fixture.otherBrand.brand_id,
+        recipe_id: recipe.recipe_id,
+        code: randomUUID(),
+        name: 'Other brand meal',
+        img_url: 'uploads/fixture.png',
+        base_price: 50,
+      },
+    });
+    const response = await request(
+      `/brands/${fixture.otherBrand.brand_id}/orders`,
+      'POST',
+      {
+        ...orderBody(),
+        lines: [{ menu_item_id: item.menu_item_id, quantity: 1 }],
+      },
+      2,
+    );
+    expect(response.status).toBe(201);
+    expect(await json(response)).toMatchObject({
+      order_code: `${fixture.otherBrand.code.trim()}-00001`,
+      order_number: 1,
+    });
+  });
+
+  it('assigns different codes to simultaneous creates and preserves them on replay', async () => {
+    const bodies = Array.from({ length: 4 }, () => orderBody());
+    const responses = await Promise.all(
+      bodies.map((body) => request(ordersPath(), 'POST', body, 1)),
+    );
+    expect(responses.map((response) => response.status)).toEqual([
+      201, 201, 201, 201,
+    ]);
+    const orders = await Promise.all(responses.map(json));
+    expect(orders.map((order) => order.order_number).sort()).toEqual([
+      1, 2, 3, 4,
+    ]);
+    expect(new Set(orders.map((order) => order.order_code)).size).toBe(4);
+    const replay = await request(ordersPath(), 'POST', bodies[0], 1);
+    expect(replay.status).toBe(201);
+    expect(await json(replay)).toEqual(orders[0]);
+    const next = await request(ordersPath(), 'POST', orderBody(), 1);
+    expect(next.status).toBe(201);
+    expect(await json(next)).toMatchObject({ order_number: 5 });
+  });
+
+  it('allocates one number for simultaneous creates with the same UUID', async () => {
+    const body = orderBody();
+    const responses = await Promise.all([
+      request(ordersPath(), 'POST', body, 1),
+      request(ordersPath(), 'POST', body, 1),
+    ]);
+    expect(responses.map((response) => response.status)).toEqual([201, 201]);
+    expect(await json(responses[0])).toEqual(await json(responses[1]));
+    const next = await request(ordersPath(), 'POST', orderBody(), 1);
+    expect(next.status).toBe(201);
+    expect(await json(next)).toMatchObject({ order_number: 2 });
+  });
+
+  it('rolls back the allocated number if order insertion fails', async () => {
+    const body = orderBody();
+    const failingClient = prisma.$extends({
+      query: {
+        order: {
+          create() {
+            throw new Error('Injected order failure');
+          },
+        },
+      },
+    });
+    const service = new OrdersService(
+      failingClient as unknown as PrismaService,
+    );
+    await expect(
+      service.create(fixture.brand.brand_id, fixture.users[1].user_id, body),
+    ).rejects.toThrow('Injected order failure');
+    expect(
+      await prisma.orderDailyCounter.count({
+        where: { brand_id: fixture.brand.brand_id },
+      }),
+    ).toBe(0);
+    const response = await request(ordersPath(), 'POST', body, 1);
+    expect(response.status).toBe(201);
+    expect(await json(response)).toMatchObject({ order_number: 1 });
+  });
+
+  it('continues a seeded daily counter and snapshots subsequent brand code changes', async () => {
+    const [{ order_date }] = await prisma.$queryRaw<
+      { order_date: Date }[]
+    >`SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date AS order_date`;
+    await prisma.orderDailyCounter.create({
+      data: { brand_id: fixture.brand.brand_id, order_date, last_number: 17 },
+    });
+    const body = orderBody();
+    const response = await request(ordersPath(), 'POST', body, 1);
+    expect(response.status).toBe(201);
+    const original = await json(response);
+    expect(original).toMatchObject({
+      order_code: `${fixture.brand.code.trim()}-00018`,
+      order_number: 18,
+    });
+    let code: string;
+    do {
+      code = randomUUID().slice(0, 4).toUpperCase();
+    } while (await prisma.brand.findUnique({ where: { code } }));
+    await prisma.brand.update({
+      where: { brand_id: fixture.brand.brand_id },
+      data: { code },
+    });
+    const replay = await request(ordersPath(), 'POST', body, 1);
+    expect(replay.status).toBe(201);
+    expect(await json(replay)).toEqual(original);
+    const next = await request(ordersPath(), 'POST', orderBody(), 1);
+    expect(next.status).toBe(201);
+    expect(await json(next)).toMatchObject({
+      order_code: `${code}-00019`,
+      order_number: 19,
+    });
+  });
+
   it.each(['brand', 'menu'] as const)(
     'IT-ASSET-001 Given a valid image When updating a %s Then persist the object key across reads',
     async (target) => {
@@ -710,4 +883,113 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
       );
     },
   );
+});
+
+describe('Daily order code migration', () => {
+  it('backfills Manila dates deterministically and seeds each brand/date counter', async () => {
+    requireTestDatabase();
+    const client = new Client({
+      connectionString: process.env.TEST_DATABASE_URL,
+    });
+    const schema = `order_codes_${randomUUID().replaceAll('-', '')}`;
+    await client.connect();
+    try {
+      await client.query(`CREATE SCHEMA "${schema}"`);
+      await client.query(`SET search_path TO "${schema}"`);
+      await client.query(`
+        CREATE TABLE brands (brand_id UUID PRIMARY KEY, code CHAR(4) NOT NULL);
+        CREATE TABLE orders (
+          order_id UUID PRIMARY KEY,
+          brand_id UUID NOT NULL REFERENCES brands(brand_id),
+          created_at TIMESTAMP(6) NOT NULL
+        );
+        INSERT INTO brands VALUES
+          ('00000000-0000-4000-8000-000000000001', 'GC'),
+          ('00000000-0000-4000-8000-000000000002', 'KK');
+        INSERT INTO orders VALUES
+          ('00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001', '2026-10-28 15:59:59'),
+          ('00000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000001', '2026-10-28 16:00:00'),
+          ('00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', '2026-10-28 16:00:00'),
+          ('00000000-0000-4000-8000-000000000004', '00000000-0000-4000-8000-000000000002', '2026-10-28 16:00:00');
+      `);
+      await client.query(
+        await readFile(
+          join(
+            process.cwd(),
+            'prisma/migrations/20261029000100_daily_order_codes/migration.sql',
+          ),
+          'utf8',
+        ),
+      );
+      const orders = await client.query<{
+        order_id: string;
+        order_code: string;
+        order_date: string;
+        order_number: number;
+      }>(
+        'SELECT order_id, order_code, order_date::text, order_number FROM orders ORDER BY order_id',
+      );
+      expect(orders.rows).toEqual([
+        {
+          order_id: '00000000-0000-4000-8000-000000000001',
+          order_code: 'GC-00001',
+          order_date: '2026-10-28',
+          order_number: 1,
+        },
+        {
+          order_id: '00000000-0000-4000-8000-000000000002',
+          order_code: 'GC-00001',
+          order_date: '2026-10-29',
+          order_number: 1,
+        },
+        {
+          order_id: '00000000-0000-4000-8000-000000000003',
+          order_code: 'GC-00002',
+          order_date: '2026-10-29',
+          order_number: 2,
+        },
+        {
+          order_id: '00000000-0000-4000-8000-000000000004',
+          order_code: 'KK-00001',
+          order_date: '2026-10-29',
+          order_number: 1,
+        },
+      ]);
+      const counters = await client.query<{
+        brand_id: string;
+        order_date: string;
+        last_number: number;
+      }>(
+        'SELECT brand_id, order_date::text, last_number FROM order_daily_counters ORDER BY brand_id, order_date',
+      );
+      expect(counters.rows).toEqual([
+        {
+          brand_id: '00000000-0000-4000-8000-000000000001',
+          order_date: '2026-10-28',
+          last_number: 1,
+        },
+        {
+          brand_id: '00000000-0000-4000-8000-000000000001',
+          order_date: '2026-10-29',
+          last_number: 2,
+        },
+        {
+          brand_id: '00000000-0000-4000-8000-000000000002',
+          order_date: '2026-10-29',
+          last_number: 1,
+        },
+      ]);
+      await expect(
+        client.query('UPDATE orders SET order_number = 1'),
+      ).rejects.toMatchObject({ code: '23505' });
+      await expect(
+        client.query('UPDATE order_daily_counters SET last_number = 0'),
+      ).rejects.toMatchObject({ code: '23514' });
+    } finally {
+      await client.query('ROLLBACK');
+      await client.query('SET search_path TO public');
+      await client.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+      await client.end();
+    }
+  });
 });

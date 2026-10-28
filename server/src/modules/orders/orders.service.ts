@@ -121,7 +121,7 @@ export class OrdersService {
       where: { brand_id: brandId, is_active: true },
     });
     if (!brand) throw new BadRequestException('Brand is unavailable.');
-    return Promise.all(
+    const snapshots = await Promise.all(
       lines.map(async (line) => {
         const menu = await tx.menuItem.findFirst({
           where: {
@@ -189,6 +189,7 @@ export class OrdersService {
         };
       }),
     );
+    return { brand, lines: snapshots };
   }
 
   async create(brandId: string, actorId: string, dto: CreateOrderDTO) {
@@ -261,15 +262,28 @@ export class OrdersService {
       }
       if (dto.order_channel === 'DINE_IN' && !dto.table_reference?.trim())
         throw new BadRequestException('Dine-in requires a table reference.');
-      const lines = await this.snapshots(
+      const { brand, lines } = await this.snapshots(
         tx,
         brandId,
         dto.order_channel,
         dto.lines,
       );
+      // Keep creation time and the Manila date aligned regardless of database timezone.
+      const [{ created_at, order_date }] = await tx.$queryRaw<
+        { created_at: Date; order_date: Date }[]
+      >`SELECT CURRENT_TIMESTAMP AS created_at, (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date AS order_date`;
+      const counter = await tx.orderDailyCounter.upsert({
+        where: { brand_id_order_date: { brand_id: brandId, order_date } },
+        create: { brand_id: brandId, order_date, last_number: 1 },
+        update: { last_number: { increment: 1 } },
+      });
       const order = await tx.order.create({
         data: {
           order_id: dto.order_id,
+          order_code: `${brand.code.trim()}-${counter.last_number.toString().padStart(5, '0')}`,
+          order_date,
+          order_number: counter.last_number,
+          created_at,
           create_request_hash: hash,
           brand_id: brandId,
           created_by_id: actorId,
@@ -364,7 +378,7 @@ export class OrdersService {
       if (order.status !== 'DRAFT')
         throw new ConflictException('Only draft orders can be verified.');
       const payment = this.payment(order.order_channel, dto);
-      const lines = await this.snapshots(
+      const { lines } = await this.snapshots(
         tx,
         brandId,
         order.order_channel,
@@ -392,7 +406,7 @@ export class OrdersService {
       if (order.status !== 'DRAFT')
         throw new ConflictException('Only draft orders can be confirmed.');
       const payment = this.payment(order.order_channel, dto);
-      const lines = await this.snapshots(
+      const { lines } = await this.snapshots(
         tx,
         brandId,
         order.order_channel,

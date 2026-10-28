@@ -116,6 +116,7 @@ export async function cleanupCatalogFixture(
   await prisma.kitchenTicket.deleteMany({ where: { order: orderWhere } });
   await prisma.orderItem.deleteMany({ where: { order: orderWhere } });
   await prisma.order.deleteMany({ where: orderWhere });
+  await prisma.orderDailyCounter.deleteMany({ where: orderWhere });
   await prisma.menuItemChannel.deleteMany({
     where: { menu_item: { brand_id: { in: brandIds } } },
   });
