@@ -6,7 +6,7 @@ import 'order_entry_shadows.dart';
 class OrderEntryActionBar extends StatelessWidget {
   const OrderEntryActionBar({
     super.key,
-    required this.secondaryLabel,
+    this.secondaryLabel,
     required this.primaryLabel,
     this.isLoading = false,
     this.onSecondary,
@@ -14,7 +14,7 @@ class OrderEntryActionBar extends StatelessWidget {
     this.sideBySide = false,
   });
 
-  final String secondaryLabel;
+  final String? secondaryLabel;
   final String primaryLabel;
   final bool isLoading;
   final VoidCallback? onSecondary;
@@ -35,6 +35,26 @@ class OrderEntryActionBar extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, c) {
             final narrow = c.maxWidth < 480;
+            final hasSecondary =
+                secondaryLabel != null && secondaryLabel!.trim().isNotEmpty;
+
+            final primary = KkfcLoadingButton(
+              label: primaryLabel,
+              loadingLabel: 'Sending...',
+              isLoading: isLoading,
+              onPressed: onPrimary,
+            );
+
+            if (!hasSecondary) {
+              if (narrow) {
+                return primary;
+              }
+              return Row(
+                children: [
+                  SizedBox(width: 300, child: primary),
+                ],
+              );
+            }
 
             final secondary = OutlinedButton(
               onPressed: isLoading ? null : onSecondary,
@@ -44,13 +64,7 @@ class OrderEntryActionBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(KkfcRadius.sm),
                 ),
               ),
-              child: Text(secondaryLabel),
-            );
-            final primary = KkfcLoadingButton(
-              label: primaryLabel,
-              loadingLabel: 'Sending...',
-              isLoading: isLoading,
-              onPressed: onPrimary,
+              child: Text(secondaryLabel!),
             );
 
             // Two buttons on one row (Order confirmed).

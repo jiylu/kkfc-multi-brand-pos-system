@@ -10,9 +10,11 @@ import '../features/orders/screens/orders_screen.dart';
 import '../features/availability/presentation/pages/availability_read_only_screen.dart';
 import '../features/order_entry/data/models/order_confirmed_view_data.dart';
 import '../features/order_entry/data/models/order_not_sent_view_data.dart';
+import '../features/order_entry/data/models/duplicate_platform_order_view_data.dart';
 import '../features/order_entry/data/models/order_entry_view_data.dart';
 import '../features/order_entry/presentation/pages/order_confirmed_screen.dart';
 import '../features/order_entry/presentation/pages/order_not_sent_screen.dart';
+import '../features/order_entry/presentation/pages/duplicate_platform_order_screen.dart';
 import '../features/order_entry/presentation/pages/order_entry_screen.dart';
 import '../features/order_entry/presentation/pages/platform_reference_screen.dart';
 import 'routes.dart';
@@ -88,6 +90,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ? data
                 : OrderNotSentViewData.sample,
             onEditOrder: () => context.go(AppRoutes.menu),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.duplicatePlatformOrder,
+        builder: (context, state) {
+          final data = state.extra;
+          return DuplicatePlatformOrderScreen(
+            data: data is DuplicatePlatformOrderViewData
+                ? data
+                : DuplicatePlatformOrderViewData.sample,
+            onBackToOrder: () => context.go(AppRoutes.menu),
           );
         },
       ),
