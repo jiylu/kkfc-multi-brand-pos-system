@@ -1,3 +1,5 @@
+import { OrdersController } from '../../../modules/orders/orders.controller';
+import { OrdersService } from '../../../modules/orders/orders.service';
 import { PinGuard } from '../../../modules/pin/pin.guard';
 import {
   Body,
@@ -111,6 +113,7 @@ describe('BrandsGuard HTTP access', () => {
     user: { findUnique: jest.fn() },
   };
   const auth = { validateSession: jest.fn() };
+  const orders = { create: jest.fn(), verify: jest.fn(), confirm: jest.fn() };
   const menuChannels = { create: jest.fn() };
   const resources = [
     {
@@ -139,7 +142,11 @@ describe('BrandsGuard HTTP access', () => {
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
-      controllers: [BrandAccessController, MenuChannelsController],
+      controllers: [
+        BrandAccessController,
+        MenuChannelsController,
+        OrdersController,
+      ],
       providers: [
         Authenticated,
         BrandsGuard,
@@ -147,6 +154,7 @@ describe('BrandsGuard HTTP access', () => {
         { provide: AuthService, useValue: auth },
         { provide: PrismaService, useValue: prisma },
         { provide: MenuChannelsService, useValue: menuChannels },
+        { provide: OrdersService, useValue: orders },
       ],
     })
       .overrideGuard(PinGuard)
@@ -182,6 +190,56 @@ describe('BrandsGuard HTTP access', () => {
   });
 
   afterAll(async () => app?.close());
+
+  it.each(['verify', 'confirm'] as const)(
+    'authorizes the actual order brand before %s, including for superadmins',
+    async (operation) => {
+      orders[operation].mockResolvedValue({ ok: true });
+      const endpoint = `${await app.getUrl()}/brands/${brandId}/orders/${resourceId}/${operation}`;
+      const send = () =>
+        fetch(endpoint, { method: 'POST', headers, body: '{}' });
+      expect((await send()).status).toBe(200);
+      expect(prisma.order.findUnique).toHaveBeenCalledWith({
+        where: { order_id: resourceId },
+        select: { brand_id: true },
+      });
+      orders[operation].mockClear();
+      callerBrand = otherBrandId;
+      expect((await send()).status).toBe(403);
+      expect(orders[operation]).not.toHaveBeenCalled();
+      role = UserRole.SUPERADMIN;
+      expect((await send()).status).toBe(200);
+      orders[operation].mockClear();
+      prisma.order.findUnique.mockResolvedValue({ brand_id: otherBrandId });
+      expect((await send()).status).toBe(400);
+      expect(orders[operation]).not.toHaveBeenCalled();
+      prisma.order.findUnique.mockResolvedValue(null);
+      expect((await send()).status).toBe(404);
+    },
+  );
+
+  it('resolves the brand resource before creating an order', async () => {
+    const endpoint = `${await app.getUrl()}/brands/${brandId}/orders`;
+    const body = JSON.stringify({
+      order_id: resourceId,
+      order_channel: 'TAKEAWAY',
+      lines: [{ menu_item_id: resourceId, quantity: 1 }],
+    });
+    orders.create.mockResolvedValue({ ok: true });
+    expect(
+      (await fetch(endpoint, { method: 'POST', headers, body })).status,
+    ).toBe(201);
+    expect(prisma.brand.findUnique).toHaveBeenCalledWith({
+      where: { brand_id: brandId },
+      select: { brand_id: true },
+    });
+    orders.create.mockClear();
+    prisma.brand.findUnique.mockResolvedValue(null);
+    expect(
+      (await fetch(endpoint, { method: 'POST', headers, body })).status,
+    ).toBe(404);
+    expect(orders.create).not.toHaveBeenCalled();
+  });
 
   it.each([
     { callerRole: UserRole.MANAGER, brand: brandId, status: 201 },

@@ -14,6 +14,7 @@ import {
   createCatalogFixture,
   requireTestDatabase,
 } from '../../shared/testing/catalog.fixture';
+import { OrdersRepository } from './orders.repository';
 import { OrdersService } from './orders.service';
 
 describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)', () => {
@@ -615,7 +616,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
       },
     });
     const service = new OrdersService(
-      failingClient as unknown as PrismaService,
+      new OrdersRepository(failingClient as unknown as PrismaService),
     );
     await expect(
       service.confirm(
@@ -786,7 +787,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
       },
     });
     const service = new OrdersService(
-      failingClient as unknown as PrismaService,
+      new OrdersRepository(failingClient as unknown as PrismaService),
     );
     await expect(
       service.create(fixture.brand.brand_id, fixture.users[1].user_id, body),

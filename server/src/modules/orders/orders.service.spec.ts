@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { OrdersRepository } from './orders.repository';
 import { OrdersService } from './orders.service';
 import { CreateOrderDTO } from './dto/order.dto';
 
@@ -119,7 +120,9 @@ describe('Order lifecycle', () => {
           work(tx as unknown as Prisma.TransactionClient),
       ),
     };
-    service = new OrdersService(prisma as unknown as PrismaService);
+    service = new OrdersService(
+      new OrdersRepository(prisma as unknown as PrismaService),
+    );
   });
 
   it.each(['verify', 'confirm'] as const)(
