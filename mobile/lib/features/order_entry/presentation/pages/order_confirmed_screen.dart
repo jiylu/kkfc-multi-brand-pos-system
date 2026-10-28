@@ -123,7 +123,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                                     child: OrderContextCard(
                                       brand: data.brand,
                                       channelLine: data.channelLine,
-                                      orderStatus: data.orderStatus,
+                                      orderStatus: 'CONFIRMED',
                                       paymentStatus: data.paymentStatus,
                                       orderTone: success,
                                       note: data.contextNote,

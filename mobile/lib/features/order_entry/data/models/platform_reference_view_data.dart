@@ -19,8 +19,6 @@ class PlatformReferenceViewData {
     required this.subtitle,
     required this.storeLabel,
     required this.storeHint,
-    required this.externalOrderNumberLabel,
-    required this.externalOrderNumberHint,
     required this.externalReferenceLabel,
     required this.externalReferenceHint,
     required this.rightTitle,
@@ -38,8 +36,6 @@ class PlatformReferenceViewData {
   final String subtitle;
   final String storeLabel;
   final String storeHint;
-  final String externalOrderNumberLabel;
-  final String externalOrderNumberHint;
   final String externalReferenceLabel;
   final String externalReferenceHint;
   final String rightTitle;
@@ -57,8 +53,6 @@ class PlatformReferenceViewData {
     subtitle: 'GrabFood · Required merchant references',
     storeLabel: 'Store',
     storeHint: 'Select store',
-    externalOrderNumberLabel: 'External order #',
-    externalOrderNumberHint: 'Choose assigned store',
     externalReferenceLabel: 'External order reference',
     externalReferenceHint: 'Enter order #',
     rightTitle: 'ORDER CONTEXT',
@@ -72,11 +66,6 @@ class PlatformReferenceViewData {
       PlatformReferenceField(
         label: 'Store',
         hint: 'Select store',
-        required: true,
-      ),
-      PlatformReferenceField(
-        label: 'External order #',
-        hint: 'Choose assigned store',
         required: true,
       ),
       PlatformReferenceField(
