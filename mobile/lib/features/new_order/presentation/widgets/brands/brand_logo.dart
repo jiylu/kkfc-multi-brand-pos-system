@@ -13,6 +13,9 @@ class BrandLogo extends StatelessWidget {
     'KK': 'assets/images/king_kungs.png',
   };
 
+  /// Asset path for a brand code (GC, AI, KK), or null when unknown.
+  static String? assetFor(String code) => _assetsByCode[code.toUpperCase()];
+
   @override
   Widget build(BuildContext context) {
     final asset = _assetsByCode[brand.code.toUpperCase()];

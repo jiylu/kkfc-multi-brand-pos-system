@@ -45,6 +45,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
     });
 
     final lines = ref.watch(cartProvider);
+    final brand = ref.watch(activeBrandProvider);
     final channel = ref.watch(menuChannelProvider);
     final total = ref.watch(cartTotalProvider);
     final count = ref.watch(cartCountProvider);
@@ -71,6 +72,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             CartPanelHeader(
+              brand: brand,
               referenceLabel: channel.referenceLabel,
               referenceController: _referenceController,
               onReferenceChanged: ref.read(orderReferenceProvider.notifier).set,
@@ -120,7 +122,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
               onSend: () => context.push(
                 AppRoutes.orderEntry,
                 extra: OrderEntryViewData.checkBeforeSending.withOrderDetails(
-                  brandName: ref.read(activeBrandProvider).name,
+                  brandName: brand.name,
                   channel: channel.label,
                   reference: _referenceController.text,
                   itemCount: count,

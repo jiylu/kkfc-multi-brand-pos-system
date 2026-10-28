@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+import 'package:mobile/core/models/brand_models.dart';
+import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
+import 'package:mobile/shared/widgets/kkfc_brand_tag.dart';
 import 'package:mobile/shared/widgets/kkfc_text_field.dart';
 
 class CartPanelHeader extends StatelessWidget {
   const CartPanelHeader({
     super.key,
+    required this.brand,
     required this.referenceLabel,
     required this.referenceController,
     required this.canClear,
@@ -17,6 +21,7 @@ class CartPanelHeader extends StatelessWidget {
     this.onReferenceChanged,
   });
 
+  final AssignedBrand brand;
   final String referenceLabel;
   final TextEditingController referenceController;
   final bool canClear;
@@ -60,6 +65,21 @@ class CartPanelHeader extends StatelessWidget {
                 child: const Text('Clear'),
               ),
             ],
+          ),
+        ),
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: KkfcSpace.s16,
+            vertical: KkfcSpace.s12,
+          ),
+          child: Align(
+            alignment: Alignment.center,
+            child: KkfcBrandTag(
+              label: brand.name,
+              logoAsset: BrandLogo.assetFor(brand.code),
+              compact: true,
+            ),
           ),
         ),
         Padding(
