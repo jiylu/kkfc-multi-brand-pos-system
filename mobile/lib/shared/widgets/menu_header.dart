@@ -95,6 +95,7 @@ class MenuHeader extends ConsumerWidget {
     final themedBrand = OutlinedButton(
       onPressed: () => startBrandSwitch(context, ref),
       style: OutlinedButton.styleFrom(
+        backgroundColor: scheme.surface,
         foregroundColor: scheme.onInverseSurface,
         padding: const EdgeInsets.symmetric(
           horizontal: MenuSpace.md,
@@ -118,11 +119,14 @@ class MenuHeader extends ConsumerWidget {
                 color: scheme.surface,
                 borderRadius: BorderRadius.circular(MenuRadius.sm),
               ),
-              child: BrandLogo(brand: brand),
+              child: BrandLogo(brand: brand, height: MenuSpace.xl),
             ),
           ),
           const SizedBox(width: MenuSpace.sm),
-          const Icon(Icons.expand_more),
+          Icon(
+            Icons.expand_more,
+            color: scheme.inverseSurface,
+          ),
         ],
       ),
     );

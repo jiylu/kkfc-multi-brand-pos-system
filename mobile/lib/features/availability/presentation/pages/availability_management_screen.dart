@@ -46,6 +46,7 @@ class _AvailabilityManagementScreenState
             subtitle: _items[i].available
                 ? 'Available · switch ON'
                 : 'Manual: unavailable · OFF',
+            compact: true,
             onChanged: (v) => _setAvailable(i, v),
           ),
         const InfoRow(

@@ -12,6 +12,7 @@ class KkfcSwitch extends StatefulWidget {
     required this.title,
     this.subtitle,
     this.autofocus = false,
+    this.compact = false,
   });
 
   final bool value;
@@ -21,6 +22,7 @@ class KkfcSwitch extends StatefulWidget {
   /// Optional second line, for example "Available on GrabFood".
   final String? subtitle;
   final bool autofocus;
+  final bool compact;
 
   @override
   State<KkfcSwitch> createState() => _KkfcSwitchState();
@@ -76,7 +78,12 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
     );
 
     // The thumb stretches a little while pressed
-    final thumbWidth = KkfcSizing.thumb * (_pressed && _enabled ? 1.2 : 1.0);
+    final thumbBase = widget.compact ? 36.0 : KkfcSizing.thumb;
+    final thumbWidth = thumbBase * (_pressed && _enabled ? 1.2 : 1.0);
+    final trackWidth = widget.compact ? 44.0 : KkfcSizing.switchTrack;
+    final trackHeight = widget.compact ? 36.0 : KkfcSizing.thumb;
+    final minHeight =
+        widget.compact ? KkfcSizing.controlMd : KkfcSizing.controlLg;
 
     return Semantics(
       container: true,
@@ -115,12 +122,12 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
             // minHeight, not a fixed height, so large text scale still fits
             child: AnimatedContainer(
               duration: KkfcMotion.fast, // verify
-              constraints: const BoxConstraints(
-                minHeight: KkfcSizing.controlLg,
+              constraints: BoxConstraints(
+                minHeight: minHeight,
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: KkfcSpace.s16,
-                vertical: KkfcSpace.s12,
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.compact ? KkfcSpace.s12 : KkfcSpace.s16,
+                vertical: widget.compact ? KkfcSpace.s8 : KkfcSpace.s12,
               ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(KkfcRadius.md),
@@ -146,8 +153,8 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
                   const SizedBox(width: KkfcSpace.s16),
                   AnimatedContainer(
                     duration: KkfcMotion.fast,
-                    width: KkfcSizing.switchTrack,
-                    height: KkfcSizing.thumb,
+                    width: trackWidth,
+                    height: trackHeight,
                     padding: const EdgeInsets.symmetric(
                       horizontal: KkfcSpace.s4,
                     ),
@@ -167,7 +174,7 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
                       child: AnimatedContainer(
                         duration: KkfcMotion.fast,
                         width: thumbWidth,
-                        height: KkfcSizing.thumb * 0.8,
+                        height: thumbBase * 0.8,
                         decoration: BoxDecoration(
                           color: thumb,
                           borderRadius: BorderRadius.circular(KkfcRadius.full),

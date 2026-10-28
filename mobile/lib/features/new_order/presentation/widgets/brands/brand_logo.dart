@@ -23,8 +23,11 @@ class BrandLogo extends StatelessWidget {
 
     return Image.asset(
       asset,
+      key: ValueKey(asset),
       height: height,
       fit: BoxFit.contain,
+      filterQuality: FilterQuality.medium,
+      gaplessPlayback: true, 
       semanticLabel: brand.name,
       errorBuilder: (_, _, _) => Text(brand.name),
     );
