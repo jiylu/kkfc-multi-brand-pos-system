@@ -134,6 +134,11 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
       return;
     }
 
+    if (!channel.isPlatform && reference.trim().isEmpty) {
+      _showError('Add a ${channel.referenceLabel.toLowerCase()} before sending the order.');
+      return;
+    }
+
     setState(() => _isSending = true);
     try {
       final brandId = await _resolveBrandId();

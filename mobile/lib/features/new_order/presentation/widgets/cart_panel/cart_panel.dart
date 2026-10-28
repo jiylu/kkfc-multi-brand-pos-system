@@ -47,6 +47,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
     final lines = ref.watch(cartProvider);
     final brand = ref.watch(activeBrandProvider);
     final channel = ref.watch(menuChannelProvider);
+    final reference = ref.watch(orderReferenceProvider);
     final total = ref.watch(cartTotalProvider);
     final count = ref.watch(cartCountProvider);
     final scheme = Theme.of(context).colorScheme;
@@ -118,26 +119,39 @@ class _CartPanelState extends ConsumerState<CartPanel> {
             CartPanelFooter(
               count: count,
               total: total,
-              canSend: lines.isNotEmpty,
-              onSend: () => context.push(
-                AppRoutes.orderEntry,
-                extra: OrderEntryViewData.checkBeforeSending.withOrderDetails(
-                  brandName: brand.name,
-                  channel: channel.label,
-                  reference: _referenceController.text,
-                  itemCount: count,
-                  items: [
-                    for (final line in lines)
-                      OrderEntryItem(
-                        name: line.item.name,
-                        quantity: line.quantity,
-                        total: formatPeso(line.totalCentavos(channel)),
-                        modifiers: line.modifierSummary,
+              canSend: lines.isNotEmpty &&
+                  (channel.isPlatform || reference.trim().isNotEmpty),
+              onSend: () {
+                if (!channel.isPlatform && reference.trim().isEmpty) {
+                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Add a ${channel.referenceLabel.toLowerCase()} before sending the order.',
                       ),
-                  ],
-                  total: formatPeso(total),
-                ),
-              ),
+                    ),
+                  );
+                  return;
+                }
+                context.push(
+                  AppRoutes.orderEntry,
+                  extra: OrderEntryViewData.checkBeforeSending.withOrderDetails(
+                    brandName: brand.name,
+                    channel: channel.label,
+                    reference: _referenceController.text,
+                    itemCount: count,
+                    items: [
+                      for (final line in lines)
+                        OrderEntryItem(
+                          name: line.item.name,
+                          quantity: line.quantity,
+                          total: formatPeso(line.totalCentavos(channel)),
+                          modifiers: line.modifierSummary,
+                        ),
+                    ],
+                    total: formatPeso(total),
+                  ),
+                );
+              },
             ),
           ],
         ),
