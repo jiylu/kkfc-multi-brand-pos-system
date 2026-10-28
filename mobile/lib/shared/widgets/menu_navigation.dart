@@ -34,6 +34,7 @@ int _selectedDestination(BuildContext context) {
 
   return switch (location) {
     AppRoutes.orders => 1,
+    AppRoutes.cancelOrder => 1,
     AppRoutes.availability => 2,
     _ => 0,
   };
