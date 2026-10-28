@@ -69,7 +69,6 @@ class ChannelRepricingScreen extends StatelessWidget {
                       const VerticalDivider(width: 1),
                       const SizedBox(
                         width: MenuLayout.cartPanelWidth,
-                        child: OperationalContextCard(),
                       ),
                     ],
                   ],
@@ -187,7 +186,6 @@ class _RepricingBody extends ConsumerWidget {
           ),
           if (showContext) ...[
             const SizedBox(height: MenuSpace.lg),
-            const _PrototypeNote(),
           ],
         ],
       ),
@@ -264,33 +262,6 @@ class _SelectedBadge extends StatelessWidget {
           color: scheme.onSecondaryContainer,
           fontWeight: FontWeight.w700,
         ),
-      ),
-    );
-  }
-}
-
-class _PrototypeNote extends StatelessWidget {
-  const _PrototypeNote();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: MenuSpace.lg,
-        vertical: MenuSpace.md,
-      ),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(MenuRadius.sm),
-      ),
-      child: Text(
-        'Prototype layout • unresolved client data and permissions remain '
-        'provisional.',
-        style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
       ),
     );
   }

@@ -12,6 +12,7 @@ import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/features/new_order/presentation/brand_switch_flow.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
+import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/availability/data/models/availability_model.dart';
 
 MenuChannel _menuChannelFor(PosChannel channel) => switch (channel) {
@@ -53,15 +54,35 @@ class MenuHeader extends ConsumerWidget {
     ref.read(sessionTokenProvider.notifier).setToken(null);
   }
 
-  /// Shows the repricing notice after a channel change. When the notice is
-  /// already on screen the live provider update is enough, so we skip the
-  /// redundant navigation.
-  void _onChannelSelected(BuildContext context) {
+  /// Shows the repricing notice after a channel change when prices differ.
+  void _onChannelSelected(BuildContext context, WidgetRef ref) {
     final router = GoRouter.maybeOf(context);
     if (router == null) return;
     if (GoRouterState.of(context).matchedLocation == AppRoutes.channelChange) {
       return;
     }
+
+    final notifier = ref.read(menuChannelProvider.notifier);
+    final previous = notifier.previousChannel;
+    final current = ref.read(menuChannelProvider);
+    final cart = ref.read(cartProvider);
+
+    if (previous == null || cart.isEmpty) {
+      return;
+    }
+
+    var hasPriceChange = false;
+    for (final line in cart) {
+      if (line.totalCentavos(previous) != line.totalCentavos(current)) {
+        hasPriceChange = true;
+        break;
+      }
+    }
+
+    if (!hasPriceChange) {
+      return;
+    }
+
     router.go(AppRoutes.channelChange);
   }
 
@@ -139,7 +160,7 @@ class MenuHeader extends ConsumerWidget {
     } else {
       channelWidget = ChannelTabs(
         inverted: true,
-        onSelected: (_) => _onChannelSelected(context),
+        onSelected: (_) => _onChannelSelected(context, ref),
       );
     }
 
