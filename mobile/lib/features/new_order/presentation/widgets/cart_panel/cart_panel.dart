@@ -73,7 +73,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
           children: [
             CartPanelHeader(
               brand: brand,
-              referenceLabel: channel.referenceLabel,
+              channel: channel,
               referenceController: _referenceController,
               onReferenceChanged: ref.read(orderReferenceProvider.notifier).set,
               // TODO: set referenceHelperText, referenceErrorText,
