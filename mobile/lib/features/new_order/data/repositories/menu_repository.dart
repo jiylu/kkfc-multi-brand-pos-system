@@ -29,12 +29,14 @@ class MenuRepository {
       }
 
       items.addAll(
-        data.map((json) {
-          if (json is! Map<String, dynamic>) {
-            throw const FormatException('Invalid menu item in response.');
-          }
-          return MenuItem.fromApiJson(json);
-        }),
+        await Future.wait(
+          data.map((json) async {
+            if (json is! Map<String, dynamic>) {
+              throw const FormatException('Invalid menu item in response.');
+            }
+            return _toMenuItem(json);
+          }),
+        ),
       );
 
       final parsedTotalPages = meta['totalPages'];
@@ -46,6 +48,31 @@ class MenuRepository {
     }
 
     return items;
+  }
+
+  Future<MenuItem> _toMenuItem(Map<String, dynamic> json) async {
+    final id = json['menu_item_id'];
+    if (id is! String || json['menu_item_channels_menu_item'] is List) {
+      return MenuItem.fromApiJson(json);
+    }
+
+    final channelRows = await _channelsForMenuItem(id);
+    return MenuItem.fromApiJson({
+      ...json,
+      'menu_item_channels_menu_item': channelRows,
+    });
+  }
+
+  Future<List<dynamic>> _channelsForMenuItem(String menuItemId) async {
+    final response = await _dio.get<List<dynamic>>(
+      '/menu-channels/menu-item/$menuItemId',
+      queryParameters: const {'activeOnly': false},
+    );
+    final rows = response.data;
+    if (rows is! List) {
+      throw const FormatException('Invalid menu-channels response.');
+    }
+    return rows;
   }
 }
 

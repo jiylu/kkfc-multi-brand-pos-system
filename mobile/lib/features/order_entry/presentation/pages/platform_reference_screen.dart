@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
@@ -22,6 +24,15 @@ class PlatformReferenceScreen extends StatelessWidget {
   final VoidCallback? onEditReferences;
 
   static const double _twoColumnBreakpoint = 720;
+
+  void _defaultEditReferences(BuildContext context) {
+    final router = GoRouter.maybeOf(context);
+    if (router != null) {
+      router.go(AppRoutes.menu);
+    } else {
+      Navigator.maybeOf(context)?.maybePop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +155,7 @@ class PlatformReferenceScreen extends StatelessWidget {
               primaryLabel: data.buttonLabel,
               isLoading: false,
               onSecondary: null,
-              onPrimary: onEditReferences,
+              onPrimary: onEditReferences ?? () => _defaultEditReferences(context),
               sideBySide: false,
             ),
           ),

@@ -141,5 +141,25 @@ void main() {
       expect(find.byType(MenuScreen), findsOneWidget);
       expect(find.byType(ChannelRepricingScreen), findsNothing);
     });
+
+    testWidgets('undo restores the previous channel and recalculates prices', (
+      tester,
+    ) async {
+      await _pumpScreen(tester, _phone);
+
+      expect(find.text('GrabFood prices updated'), findsOneWidget);
+      expect(find.text('₱675.00'), findsOneWidget);
+
+      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Undo'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Undo'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dine-in prices updated'), findsOneWidget);
+      expect(find.text('2 × (₱179.00 + ₱25.00)'), findsOneWidget);
+      expect(find.text('₱408.00'), findsOneWidget);
+      expect(find.text('1 × ₱189.00'), findsOneWidget);
+      expect(find.text('₱597.00'), findsOneWidget);
+    });
   });
 }

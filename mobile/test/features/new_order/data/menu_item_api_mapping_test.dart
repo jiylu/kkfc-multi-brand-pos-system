@@ -1,5 +1,23 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
+import 'package:mobile/features/new_order/data/repositories/menu_repository.dart';
+
+class _FakeAdapter implements HttpClientAdapter {
+  _FakeAdapter(this._handler);
+
+  final ResponseBody Function(RequestOptions options) _handler;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<List<int>>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => _handler(options);
+
+  @override
+  void close({bool force = false}) {}
+}
 
 void main() {
   test('maps the brand menu response and its channel overrides to a menu card', () {
@@ -23,5 +41,52 @@ void main() {
     expect(item.priceFor(MenuChannel.foodpanda), 22500);
     expect(item.availabilityFor(MenuChannel.grabFood), MenuAvailability.available);
     expect(item.availabilityFor(MenuChannel.foodpanda), MenuAvailability.manualOff);
+    expect(
+      item.channels,
+      {
+        MenuChannel.dineIn,
+        MenuChannel.takeaway,
+        MenuChannel.grabFood,
+        MenuChannel.foodpanda,
+      },
+    );
+  });
+
+  test('MenuRepository loads per-item channel overrides from /menu-channels/menu-item/:id', () async {
+    final dio = Dio();
+    dio.httpClientAdapter = _FakeAdapter((options) {
+      if (options.path == '/menu-items/brand/brand-1') {
+        return ResponseBody.fromString(
+          '{"data":[{"menu_item_id":"item-1","name":"Paa Inasal","description":"Grilled","base_price":"179.00","is_available":true}],"meta":{"page":1,"limit":100,"total":1,"totalPages":1}}',
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      }
+      if (options.path == '/menu-channels/menu-item/item-1' &&
+          options.queryParameters['activeOnly'] == false) {
+        return ResponseBody.fromString(
+          '[{"order_channel":"GRABFOOD","price":"205.00","is_available":true}]',
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      }
+      throw StateError('Unexpected request: ${options.path}');
+    });
+
+    final repository = MenuRepository(dio);
+    final items = await repository.getByBrand('brand-1');
+
+    expect(items, hasLength(1));
+    expect(items.single.priceFor(MenuChannel.dineIn), 17900);
+    expect(items.single.priceFor(MenuChannel.takeaway), 17900);
+    expect(items.single.priceFor(MenuChannel.grabFood), 20500);
+    expect(
+      items.single.channels,
+      {MenuChannel.dineIn, MenuChannel.takeaway, MenuChannel.grabFood},
+    );
   });
 }

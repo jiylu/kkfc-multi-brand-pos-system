@@ -134,6 +134,7 @@ class MenuItem {
     final channelRows = json['menu_item_channels_menu_item'];
     final listed = <MenuChannel>{};
     if (channelRows is List) {
+      listed.addAll(const [MenuChannel.dineIn, MenuChannel.takeaway]);
       for (final row in channelRows) {
         if (row is! Map<String, dynamic>) continue;
         final channel = _menuChannelFromApi(row['order_channel']);

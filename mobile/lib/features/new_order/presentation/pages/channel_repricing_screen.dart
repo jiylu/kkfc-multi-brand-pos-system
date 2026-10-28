@@ -98,10 +98,13 @@ class _RepricingBody extends ConsumerWidget {
     return '${line.quantity} × ($unit $sign ${formatPeso(delta.abs())})';
   }
 
-  void _undo(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Undo is provisional in this prototype.')),
-    );
+  void _undo(BuildContext context, WidgetRef ref) {
+    final restored = ref.read(menuChannelProvider.notifier).undo();
+    if (!restored) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No previous channel to restore.')),
+      );
+    }
   }
 
   @override
@@ -178,7 +181,7 @@ class _RepricingBody extends ConsumerWidget {
             title: 'Undo',
             subtitle: 'Restore previous channel',
             trailing: FilledButton.tonal(
-              onPressed: () => _undo(context),
+              onPressed: () => _undo(context, ref),
               child: const Text('Undo'),
             ),
           ),

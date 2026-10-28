@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/features/auth/providers/auth_profile_provider.dart';
+import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/order_entry/data/models/order_entry_view_data.dart';
@@ -127,7 +128,7 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
       return;
     }
 
-    if (reference.trim().isEmpty) {
+    if (channel.isPlatform && reference.trim().isEmpty) {
       _showError('Add a reference label before sending the order.');
       _openPlatformReference();
       return;
@@ -203,7 +204,31 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
   }
 
   Widget _buildContent(BuildContext context) {
-    final data = widget.data;
+    final lines = ref.watch(cartProvider);
+    final channel = ref.watch(menuChannelProvider);
+    final reference = ref.watch(orderReferenceProvider);
+    final brand = ref.watch(activeBrandProvider);
+    final count = ref.watch(cartCountProvider);
+    final total = ref.watch(cartTotalProvider);
+
+    final data = lines.isEmpty
+        ? widget.data
+        : widget.data.withOrderDetails(
+            brandName: brand.name,
+            channel: channel.label,
+            reference: reference,
+            itemCount: count,
+            items: [
+              for (final line in lines)
+                OrderEntryItem(
+                  name: line.item.name,
+                  quantity: line.quantity,
+                  total: formatPeso(line.totalCentavos(channel)),
+                  modifiers: line.modifierSummary,
+                ),
+            ],
+            total: formatPeso(total),
+          );
 
     return ColoredBox(
       color: Theme.of(context).colorScheme.surface,

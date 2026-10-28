@@ -6,9 +6,29 @@ import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:flutter/foundation.dart' show mapEquals;
 
 class MenuChannelNotifier extends Notifier<MenuChannel> {
+  MenuChannel? _previous;
+
   @override
-  MenuChannel build() => MenuChannel.dineIn;
-  void select(MenuChannel channel) => state = channel;
+  MenuChannel build() {
+    _previous = null;
+    return MenuChannel.dineIn;
+  }
+
+  MenuChannel? get previousChannel => _previous;
+
+  void select(MenuChannel channel) {
+    if (channel == state) return;
+    _previous = state;
+    state = channel;
+  }
+
+  bool undo() {
+    final previous = _previous;
+    if (previous == null || previous == state) return false;
+    _previous = state;
+    state = previous;
+    return true;
+  }
 }
 
 final menuChannelProvider = NotifierProvider<MenuChannelNotifier, MenuChannel>(
