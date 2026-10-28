@@ -8,9 +8,17 @@ class PlatformReferenceCard extends StatelessWidget {
   const PlatformReferenceCard({
     super.key,
     required this.data,
+    this.storeController,
+    this.externalReferenceController,
+    this.onStoreChanged,
+    this.onExternalReferenceChanged,
   });
 
   final PlatformReferenceViewData data;
+  final TextEditingController? storeController;
+  final TextEditingController? externalReferenceController;
+  final ValueChanged<String>? onStoreChanged;
+  final ValueChanged<String>? onExternalReferenceChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +46,15 @@ class PlatformReferenceCard extends StatelessWidget {
           ),
           const SizedBox(height: KkfcSpace.s16),
           for (final field in data.fields) ...[
-            _FieldRow(field: field),
+            _FieldRow(
+              field: field,
+              controller: field.label == data.storeLabel
+                  ? storeController
+                  : externalReferenceController,
+              onChanged: field.label == data.storeLabel
+                  ? onStoreChanged
+                  : onExternalReferenceChanged,
+            ),
             const SizedBox(height: KkfcSpace.s20),
           ],
         ],
@@ -48,9 +64,15 @@ class PlatformReferenceCard extends StatelessWidget {
 }
 
 class _FieldRow extends StatelessWidget {
-  const _FieldRow({required this.field});
+  const _FieldRow({
+    required this.field,
+    this.controller,
+    this.onChanged,
+  });
 
   final PlatformReferenceField field;
+  final TextEditingController? controller;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +103,8 @@ class _FieldRow extends StatelessWidget {
         KkfcTextField(
           label: '',
           hint: field.hint,
+          controller: controller,
+          onChanged: onChanged,
           errorText: field.errorText,
           hasError: field.errorText != null,
           valueStyle: const TextStyle(fontFamily: 'monospace'),

@@ -57,6 +57,17 @@ final orderReferenceProvider = NotifierProvider<OrderReferenceNotifier, String>(
   OrderReferenceNotifier.new,
 );
 
+class StoreReferenceNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+  void set(String reference) => state = reference;
+  void clear() => state = '';
+}
+
+final storeReferenceProvider = NotifierProvider<StoreReferenceNotifier, String>(
+  StoreReferenceNotifier.new,
+);
+
 final menuItemsProvider = FutureProvider.autoDispose<List<MenuItem>>((
   ref,
 ) async {

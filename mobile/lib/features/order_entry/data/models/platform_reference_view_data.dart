@@ -47,6 +47,44 @@ class PlatformReferenceViewData {
   final String buttonLabel;
   final List<PlatformReferenceField> fields;
 
+  PlatformReferenceViewData withContext({
+    required String brandName,
+    required String channelLabel,
+    String? storeErrorText,
+    String? externalReferenceErrorText,
+  }) {
+    return PlatformReferenceViewData(
+      eyebrow: eyebrow,
+      title: title,
+      subtitle: '$channelLabel · Required merchant references',
+      storeLabel: storeLabel,
+      storeHint: storeHint,
+      externalReferenceLabel: externalReferenceLabel,
+      externalReferenceHint: externalReferenceHint,
+      rightTitle: rightTitle,
+      rightSubtitle: rightSubtitle,
+      warningTitle: warningTitle,
+      warningBody: warningBody,
+      reviewTitle: reviewTitle,
+      reviewBody: brandName,
+      buttonLabel: buttonLabel,
+      fields: [
+        PlatformReferenceField(
+          label: storeLabel,
+          hint: storeHint,
+          required: true,
+          errorText: storeErrorText,
+        ),
+        PlatformReferenceField(
+          label: externalReferenceLabel,
+          hint: externalReferenceHint,
+          required: true,
+          errorText: externalReferenceErrorText,
+        ),
+      ],
+    );
+  }
+
   static const sample = PlatformReferenceViewData(
     eyebrow: 'ACTION NEEDED',
     title: 'Complete order details',

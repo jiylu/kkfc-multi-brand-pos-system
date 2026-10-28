@@ -122,6 +122,7 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
     final lines = ref.read(cartProvider);
     final channel = ref.read(menuChannelProvider);
     final reference = ref.read(orderReferenceProvider);
+    final storeReference = ref.read(storeReferenceProvider);
     final brand = ref.read(activeBrandProvider);
 
     if (lines.isEmpty) {
@@ -129,7 +130,8 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
       return;
     }
 
-    if (channel.isPlatform && reference.trim().isEmpty) {
+    if (channel.isPlatform &&
+        (reference.trim().isEmpty || storeReference.trim().isEmpty)) {
       _showError('Add a reference label before sending the order.');
       _openPlatformReference();
       return;
@@ -149,7 +151,9 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
             channel: channel,
             lines: lines,
             reference: reference,
-            merchantStoreReference: brand.code,
+            merchantStoreReference: storeReference.trim().isNotEmpty
+                ? storeReference.trim()
+                : brand.code,
           );
       final confirmedData = OrderConfirmedViewData.fromOrder(
         brand: brand.name,
@@ -162,6 +166,7 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
 
       ref.read(cartProvider.notifier).clear();
       ref.read(orderReferenceProvider.notifier).clear();
+      ref.read(storeReferenceProvider.notifier).clear();
 
       if (!mounted) return;
       _showSuccess('Order sent to kitchen.');
@@ -221,27 +226,35 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
     final lines = ref.watch(cartProvider);
     final channel = ref.watch(menuChannelProvider);
     final reference = ref.watch(orderReferenceProvider);
+    final storeReference = ref.watch(storeReferenceProvider);
     final brand = ref.watch(activeBrandProvider);
     final count = ref.watch(cartCountProvider);
     final total = ref.watch(cartTotalProvider);
 
-    final data = lines.isEmpty
+    final hasDynamicDetails = lines.isNotEmpty ||
+        reference.trim().isNotEmpty ||
+        storeReference.trim().isNotEmpty;
+
+    final data = !hasDynamicDetails
         ? widget.data
         : widget.data.withOrderDetails(
             brandName: brand.name,
             channel: channel.label,
             reference: reference,
-            itemCount: count,
-            items: [
-              for (final line in lines)
-                OrderEntryItem(
-                  name: line.item.name,
-                  quantity: line.quantity,
-                  total: formatPeso(line.totalCentavos(channel)),
-                  modifiers: line.modifierSummary,
-                ),
-            ],
-            total: formatPeso(total),
+            storeReference: storeReference,
+            itemCount: lines.isEmpty ? null : count,
+            items: lines.isEmpty
+                ? null
+                : [
+                    for (final line in lines)
+                      OrderEntryItem(
+                        name: line.item.name,
+                        quantity: line.quantity,
+                        total: formatPeso(line.totalCentavos(channel)),
+                        modifiers: line.modifierSummary,
+                      ),
+                  ],
+            total: lines.isEmpty ? null : formatPeso(total),
           );
 
     return ColoredBox(

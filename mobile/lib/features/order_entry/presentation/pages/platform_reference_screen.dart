@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/app/theme/tokens.dart';
+import 'package:mobile/features/new_order/providers/brand_providers.dart';
+import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/features/order_entry/data/models/order_entry_view_data.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
@@ -13,7 +17,7 @@ import '../widgets/order_entry_action_bar.dart';
 import '../widgets/order_context_card.dart';
 import '../widgets/platform_reference_card.dart';
 
-class PlatformReferenceScreen extends StatelessWidget {
+class PlatformReferenceScreen extends ConsumerStatefulWidget {
   const PlatformReferenceScreen({
     super.key,
     this.data = PlatformReferenceViewData.sample,
@@ -25,10 +29,57 @@ class PlatformReferenceScreen extends StatelessWidget {
 
   static const double _twoColumnBreakpoint = 720;
 
-  void _defaultEditReferences(BuildContext context) {
+  @override
+  ConsumerState<PlatformReferenceScreen> createState() =>
+      _PlatformReferenceScreenState();
+}
+
+class _PlatformReferenceScreenState
+    extends ConsumerState<PlatformReferenceScreen> {
+  late final TextEditingController _storeController;
+  late final TextEditingController _externalReferenceController;
+  bool _submitted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _storeController = TextEditingController(
+      text: ref.read(storeReferenceProvider),
+    );
+    _externalReferenceController = TextEditingController(
+      text: ref.read(orderReferenceProvider),
+    );
+  }
+
+  @override
+  void dispose() {
+    _storeController.dispose();
+    _externalReferenceController.dispose();
+    super.dispose();
+  }
+
+  void _submitReferences() {
+    final store = _storeController.text.trim();
+    final externalReference = _externalReferenceController.text.trim();
+
+    ref.read(storeReferenceProvider.notifier).set(store);
+    ref.read(orderReferenceProvider.notifier).set(externalReference);
+
+    if (store.isEmpty || externalReference.isEmpty) {
+      setState(() => _submitted = true);
+      return;
+    }
+
+    if (widget.onEditReferences != null) {
+      widget.onEditReferences!();
+      return;
+    }
+
     final router = GoRouter.maybeOf(context);
-    if (router != null) {
-      router.go(AppRoutes.menu);
+    if (router != null && router.canPop()) {
+      router.pop();
+    } else if (router != null) {
+      router.go(AppRoutes.orderEntry);
     } else {
       Navigator.maybeOf(context)?.maybePop();
     }
@@ -36,6 +87,17 @@ class PlatformReferenceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String>(storeReferenceProvider, (_, store) {
+      if (_storeController.text != store) {
+        _storeController.text = store;
+      }
+    });
+    ref.listen<String>(orderReferenceProvider, (_, reference) {
+      if (_externalReferenceController.text != reference) {
+        _externalReferenceController.text = reference;
+      }
+    });
+
     return KkfcScaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -68,6 +130,45 @@ class PlatformReferenceScreen extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
+    final brand = ref.watch(activeBrandProvider);
+    final channel = ref.watch(menuChannelProvider);
+    final storeText = _storeController.text.trim();
+    final externalRefText = _externalReferenceController.text.trim();
+
+    final effectiveData = widget.data.withContext(
+      brandName: brand.name,
+      channelLabel: channel.label,
+      storeErrorText: (_submitted && storeText.isEmpty) ? 'Store required' : null,
+      externalReferenceErrorText:
+          externalRefText.isEmpty ? 'External reference required' : null,
+    );
+    final channelLine = OrderEntryViewData.formatChannelLine(
+      channel.label,
+      externalRefText,
+      storeText,
+    );
+
+    final referenceCard = PlatformReferenceCard(
+      data: effectiveData,
+      storeController: _storeController,
+      externalReferenceController: _externalReferenceController,
+      onStoreChanged: (value) {
+        ref.read(storeReferenceProvider.notifier).set(value);
+        setState(() {});
+      },
+      onExternalReferenceChanged: (value) {
+        ref.read(orderReferenceProvider.notifier).set(value);
+        setState(() {});
+      },
+    );
+    final contextCard = OrderContextCard(
+      brand: brand.name,
+      channelLine: channelLine,
+      orderStatus: 'Draft',
+      paymentStatus: 'Unpaid',
+      note: effectiveData.rightSubtitle,
+    );
+
     return ColoredBox(
       color: Theme.of(context).colorScheme.surface,
       child: Column(
@@ -75,7 +176,8 @@ class PlatformReferenceScreen extends StatelessWidget {
           Expanded(
             child: LayoutBuilder(
               builder: (context, c) {
-                final wide = c.maxWidth >= _twoColumnBreakpoint;
+                final wide =
+                    c.maxWidth >= PlatformReferenceScreen._twoColumnBreakpoint;
 
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(KkfcSpace.s32),
@@ -89,9 +191,9 @@ class PlatformReferenceScreen extends StatelessWidget {
                             FadeSlideIn(
                               index: 0,
                               child: OrderEntryHeader(
-                                eyebrow: data.eyebrow,
-                                title: data.title,
-                                subtitle: data.subtitle,
+                                eyebrow: effectiveData.eyebrow,
+                                title: effectiveData.title,
+                                subtitle: effectiveData.subtitle,
                               ),
                             ),
                             const SizedBox(height: KkfcSpace.s32),
@@ -103,7 +205,7 @@ class PlatformReferenceScreen extends StatelessWidget {
                                     flex: 3,
                                     child: FadeSlideIn(
                                       index: 1,
-                                      child: PlatformReferenceCard(data: data),
+                                      child: referenceCard,
                                     ),
                                   ),
                                   const SizedBox(width: KkfcSpace.s32),
@@ -111,13 +213,7 @@ class PlatformReferenceScreen extends StatelessWidget {
                                     flex: 2,
                                     child: FadeSlideIn(
                                       index: 2,
-                                      child: OrderContextCard(
-                                        brand: 'Aurelia’s Inasal',
-                                        channelLine: 'GrabFood',
-                                        orderStatus: 'Draft',
-                                        paymentStatus: 'Unpaid',
-                                        note: data.rightSubtitle,
-                                      ),
+                                      child: contextCard,
                                     ),
                                   ),
                                 ],
@@ -125,18 +221,12 @@ class PlatformReferenceScreen extends StatelessWidget {
                             else ...[
                               FadeSlideIn(
                                 index: 1,
-                                child: PlatformReferenceCard(data: data),
+                                child: referenceCard,
                               ),
                               const SizedBox(height: KkfcSpace.s16),
                               FadeSlideIn(
                                 index: 2,
-                                child: OrderContextCard(
-                                  brand: 'Aurelia’s Inasal',
-                                  channelLine: 'GrabFood',
-                                  orderStatus: 'Draft',
-                                  paymentStatus: 'Unpaid',
-                                  note: data.rightSubtitle,
-                                ),
+                                child: contextCard,
                               ),
                             ],
                           ],
@@ -152,10 +242,10 @@ class PlatformReferenceScreen extends StatelessWidget {
             index: 3,
             child: OrderEntryActionBar(
               secondaryLabel: '',
-              primaryLabel: data.buttonLabel,
+              primaryLabel: effectiveData.buttonLabel,
               isLoading: false,
               onSecondary: null,
-              onPrimary: onEditReferences ?? () => _defaultEditReferences(context),
+              onPrimary: _submitReferences,
               sideBySide: false,
             ),
           ),

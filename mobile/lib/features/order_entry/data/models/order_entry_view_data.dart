@@ -66,10 +66,19 @@ class OrderEntryViewData {
       .value;
 
   /// Formats the channel display string, combining [channel] and optional
-  /// [reference] as `<channel> · <reference>` when [reference] is non-blank.
-  static String formatChannelLine(String channel, [String? reference]) {
-    final trimmed = reference?.trim() ?? '';
-    return trimmed.isEmpty ? channel : '$channel · $trimmed';
+  /// [storeReference] / [reference] when non-blank.
+  static String formatChannelLine(
+    String channel, [
+    String? reference,
+    String? storeReference,
+  ]) {
+    final trimmedStore = storeReference?.trim() ?? '';
+    final trimmedRef = reference?.trim() ?? '';
+    return [
+      channel,
+      if (trimmedStore.isNotEmpty) trimmedStore,
+      if (trimmedRef.isNotEmpty) trimmedRef,
+    ].join(' · ');
   }
 
   /// Formats item count as `1 item` or `<count> items`.
@@ -85,33 +94,52 @@ class OrderEntryViewData {
     String? brandName,
     String? channel,
     String? reference,
+    String? storeReference,
     int? itemCount,
     List<OrderEntryItem>? items,
     String? total,
   }) {
+    final trimmedStore = storeReference?.trim() ?? '';
     final nextChannelLine = channel != null
-        ? formatChannelLine(channel, reference)
+        ? formatChannelLine(channel, reference, storeReference)
         : null;
     final nextItemsValue = itemCount != null
         ? formatItemCount(itemCount)
         : null;
+
+    final updatedRows = <OrderEntryRow>[];
+    var hasStoreRow = false;
+    for (final row in rows) {
+      if (row.label == 'Brand' && brandName != null) {
+        updatedRows.add(OrderEntryRow('Brand', brandName));
+      } else if (row.label == 'Store') {
+        hasStoreRow = true;
+        if (trimmedStore.isNotEmpty) {
+          updatedRows.add(OrderEntryRow('Store', trimmedStore));
+        }
+      } else if (row.label == 'Channel') {
+        if (trimmedStore.isNotEmpty && !hasStoreRow) {
+          updatedRows.add(OrderEntryRow('Store', trimmedStore));
+          hasStoreRow = true;
+        }
+        updatedRows.add(
+          nextChannelLine != null
+              ? OrderEntryRow('Channel', nextChannelLine)
+              : row,
+        );
+      } else if (row.label == 'Items' && nextItemsValue != null) {
+        updatedRows.add(OrderEntryRow('Items', nextItemsValue));
+      } else {
+        updatedRows.add(row);
+      }
+    }
 
     return OrderEntryViewData(
       eyebrow: eyebrow,
       title: title,
       subtitle: subtitle,
       summaryTitle: summaryTitle,
-      rows: [
-        for (final row in rows)
-          if (row.label == 'Brand' && brandName != null)
-            OrderEntryRow('Brand', brandName)
-          else if (row.label == 'Channel' && nextChannelLine != null)
-            OrderEntryRow('Channel', nextChannelLine)
-          else if (row.label == 'Items' && nextItemsValue != null)
-            OrderEntryRow('Items', nextItemsValue)
-          else
-            row,
-      ],
+      rows: updatedRows,
       items: items ?? this.items,
       totalLabel: totalLabel,
       total: total ?? this.total,
