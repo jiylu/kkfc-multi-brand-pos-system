@@ -8,7 +8,9 @@ import '../features/new_order/presentation/pages/channel_repricing_screen.dart';
 import '../features/new_order/presentation/pages/menu_screen.dart';
 import '../features/orders/screens/orders_screen.dart';
 import '../features/availability/presentation/pages/availability_management_screen.dart';
+import '../features/order_entry/data/models/order_confirmed_view_data.dart';
 import '../features/order_entry/data/models/order_entry_view_data.dart';
+import '../features/order_entry/presentation/pages/order_confirmed_screen.dart';
 import '../features/order_entry/presentation/pages/order_entry_screen.dart';
 import 'routes.dart';
 
@@ -60,6 +62,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           return data is OrderEntryViewData
               ? OrderEntryScreen(data: data)
               : const OrderEntryScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.orderConfirmed,
+        builder: (context, state) {
+          final data = state.extra;
+          return OrderConfirmedScreen(
+            data: data is OrderConfirmedViewData
+                ? data
+                : OrderConfirmedViewData.sample,
+            onNewOrder: () => context.go(AppRoutes.menu),
+          );
         },
       ),
     ],

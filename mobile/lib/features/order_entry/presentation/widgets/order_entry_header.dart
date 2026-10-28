@@ -3,14 +3,16 @@ import 'package:flutter/material.dart';
 class OrderEntryHeader extends StatelessWidget {
   const OrderEntryHeader({
     super.key,
-    required this.eyebrow,
     required this.title,
     required this.subtitle,
+    this.eyebrow,
+    this.tag,
   });
 
-  final String eyebrow;
   final String title;
   final String subtitle;
+  final String? eyebrow;
+  final Widget? tag; // e.g. the green "✓ ORDER CONFIRMED" pill
 
   @override
   Widget build(BuildContext context) {
@@ -19,25 +21,31 @@ class OrderEntryHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          eyebrow,
-          style: text.labelSmall?.copyWith(
-            color: scheme.onSurfaceVariant,
-            letterSpacing: 0.8,
+        if (tag != null) ...[
+          tag!,
+          const SizedBox(height: 12),
+        ],
+        if (eyebrow != null) ...[
+          Text(
+            eyebrow!,
+            style: text.labelSmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              letterSpacing: 0.8,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
+          const SizedBox(height: 4),
+        ],
         Text(
-          title, 
+          title,
           style: text.titleLarge?.copyWith(
             fontWeight: FontWeight.w800,
-          )
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           subtitle,
           style: text.bodyMedium?.copyWith(
-            color: scheme.onSurfaceVariant, 
+            color: scheme.onSurfaceVariant,
           ),
         ),
       ],

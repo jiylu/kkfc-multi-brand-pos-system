@@ -28,12 +28,13 @@ class MenuItemModifierRepository {
           throw const FormatException('Invalid menu item modifier in response.');
         }
         final id = row['menu_item_modifier_id'];
+        final modifierId = row['modifier_id'];
         final price = row['additional_price'];
         if (id is! String || price == null) {
           throw const FormatException('Menu item modifier is missing fields.');
         }
         return ModifierGroup.addOn(
-          id: id,
+          id: modifierId is String ? modifierId : id,
           name: await _nameOf(id),
           priceCentavos: decimalToCentavos(price),
         );

@@ -8,14 +8,18 @@ class OrderEntryActionBar extends StatelessWidget {
     super.key,
     required this.secondaryLabel,
     required this.primaryLabel,
+    this.isLoading = false,
     this.onSecondary,
     this.onPrimary,
+    this.sideBySide = false,
   });
 
   final String secondaryLabel;
   final String primaryLabel;
+  final bool isLoading;
   final VoidCallback? onSecondary;
   final VoidCallback? onPrimary;
+  final bool sideBySide;
 
   @override
   Widget build(BuildContext context) {
@@ -30,26 +34,55 @@ class OrderEntryActionBar extends StatelessWidget {
         padding: const EdgeInsets.all(KkfcSpace.s16),
         child: LayoutBuilder(
           builder: (context, c) {
+            final narrow = c.maxWidth < 480;
+
             final secondary = OutlinedButton(
-              onPressed: onSecondary,
+              onPressed: isLoading ? null : onSecondary,
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(0, KkfcSizing.controlLg),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(KkfcRadius.sm),
+                ),
               ),
               child: Text(secondaryLabel),
             );
             final primary = KkfcLoadingButton(
               label: primaryLabel,
               loadingLabel: 'Sending...',
-              isLoading: true,
+              isLoading: isLoading,
               onPressed: onPrimary,
             );
 
-            // Narrow: stacked and full width. Wide: left-aligned row.
-            if (c.maxWidth < 480) {
+            // Two buttons on one row (Order confirmed).
+            if (sideBySide) {
+              if (narrow) {
+                return Row(
+                  children: [
+                    Expanded(child: secondary),
+                    const SizedBox(width: KkfcSpace.s16),
+                    Expanded(child: primary),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  SizedBox(width: 200, child: secondary),
+                  const SizedBox(width: KkfcSpace.s16),
+                  SizedBox(width: 200, child: primary),
+                ],
+              );
+            }
+
+            // Default (Check before sending): stacked on narrow, row on wide.
+            if (narrow) {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [primary, const SizedBox(height: KkfcSpace.s8), secondary],
+                children: [
+                  primary,
+                  const SizedBox(height: KkfcSpace.s8),
+                  secondary,
+                ],
               );
             }
             return Row(

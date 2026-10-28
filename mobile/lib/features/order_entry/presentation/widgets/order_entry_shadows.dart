@@ -36,4 +36,22 @@ abstract final class OrderEntryShadows {
       ),
     ];
   }
+
+  /// Hero card (kitchen ticket on tablet).
+  static List<BoxShadow> raised(BuildContext context) {
+    final c = Theme.of(context).colorScheme.shadow;
+    return [
+      BoxShadow(
+        color: c.withValues(alpha: 0.06),
+        blurRadius: 3,
+        offset: const Offset(0, 2),
+      ),
+      BoxShadow(
+        color: c.withValues(alpha: 0.12),
+        blurRadius: 32,
+        spreadRadius: -8,
+        offset: const Offset(0, 16),
+      ),
+    ];
+  } 
 }

@@ -12,6 +12,8 @@ class OrderContextCard extends StatelessWidget {
     required this.orderStatus,
     required this.paymentStatus,
     required this.note,
+    this.orderTone,
+    this.paymentTone,
   });
 
   final String brand; // Aurelia's Inasal
@@ -19,6 +21,8 @@ class OrderContextCard extends StatelessWidget {
   final String orderStatus; // Draft
   final String paymentStatus; // Unpaid
   final String note;
+  final KkfcTone? orderTone;
+  final KkfcTone? paymentTone;
 
   @override
   Widget build(BuildContext context) {
@@ -58,13 +62,13 @@ class OrderContextCard extends StatelessWidget {
           _StatusPill(
             label: 'Order',
             value: orderStatus,
-            tone: context.semanticColors.info,
+            tone: orderTone ?? context.semanticColors.info,
           ),
           const SizedBox(height: KkfcSpace.s8),
           _StatusPill(
             label: 'Payment',
             value: paymentStatus,
-            tone: context.semanticColors.warning,
+            tone: paymentTone ?? context.semanticColors.warning,
           ),
           const SizedBox(height: KkfcSpace.s16),
           Text(

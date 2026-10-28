@@ -5,4 +5,5 @@ abstract final class AppRoutes {
   static const channelChange = '/channel-change';
   static const availability = '/availability';
   static const orderEntry = '/order-entry';
+  static const orderConfirmed = '/order-confirmed';
 }

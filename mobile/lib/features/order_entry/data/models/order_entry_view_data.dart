@@ -140,6 +140,6 @@ class OrderEntryViewData {
     statusBadge: 'Not sent',
     statusMessage: 'This order has not been sent to the kitchen yet.',
     secondaryLabel: 'Edit order',
-    primaryLabel: 'Send to kitchen',
+    primaryLabel: 'Confirm & send',
   );
 }

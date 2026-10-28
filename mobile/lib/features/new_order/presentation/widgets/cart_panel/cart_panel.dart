@@ -20,10 +20,15 @@ class CartPanel extends ConsumerStatefulWidget {
 }
 
 class _CartPanelState extends ConsumerState<CartPanel> {
-  // The header's order reference field needs a controller that outlives
-  // rebuilds, so this widget owns it.
-  // TODO: move the reference into a provider once the order state exists.
-  final _referenceController = TextEditingController();
+  late final TextEditingController _referenceController;
+
+  @override
+  void initState() {
+    super.initState();
+    _referenceController = TextEditingController(
+      text: ref.read(orderReferenceProvider),
+    );
+  }
 
   @override
   void dispose() {
@@ -33,6 +38,12 @@ class _CartPanelState extends ConsumerState<CartPanel> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String>(orderReferenceProvider, (_, reference) {
+      if (_referenceController.text != reference) {
+        _referenceController.text = reference;
+      }
+    });
+
     final lines = ref.watch(cartProvider);
     final channel = ref.watch(menuChannelProvider);
     final total = ref.watch(cartTotalProvider);
@@ -62,6 +73,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
             CartPanelHeader(
               referenceLabel: channel.referenceLabel,
               referenceController: _referenceController,
+              onReferenceChanged: ref.read(orderReferenceProvider.notifier).set,
               // TODO: set referenceHelperText, referenceErrorText,
               // referenceEnabled and referenceDisabledText from the channel
               // rules (e.g. "Not used for GrabFood") once they exist.

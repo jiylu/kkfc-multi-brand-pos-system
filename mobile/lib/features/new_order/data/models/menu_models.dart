@@ -1,14 +1,18 @@
 // TODO: PALITA NG ACTUAL PARAMETERS FROM BACKEND
 
 enum MenuChannel {
-  dineIn('Dine-in', 'Table reference'),
-  takeaway('Takeaway', 'Pickup reference'),
-  grabFood('GrabFood', 'External order reference'),
-  foodpanda('foodpanda', 'External order reference');
+  dineIn('Dine-in', 'Table reference', 'DINE_IN'),
+  takeaway('Takeaway', 'Pickup reference', 'TAKEAWAY'),
+  grabFood('GrabFood', 'External order reference', 'GRABFOOD'),
+  foodpanda('foodpanda', 'External order reference', 'FOODPANDA');
 
-  const MenuChannel(this.label, this.referenceLabel);
+  const MenuChannel(this.label, this.referenceLabel, this.apiValue);
   final String label;
   final String referenceLabel;
+  final String apiValue;
+
+  bool get isPlatform =>
+      this == MenuChannel.grabFood || this == MenuChannel.foodpanda;
 }
 
 enum MenuAvailability { available, stockout, manualOff, inactive }
@@ -214,6 +218,17 @@ class CartLine {
       item.priceFor(channel) + modifiersCentavosFor(item, selections);
 
   int totalCentavos(MenuChannel channel) => unitCentavos(channel) * quantity;
+
+  /// Active modifier IDs selected for this cart line.
+  List<String> get selectedModifierIds {
+    final ids = <String>[];
+    for (final g in item.modifierGroups) {
+      final id = selections[g.id] ?? g.defaultOptionId;
+      if (id == g.defaultOptionId) continue;
+      ids.add(g.isAddOn ? g.id : id);
+    }
+    return ids;
+  }
 
   /// Only choices that differ from the default, so a plain line shows nothing.
   List<String> get modifierSummary {
