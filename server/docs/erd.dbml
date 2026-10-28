@@ -296,6 +296,9 @@ Table menu_item_modifiers {
 // Enforces duplicate prevention on external platform orders, tracks order lifecycle timestamps, and preserves cancellation reasons (FR-005, FR-006, FR-008, FR-010, BR-13).
 Table orders {
   order_id uuid [pk]
+  order_code varchar(64) [not null, note: 'Saved brand prefix and daily number, minimum five digits; repeats on different Manila dates.']
+  order_date date [not null, note: 'Asia/Manila calendar date at draft creation.']
+  order_number integer [not null]
   brand_id uuid [not null, ref: > brands.brand_id]
   created_by_id uuid [not null, ref: > users.user_id]
   order_channel order_channels [not null]
@@ -316,7 +319,17 @@ Table orders {
   modified_at timestamp [not null, default: `now()`]
   indexes {
     (order_channel, merchant_store_reference, external_order_reference) [unique]
+    (brand_id, order_date, order_number) [unique]
     (brand_id, created_at)
+  }
+}
+
+Table order_daily_counters {
+  brand_id uuid [not null, ref: > brands.brand_id]
+  order_date date [not null]
+  last_number integer [not null, note: 'Positive; allocated atomically with draft creation.']
+  indexes {
+    (brand_id, order_date) [pk]
   }
 }
 
