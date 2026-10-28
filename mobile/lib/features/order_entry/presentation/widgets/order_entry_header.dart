@@ -37,7 +37,7 @@ class OrderEntryHeader extends StatelessWidget {
         ],
         Text(
           title,
-          style: text.titleLarge?.copyWith(
+          style: text.headlineLarge?.copyWith(
             fontWeight: FontWeight.w800,
           ),
         ),

@@ -16,6 +16,7 @@ import 'package:mobile/shared/widgets/menu_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/shared/widgets/toast/kkfc_toaster.dart';
 import 'order_confirmed_screen.dart';
+import 'platform_reference_screen.dart';
 import '../widgets/order_entry_action_bar.dart';
 import '../widgets/order_entry_header.dart';
 import '../widgets/order_context_card.dart';
@@ -100,6 +101,19 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
     }
   }
 
+  void _openPlatformReference() {
+    final router = GoRouter.maybeOf(context);
+    if (router != null) {
+      router.push(AppRoutes.platformReference);
+    } else {
+      Navigator.maybeOf(context)?.push(
+        MaterialPageRoute<void>(
+          builder: (_) => const PlatformReferenceScreen(),
+        ),
+      );
+    }
+  }
+
   Future<void> _sendOrder() async {
     if (_isSending) return;
 
@@ -110,6 +124,12 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
 
     if (lines.isEmpty) {
       _showError('Add at least one item before sending the order.');
+      return;
+    }
+
+    if (reference.trim().isEmpty) {
+      _showError('Add a reference label before sending the order.');
+      _openPlatformReference();
       return;
     }
 

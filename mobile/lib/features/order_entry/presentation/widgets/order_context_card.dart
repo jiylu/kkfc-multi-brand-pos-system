@@ -115,7 +115,7 @@ class _StatusPill extends StatelessWidget {
               TextSpan(
                 children: [
                   TextSpan(text: label.toUpperCase()),
-                  const TextSpan(text: '   '),
+                  const TextSpan(text: ' '),
                   TextSpan(text: value.toUpperCase()),
                 ],
               ),

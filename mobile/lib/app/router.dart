@@ -12,6 +12,7 @@ import '../features/order_entry/data/models/order_confirmed_view_data.dart';
 import '../features/order_entry/data/models/order_entry_view_data.dart';
 import '../features/order_entry/presentation/pages/order_confirmed_screen.dart';
 import '../features/order_entry/presentation/pages/order_entry_screen.dart';
+import '../features/order_entry/presentation/pages/platform_reference_screen.dart';
 import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -75,6 +76,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             onNewOrder: () => context.go(AppRoutes.menu),
           );
         },
+      ),
+      GoRoute(
+        path: AppRoutes.platformReference,
+        builder: (context, state) => const PlatformReferenceScreen(),
       ),
     ],
   );
