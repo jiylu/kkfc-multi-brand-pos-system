@@ -8,11 +8,18 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import {
+  BrandResource,
+  BrandResourceType,
+} from '../../../shared/decorators/brand-resource.decorator';
 import { UserRole } from '@prisma/client';
-import { Authenticated, type AuthenticatedRequest } from '../auth/auth.guard';
-import { BrandsGuard } from '../../shared/guards/brands.guard';
-import { RolesGuard } from '../../shared/guards/roles.guard';
-import { Roles } from '../../shared/decorators/roles.decorator';
+import {
+  Authenticated,
+  type AuthenticatedRequest,
+} from '../../auth/auth.guard';
+import { BrandsGuard } from '../../../shared/guards/brands.guard';
+import { RolesGuard } from '../../../shared/guards/roles.guard';
+import { Roles } from '../../../shared/decorators/roles.decorator';
 import { CreateOrderDTO, ConfirmOrderDTO } from './dto/order.dto';
 import { OrdersService } from './orders.service';
 
@@ -23,6 +30,7 @@ export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 
   @Post()
+  @BrandResource(BrandResourceType.BRAND, 'brandId')
   create(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Body() dto: CreateOrderDTO,
@@ -32,6 +40,7 @@ export class OrdersController {
   }
 
   @Post(':orderId/verify')
+  @BrandResource(BrandResourceType.ORDER, 'orderId')
   @HttpCode(200)
   verify(
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -42,6 +51,7 @@ export class OrdersController {
   }
 
   @Post(':orderId/confirm')
+  @BrandResource(BrandResourceType.ORDER, 'orderId')
   @HttpCode(200)
   confirm(
     @Param('brandId', ParseUUIDPipe) brandId: string,

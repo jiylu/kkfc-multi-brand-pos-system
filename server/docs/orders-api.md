@@ -3,6 +3,24 @@
 All routes use `/api/brands/:brandId/orders`, a bearer session, and brand access.
 Allowed roles: CASHIER_STAFF, MANAGER, SUPERADMIN (the latter may access any brand).
 
+`BrandsGuard` resolves `BrandResource(BRAND, 'brandId')` for creation and
+`BrandResource(ORDER, 'orderId')` for verify/confirm. Missing resources return 404;
+a URL brand that differs from the order's brand returns 400, including for
+superadmins. A caller without access to the resolved brand receives 403.
+
+The controller handles HTTP input, the service owns lifecycle/payment/catalog
+validation and response redaction, and `OrdersRepository` owns database operations
+and serializable transaction retries. Each lifecycle operation uses one transaction
+for all reads and writes, including item snapshots, counters, and tickets.
+
+The feature is organized into `modules/orders/orders/` (controller, lifecycle
+service, repository, and order DTOs) and `modules/orders/order-items/` (line DTO,
+item validation, catalog snapshots, and item persistence). `OrdersModule` imports
+`OrderItemsModule`, which exports `OrderItemsService` and does not depend on orders.
+Orders supplies its transaction when calling the item service. Draft creation
+continues to insert the order and its nested items together through the orders
+repository.
+
 - `POST /`: create a draft. Required body: client-generated `order_id` UUID,
   `order_channel`, and nonempty `lines` (`menu_item_id`, positive integer `quantity`,
   optional unique `modifier_ids` and `notes`). Optional order `notes`.

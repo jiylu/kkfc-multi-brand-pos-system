@@ -1,32 +1,17 @@
+import { OrderLineDTO } from '../../order-items/dto/order-line.dto';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
-  ArrayUnique,
   IsArray,
   IsEnum,
-  IsInt,
   IsOptional,
   IsString,
   IsUUID,
-  Max,
   MaxLength,
-  Min,
   ValidateNested,
 } from 'class-validator';
 import { OrderChannel, PaymentMethod, PaymentStatus } from '@prisma/client';
-
-export class OrderLineDTO {
-  @IsUUID() menu_item_id: string;
-  @IsInt() @Min(1) @Max(9999) quantity: number;
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(100)
-  @ArrayUnique()
-  @IsUUID('all', { each: true })
-  modifier_ids?: string[];
-  @IsOptional() @IsString() @MaxLength(2000) notes?: string;
-}
 
 export class CreateOrderDTO {
   // Client-generated UUID reused unchanged on retries.
