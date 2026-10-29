@@ -41,3 +41,22 @@ Feature: Menu interactions and asynchronous states
     Given a menu load returning no items
     When the menu screen settles
     Then an empty message is displayed without item cards
+
+  @IT-MOB-MENU-006
+  Scenario: Show the current brand and channel as the store reference
+    Given the active brand is King Kungs Kafe
+    And the selected channel is GrabFood
+    When the cart panel header renders
+    Then Store reference displays "King Kungs Kafe, GrabFood"
+    When the selected channel changes to foodpanda
+    Then Store reference displays "King Kungs Kafe, foodpanda"
+
+  @IT-MOB-MENU-007
+  Scenario: Reflect the store reference on the platform reference screen
+    Given the active brand is King Kungs Kafe
+    And the selected channel is GrabFood
+    When the platform reference screen renders
+    Then Store reference displays "King Kungs Kafe, GrabFood" read-only
+    And only the external order reference can be edited
+    When the external order reference is submitted as "GF-1001"
+    Then the merchant store reference is "King Kungs Kafe, GrabFood"

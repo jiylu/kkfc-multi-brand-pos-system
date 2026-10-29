@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/app/theme/typography.dart';
+import 'package:mobile/core/models/brand_models.dart';
+import 'package:mobile/features/new_order/data/models/menu_models.dart';
+import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
+import 'package:mobile/shared/store_reference.dart';
+import 'package:mobile/shared/widgets/kkfc_brand_tag.dart';
 import 'package:mobile/shared/widgets/kkfc_text_field.dart';
 
 class CartPanelHeader extends StatelessWidget {
   const CartPanelHeader({
     super.key,
-    required this.referenceLabel,
+    required this.brand,
+    required this.channel,
     required this.referenceController,
     required this.canClear,
     required this.onClear,
@@ -17,7 +23,8 @@ class CartPanelHeader extends StatelessWidget {
     this.onReferenceChanged,
   });
 
-  final String referenceLabel;
+  final AssignedBrand brand;
+  final MenuChannel channel;
   final TextEditingController referenceController;
   final bool canClear;
   final VoidCallback onClear;
@@ -62,21 +69,86 @@ class CartPanelHeader extends StatelessWidget {
             ],
           ),
         ),
+        const Divider(height: 1),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: KkfcSpace.s16),
-          child: KkfcTextField(
-            label: referenceLabel,
-            controller: referenceController,
-            helperText: referenceHelperText,
-            errorText: referenceErrorText,
-            disabledText: referenceDisabledText,
-            enabled: referenceEnabled,
-            onChanged: onReferenceChanged,
-            textAlign: TextAlign.center,
-            valueStyle: KkfcTypography.bodyLg,
+          padding: const EdgeInsets.symmetric(
+            horizontal: KkfcSpace.s16,
+            vertical: KkfcSpace.s12,
+          ),
+          child: Align(
+            alignment: Alignment.center,
+            child: KkfcBrandTag(
+              label: brand.name,
+              logoAsset: BrandLogo.assetFor(brand.code),
+              compact: true,
+            ),
           ),
         ),
+        if (channel.isPlatform)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: KkfcSpace.s16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ReferenceBlock(
+                  label: 'Store reference',
+                  value: formatStoreReference(
+                    brandName: brand.name,
+                    channelLabel: channel.label,
+                  ),
+                ),
+                const SizedBox(height: KkfcSpace.s12),
+                _ReferenceBlock(
+                  label: 'External order reference',
+                  value: 'Enter reference from ${channel.label}',
+                ),
+              ],
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: KkfcSpace.s16),
+            child: KkfcTextField(
+              label: channel.referenceLabel,
+              controller: referenceController,
+              helperText: referenceHelperText,
+              errorText: referenceErrorText,
+              disabledText: referenceDisabledText,
+              enabled: referenceEnabled,
+              onChanged: onReferenceChanged,
+              textAlign: TextAlign.center,
+              valueStyle: KkfcTypography.bodyLg,
+            ),
+          ),
         const SizedBox(height: KkfcSpace.s8),
+      ],
+    );
+  }
+}
+
+class _ReferenceBlock extends StatelessWidget {
+  const _ReferenceBlock({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: KkfcSpace.s4),
+        Text(
+          value,
+          style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+        ),
       ],
     );
   }

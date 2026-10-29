@@ -8,6 +8,7 @@ import 'package:mobile/app/theme/theme.dart';
 import 'package:mobile/features/availability/presentation/pages/availability_management_screen.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:mobile/features/new_order/presentation/pages/menu_screen.dart';
+import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_bar.dart';
 import 'package:mobile/features/new_order/presentation/widgets/cart_panel/cart_panel.dart';
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
@@ -150,7 +151,13 @@ void main() {
         of: find.byType(MenuHeader),
         matching: find.byType(IconButton),
       );
-      final groupLeft = tester.getTopLeft(find.byType(OutlinedButton)).dx;
+      final brand = find
+          .ancestor(
+            of: find.byType(BrandLogo),
+            matching: find.byType(Container),
+          )
+          .first;
+      final groupLeft = tester.getTopLeft(brand).dx;
       final groupRight = tester.getTopRight(logout).dx;
       final headerCenter = tester.getCenter(find.byType(MenuHeader)).dx;
 
@@ -214,7 +221,13 @@ void main() {
         matching: find.byType(IconButton),
       );
       final headerCenter = tester.getCenter(find.byType(MenuHeader)).dx;
-      final accountLeft = tester.getTopLeft(find.byType(OutlinedButton)).dx;
+      final brand = find
+          .ancestor(
+            of: find.byType(BrandLogo),
+            matching: find.byType(Container),
+          )
+          .first;
+      final accountLeft = tester.getTopLeft(brand).dx;
       final accountRight = tester.getTopRight(logout).dx;
       final tabsCenter = tester.getCenter(find.byType(ChannelTabs)).dx;
 
@@ -248,7 +261,7 @@ void main() {
       expect(tester.takeException(), isNull);
 
       final logout = find.byTooltip('Logout');
-      final brand = find.byType(OutlinedButton);
+      final brand = find.byType(BrandLogo);
 
       expect(logout, findsOneWidget);
       expect(brand, findsOneWidget);

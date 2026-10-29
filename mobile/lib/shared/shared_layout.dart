@@ -6,7 +6,7 @@ abstract final class MenuSpace {
   static const double sm = KkfcSpace.s8;
   static const double md = KkfcSpace.s12;
   static const double lg = KkfcSpace.s16;
-  static const double xl = KkfcSpace.s24;
+  static const double xl = KkfcSpace.s48;
   static const double xxl = KkfcSpace.s64;
 }
 

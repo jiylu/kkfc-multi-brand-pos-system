@@ -37,7 +37,7 @@ class ChannelRepricingScreen extends StatelessWidget {
         builder: (context, constraints) {
           final width = constraints.maxWidth;
           final showRail = width >= MenuLayout.compactMax;
-          final showContext = width >= MenuLayout.wideMin;
+          final showContext = width >= MenuLayout.compactMax;
 
           return Column(
             children: [
@@ -90,14 +90,21 @@ class _RepricingBody extends ConsumerWidget {
 
   String _lineDetail(CartLine line, MenuChannel channel) {
     final unit = formatPeso(line.item.priceFor(channel));
-    if (!line.extraRice) return '${line.quantity} × $unit';
-    return '${line.quantity} × ($unit + ${formatPeso(kExtraRiceCentavos)})';
+    final delta = modifiersCentavosFor(line.item, line.selections);
+
+    if (delta == 0) return '${line.quantity} × $unit';
+
+    final sign = delta > 0 ? '+' : '−';
+    return '${line.quantity} × ($unit $sign ${formatPeso(delta.abs())})';
   }
 
-  void _undo(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Undo is provisional in this prototype.')),
-    );
+  void _undo(BuildContext context, WidgetRef ref) {
+    final restored = ref.read(menuChannelProvider.notifier).undo();
+    if (!restored) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No previous channel to restore.')),
+      );
+    }
   }
 
   @override
@@ -174,14 +181,11 @@ class _RepricingBody extends ConsumerWidget {
             title: 'Undo',
             subtitle: 'Restore previous channel',
             trailing: FilledButton.tonal(
-              onPressed: () => _undo(context),
+              onPressed: () => _undo(context, ref),
               child: const Text('Undo'),
             ),
           ),
-          if (showContext) ...[
-            const SizedBox(height: MenuSpace.lg),
-            const _PrototypeNote(),
-          ],
+          if (showContext) ...[const SizedBox(height: MenuSpace.lg)],
         ],
       ),
     );
@@ -257,33 +261,6 @@ class _SelectedBadge extends StatelessWidget {
           color: scheme.onSecondaryContainer,
           fontWeight: FontWeight.w700,
         ),
-      ),
-    );
-  }
-}
-
-class _PrototypeNote extends StatelessWidget {
-  const _PrototypeNote();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: MenuSpace.lg,
-        vertical: MenuSpace.md,
-      ),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(MenuRadius.sm),
-      ),
-      child: Text(
-        'Prototype layout • unresolved client data and permissions remain '
-        'provisional.',
-        style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
       ),
     );
   }

@@ -4,29 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/app/routes.dart';
+import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/shared/shared_layout.dart';
-import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
-import 'package:mobile/features/new_order/presentation/brand_switch_flow.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
+import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/availability/data/models/availability_model.dart';
-
-MenuChannel _menuChannelFor(PosChannel channel) => switch (channel) {
-  PosChannel.dineIn => MenuChannel.dineIn,
-  PosChannel.takeaway => MenuChannel.takeaway,
-  PosChannel.grabFood => MenuChannel.grabFood,
-  PosChannel.foodpanda => MenuChannel.foodpanda,
-};
-
-PosChannel _posChannelFor(MenuChannel channel) => switch (channel) {
-  MenuChannel.dineIn => PosChannel.dineIn,
-  MenuChannel.takeaway => PosChannel.takeaway,
-  MenuChannel.grabFood => PosChannel.grabFood,
-  MenuChannel.foodpanda => PosChannel.foodpanda,
-};
+import 'package:mobile/shared/menu_channel_mapping.dart';
 
 class MenuHeader extends ConsumerWidget {
   const MenuHeader({
@@ -49,61 +36,76 @@ class MenuHeader extends ConsumerWidget {
     if (token == null) return;
 
     unawaited(ref.read(authRepositoryProvider).logout(token));
+    ref.read(cartProvider.notifier).clear();
+    ref.read(orderReferenceProvider.notifier).clear();
+    ref.read(storeReferenceProvider.notifier).clear();
+    ref.read(menuSearchProvider.notifier).clear();
+    ref.read(menuChannelProvider.notifier).reset();
     ref.read(sessionExpiredProvider.notifier).set(false);
     ref.read(sessionTokenProvider.notifier).setToken(null);
   }
 
-  /// Shows the repricing notice after a channel change. When the notice is
-  /// already on screen the live provider update is enough, so we skip the
-  /// redundant navigation.
-  void _onChannelSelected(BuildContext context) {
+  /// Shows the repricing notice after a channel change when prices differ.
+  void _onChannelSelected(BuildContext context, WidgetRef ref) {
     final router = GoRouter.maybeOf(context);
     if (router == null) return;
     if (GoRouterState.of(context).matchedLocation == AppRoutes.channelChange) {
       return;
     }
+
+    final notifier = ref.read(menuChannelProvider.notifier);
+    final previous = notifier.previousChannel;
+    final current = ref.read(menuChannelProvider);
+    final cart = ref.read(cartProvider);
+
+    if (previous == null || cart.isEmpty) {
+      return;
+    }
+
+    var hasPriceChange = false;
+    for (final line in cart) {
+      if (line.totalCentavos(previous) != line.totalCentavos(current)) {
+        hasPriceChange = true;
+        break;
+      }
+    }
+
+    if (!hasPriceChange) {
+      return;
+    }
+
     router.go(AppRoutes.channelChange);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final brand = ref.watch(activeBrandProvider);
+    final hasSession = ref.watch(sessionProvider);
+    if (hasSession) {
+      ref.listen<AsyncValue<AssignedBrand>>(assignedBrandProvider, (_, next) {
+        final b = next.value;
+        if (b != null) {
+          ref.read(activeBrandProvider.notifier).select(b);
+        }
+      });
+    }
+
+    final AssignedBrand? assignedBrand = hasSession
+        ? ref.watch(assignedBrandProvider).value
+        : null;
+    final AssignedBrand brand = assignedBrand ?? ref.watch(activeBrandProvider);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
-    final themedBrand = OutlinedButton(
-      onPressed: () => startBrandSwitch(context, ref),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: scheme.onInverseSurface,
-        padding: const EdgeInsets.symmetric(
-          horizontal: MenuSpace.md,
-          vertical: MenuSpace.sm,
-        ),
-        side: BorderSide(color: scheme.onInverseSurface.withValues(alpha: 0.5)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(MenuRadius.md),
-        ),
+    final themedBrand = Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MenuSpace.sm,
+        vertical: MenuSpace.xs,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: MenuSpace.sm,
-                vertical: MenuSpace.xs,
-              ),
-              decoration: BoxDecoration(
-                color: scheme.surface,
-                borderRadius: BorderRadius.circular(MenuRadius.sm),
-              ),
-              child: BrandLogo(brand: brand),
-            ),
-          ),
-          const SizedBox(width: MenuSpace.sm),
-          const Icon(Icons.expand_more),
-        ],
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(MenuRadius.sm),
       ),
+      child: BrandLogo(brand: brand, height: MenuSpace.xl),
     );
 
     final themedUser = Column(
@@ -133,13 +135,14 @@ class MenuHeader extends ConsumerWidget {
     if (onChannelChanged != null && channel != null) {
       channelWidget = ChannelTabs(
         inverted: true,
-        selected: _menuChannelFor(channel!),
-        onSelected: (selected) => onChannelChanged!(_posChannelFor(selected)),
+        selected: menuChannelForPos(channel!),
+        onSelected: (selected) =>
+            onChannelChanged!(posChannelForMenu(selected)),
       );
     } else {
       channelWidget = ChannelTabs(
         inverted: true,
-        onSelected: (_) => _onChannelSelected(context),
+        onSelected: (_) => _onChannelSelected(context, ref),
       );
     }
 

@@ -5,9 +5,9 @@ import 'package:mobile/features/new_order/data/seed/sample_brands.dart';
 import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
 
 const _assets = <String, String>{
-  'gamcheon': 'assets/images/gamcheon.png',
-  'aurelias-inasal': 'assets/images/aurelia.png',
-  'king-kungs-kafe': 'assets/images/king_kungs.png',
+  'GC': 'assets/images/gamcheon.png',
+  'AI': 'assets/images/aurelia.png',
+  'KK': 'assets/images/king_kungs.png',
 };
 
 void main() {
@@ -21,7 +21,7 @@ void main() {
 
       final image = tester.widget<Image>(find.byType(Image));
 
-      expect((image.image as AssetImage).assetName, _assets[brand.id]);
+      expect((image.image as AssetImage).assetName, _assets[brand.code]);
     });
   }
 

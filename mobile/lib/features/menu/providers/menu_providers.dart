@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
+import 'package:flutter/foundation.dart' show mapEquals;
 
 class MenuChannelNotifier extends Notifier<MenuChannel> {
   @override
@@ -51,37 +52,93 @@ final visibleMenuItemsProvider =
     });
 
 class CartNotifier extends Notifier<List<CartLine>> {
-  /// Pre-filled to match the design. Change to `const []` for a real start.
-  @override
-  List<CartLine> build() => [
-    CartLine(item: sampleMenu[0], quantity: 2, extraRice: true),
-    CartLine(item: sampleMenu[1], quantity: 1),
-  ];
+  int _seq = 0;
 
-  void add(MenuItem item) {
-    final i = state.indexWhere((l) => l.item.id == item.id);
-    if (i == -1) {
-      state = [...state, CartLine(item: item, quantity: 1)];
+  @override
+  List<CartLine> build() => const [];
+
+  Map<String, String> _normalize(MenuItem item, Map<String, String> s) => {
+    for (final g in item.modifierGroups) g.id: s[g.id] ?? g.defaultOptionId,
+  };
+
+  int _findIdentical(
+    MenuItem item,
+    Map<String, String> sel, {
+    String? except,
+  }) => state.indexWhere(
+    (l) =>
+        l.id != except && l.item.id == item.id && mapEquals(l.selections, sel),
+  );
+
+  /// Quick add with defaults (no modifiers).
+  void add(MenuItem item) => addConfigured(item, const {}, 1);
+
+  void addConfigured(
+    MenuItem item,
+    Map<String, String> selections,
+    int quantity,
+  ) {
+    final sel = _normalize(item, selections);
+    final i = _findIdentical(item, sel);
+    if (i != -1) {
+      state = [
+        for (var k = 0; k < state.length; k++)
+          if (k == i)
+            state[k].copyWith(quantity: state[k].quantity + quantity)
+          else
+            state[k],
+      ];
       return;
     }
     state = [
-      for (var k = 0; k < state.length; k++)
-        if (k == i)
-          state[k].copyWith(quantity: state[k].quantity + 1)
-        else
-          state[k],
+      ...state,
+      CartLine(
+        id: 'line-${_seq++}',
+        item: item,
+        quantity: quantity,
+        selections: sel,
+      ),
     ];
   }
 
-  void decrement(String itemId) {
+  void updateLine(String lineId, Map<String, String> selections, int quantity) {
+    final i = state.indexWhere((l) => l.id == lineId);
+    if (i == -1) return;
+    final line = state[i];
+    final sel = _normalize(line.item, selections);
+
+    // If the edit makes this line identical to another, merge them.
+    final j = _findIdentical(line.item, sel, except: lineId);
+    if (j != -1) {
+      final otherId = state[j].id;
+      state = [
+        for (final l in state)
+          if (l.id != lineId)
+            (l.id == otherId ? l.copyWith(quantity: l.quantity + quantity) : l),
+      ];
+      return;
+    }
     state = [
       for (final l in state)
-        if (l.item.id != itemId)
-          l
-        else if (l.quantity > 1)
-          l.copyWith(quantity: l.quantity - 1),
+        if (l.id == lineId)
+          l.copyWith(quantity: quantity, selections: sel)
+        else
+          l,
     ];
   }
+
+  void incrementLine(String lineId) => state = [
+    for (final l in state)
+      if (l.id == lineId) l.copyWith(quantity: l.quantity + 1) else l,
+  ];
+
+  void decrementLine(String lineId) => state = [
+    for (final l in state)
+      if (l.id != lineId)
+        l
+      else if (l.quantity > 1)
+        l.copyWith(quantity: l.quantity - 1),
+  ];
 
   void clear() => state = const [];
 }
