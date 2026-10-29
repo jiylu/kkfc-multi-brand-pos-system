@@ -1,3 +1,5 @@
+import { OrderItemsService } from '../order-items/order-items.service';
+import { OrderLineDTO } from '../order-items/dto/order-line.dto';
 import {
   BadRequestException,
   ConflictException,
@@ -8,7 +10,7 @@ import {
 import { OrderChannel, Prisma } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { OrdersRepository, type SavedOrder } from './orders.repository';
-import { ConfirmOrderDTO, CreateOrderDTO, OrderLineDTO } from './dto/order.dto';
+import { ConfirmOrderDTO, CreateOrderDTO } from './dto/order.dto';
 
 function omit<T, K extends keyof T>(value: T, ...keys: K[]): Omit<T, K> {
   const copy = { ...value };
@@ -18,7 +20,10 @@ function omit<T, K extends keyof T>(value: T, ...keys: K[]): Omit<T, K> {
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly repository: OrdersRepository) {}
+  constructor(
+    private readonly repository: OrdersRepository,
+    private readonly items: OrderItemsService,
+  ) {}
 
   private platform(channel: OrderChannel) {
     return channel === 'GRABFOOD' || channel === 'FOODPANDA';
@@ -80,76 +85,15 @@ export class OrdersService {
     channel: OrderChannel,
     lines: OrderLineDTO[],
   ) {
-    this.validateLines(lines);
+    this.items.validateLines(lines);
     const brand = await this.repository.findActiveBrand(brandId, tx);
     if (!brand) throw new BadRequestException('Brand is unavailable.');
-    const snapshots = await Promise.all(
-      lines.map(async (line) => {
-        const menu = await this.repository.findMenuSnapshot(
-          brandId,
-          line.menu_item_id,
-          channel,
-          tx,
-        );
-        if (
-          !menu ||
-          !menu.is_available ||
-          !menu.recipe ||
-          !menu.recipe.is_active ||
-          menu.recipe.type !== 'MENU_ASSEMBLY'
-        )
-          throw new BadRequestException('Menu item or recipe is unavailable.');
-        const override = menu.menu_item_channels_menu_item[0];
-        if (override && !override.is_available)
-          throw new BadRequestException(
-            'Menu item is unavailable on this channel.',
-          );
-        const price = override?.price ?? menu.base_price;
-        this.validatePrice(price);
-        if (
-          menu.recipe.recipe_components_recipe.some((component) => {
-            const quantity = new Prisma.Decimal(component.quantity);
-            return !quantity.isFinite() || quantity.lte(0);
-          })
-        )
-          throw new BadRequestException(
-            'Recipe component quantities must be positive and finite.',
-          );
-        const modifiers = (line.modifier_ids ?? []).map((id) => {
-          const link = menu.menu_item_modifiers_menu_item.find(
-            (m) =>
-              m.modifier_id === id && m.is_available && m.modifier.is_active,
-          );
-          if (!link)
-            throw new BadRequestException(
-              'Modifier is unavailable for this menu item.',
-            );
-          this.validatePrice(link.additional_price);
-          return {
-            modifier_id: id,
-            modifier_name: link.modifier.name,
-            additional_price: link.additional_price,
-          };
-        });
-        return {
-          menu_item_id: menu.menu_item_id,
-          item_name: menu.name,
-          quantity: line.quantity,
-          unit_price: price,
-          notes: line.notes ?? null,
-          applied_recipe_id: menu.recipe_id,
-          recipe_snapshot: JSON.parse(
-            JSON.stringify(menu.recipe),
-          ) as Prisma.InputJsonValue,
-          modifiers,
-        };
-      }),
-    );
+    const snapshots = await this.items.snapshots(tx, brandId, channel, lines);
     return { brand, lines: snapshots };
   }
 
   async create(brandId: string, actorId: string, dto: CreateOrderDTO) {
-    this.validateLines(dto.lines);
+    this.items.validateLines(dto.lines);
     // Normalize identity references before hashing, checking duplicates or saving.
     dto = {
       ...dto,
@@ -269,40 +213,6 @@ export class OrdersService {
     }));
   }
 
-  private validateLines(lines: OrderLineDTO[]) {
-    if (!Array.isArray(lines) || lines.length < 1 || lines.length > 100)
-      throw new BadRequestException(
-        'An order must contain between 1 and 100 lines.',
-      );
-    for (const line of lines) {
-      if (
-        !line ||
-        !Number.isSafeInteger(line.quantity) ||
-        line.quantity < 1 ||
-        line.quantity > 9999
-      )
-        throw new BadRequestException(
-          'Line quantity must be an integer between 1 and 9999.',
-        );
-      const modifiers = line.modifier_ids ?? [];
-      if (
-        !Array.isArray(modifiers) ||
-        modifiers.length > 100 ||
-        new Set(modifiers).size !== modifiers.length
-      )
-        throw new BadRequestException(
-          'Modifiers must be a unique list of at most 100 IDs.',
-        );
-    }
-  }
-
-  private validatePrice(price: Prisma.Decimal) {
-    if (!price.isFinite() || price.lt(0) || price.gt('9999999999.99'))
-      throw new BadRequestException(
-        'Catalog prices must be nonnegative and fit the order price field.',
-      );
-  }
-
   private assertConfirmable(order: SavedOrder) {
     if (order.status === 'DRAFT' && order.kitchen_tickets_order)
       throw new ConflictException(
@@ -357,14 +267,11 @@ export class OrdersService {
         order.order_channel,
         this.draftLines(order),
       );
-      for (const [index, snapshot] of lines.entries()) {
-        const { modifiers, ...data } = snapshot;
-        const id = order.order_items_order[index].order_item_id;
-        await this.repository.updateItem(id, data, tx);
-        for (const modifier of modifiers) {
-          await this.repository.updateModifier(id, modifier, tx);
-        }
-      }
+      await this.items.saveSnapshots(
+        order.order_items_order.map((item) => item.order_item_id),
+        lines,
+        tx,
+      );
       const sequence = await this.repository.nextTicketNumber(tx);
       if (
         !sequence ||

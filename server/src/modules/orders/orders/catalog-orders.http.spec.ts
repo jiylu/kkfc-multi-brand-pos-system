@@ -1,3 +1,5 @@
+import { OrderItemsService } from '../order-items/order-items.service';
+import { OrderItemsRepository } from '../order-items/order-items.repository';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { OrderChannel } from '@prisma/client';
@@ -6,14 +8,14 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Client } from 'pg';
 import sharp from 'sharp';
-import { AppModule } from '../../app.module';
-import { PrismaService } from '../../shared/prisma/prisma.service';
-import { StorageService } from '../../shared/storage/storage.service';
+import { AppModule } from '../../../app.module';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { StorageService } from '../../../shared/storage/storage.service';
 import {
   cleanupCatalogFixture,
   createCatalogFixture,
   requireTestDatabase,
-} from '../../shared/testing/catalog.fixture';
+} from '../../../shared/testing/catalog.fixture';
 import { OrdersRepository } from './orders.repository';
 import { OrdersService } from './orders.service';
 
@@ -617,6 +619,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     });
     const service = new OrdersService(
       new OrdersRepository(failingClient as unknown as PrismaService),
+      new OrderItemsService(new OrderItemsRepository()),
     );
     await expect(
       service.confirm(
@@ -788,6 +791,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     });
     const service = new OrdersService(
       new OrdersRepository(failingClient as unknown as PrismaService),
+      new OrderItemsService(new OrderItemsRepository()),
     );
     await expect(
       service.create(fixture.brand.brand_id, fixture.users[1].user_id, body),

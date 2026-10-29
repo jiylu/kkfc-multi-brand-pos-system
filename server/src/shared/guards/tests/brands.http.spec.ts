@@ -1,5 +1,5 @@
-import { OrdersController } from '../../../modules/orders/orders.controller';
-import { OrdersService } from '../../../modules/orders/orders.service';
+import { OrdersController } from '../../../modules/orders/orders/orders.controller';
+import { OrdersService } from '../../../modules/orders/orders/orders.service';
 import { PinGuard } from '../../../modules/pin/pin.guard';
 import {
   Body,

@@ -11,12 +11,15 @@ import {
 import {
   BrandResource,
   BrandResourceType,
-} from '../../shared/decorators/brand-resource.decorator';
+} from '../../../shared/decorators/brand-resource.decorator';
 import { UserRole } from '@prisma/client';
-import { Authenticated, type AuthenticatedRequest } from '../auth/auth.guard';
-import { BrandsGuard } from '../../shared/guards/brands.guard';
-import { RolesGuard } from '../../shared/guards/roles.guard';
-import { Roles } from '../../shared/decorators/roles.decorator';
+import {
+  Authenticated,
+  type AuthenticatedRequest,
+} from '../../auth/auth.guard';
+import { BrandsGuard } from '../../../shared/guards/brands.guard';
+import { RolesGuard } from '../../../shared/guards/roles.guard';
+import { Roles } from '../../../shared/decorators/roles.decorator';
 import { CreateOrderDTO, ConfirmOrderDTO } from './dto/order.dto';
 import { OrdersService } from './orders.service';
 

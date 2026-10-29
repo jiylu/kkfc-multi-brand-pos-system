@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { OrderChannel, Prisma } from '@prisma/client';
 import { setTimeout as delay } from 'node:timers/promises';
-import { PrismaService } from '../../shared/prisma/prisma.service';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
 
 const includeOrder = {
   order_items_order: { include: { order_item_modifiers_order_item: true } },
@@ -58,26 +58,6 @@ export class OrdersRepository {
     });
   }
 
-  findMenuSnapshot(
-    brandId: string,
-    menuItemId: string,
-    channel: OrderChannel,
-    tx: Prisma.TransactionClient,
-  ) {
-    return tx.menuItem.findFirst({
-      where: {
-        menu_item_id: menuItemId,
-        brand_id: brandId,
-        is_active: true,
-      },
-      include: {
-        recipe: { include: { recipe_components_recipe: true } },
-        menu_item_channels_menu_item: { where: { order_channel: channel } },
-        menu_item_modifiers_menu_item: { include: { modifier: true } },
-      },
-    });
-  }
-
   findById(orderId: string, tx: Prisma.TransactionClient) {
     return tx.order.findUnique({
       where: { order_id: orderId },
@@ -115,30 +95,6 @@ export class OrdersRepository {
 
   create(data: Prisma.OrderUncheckedCreateInput, tx: Prisma.TransactionClient) {
     return tx.order.create({ data, include: includeOrder });
-  }
-
-  updateItem(
-    id: string,
-    data: Prisma.OrderItemUncheckedUpdateInput,
-    tx: Prisma.TransactionClient,
-  ) {
-    return tx.orderItem.update({ where: { order_item_id: id }, data });
-  }
-
-  updateModifier(
-    id: string,
-    modifier: Prisma.OrderItemModifierUncheckedCreateWithoutOrder_itemInput,
-    tx: Prisma.TransactionClient,
-  ) {
-    return tx.orderItemModifier.update({
-      where: {
-        order_item_id_modifier_id: {
-          order_item_id: id,
-          modifier_id: modifier.modifier_id,
-        },
-      },
-      data: modifier,
-    });
   }
 
   async nextTicketNumber(tx: Prisma.TransactionClient) {
