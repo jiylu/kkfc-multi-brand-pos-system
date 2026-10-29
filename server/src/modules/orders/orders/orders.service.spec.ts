@@ -99,7 +99,7 @@ describe('Order lifecycle', () => {
       },
       orderItem: { update: jest.fn() },
       orderItemModifier: { update: jest.fn() },
-      kitchenTicket: { create: jest.fn() },
+      kitchenTicket: { create: jest.fn(), update: jest.fn() },
       $queryRaw: jest.fn().mockResolvedValue([
         {
           number: 14n,
@@ -704,5 +704,162 @@ describe('Order lifecycle', () => {
       }),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(tx.order.create).not.toHaveBeenCalled();
+  });
+  describe('cancellation', () => {
+    const reason = { cancellation_reason: '  Customer changed their mind.  ' };
+    beforeEach(() => {
+      tx.order.update.mockImplementation(
+        ({ data }: { data: Record<string, unknown> }) =>
+          Promise.resolve({ ...draft, ...data }),
+      );
+    });
+
+    it('cancels a draft, records actor/reason/time and redacts private fields', async () => {
+      const result = await service.cancel('brand', 'order', 'actor', reason);
+      expect(result).toMatchObject({
+        status: 'CANCELLED',
+        cancelled_by_id: 'actor',
+        cancellation_reason: 'Customer changed their mind.',
+        order_code: draft.order_code,
+      });
+      expect(result.cancelled_at).toBeInstanceOf(Date);
+      expect(result).not.toHaveProperty('create_request_hash');
+      expect(result.order_items_order[0]).not.toHaveProperty('recipe_snapshot');
+      expect(tx.kitchenTicket.update).not.toHaveBeenCalled();
+      expect(tx.orderItem.update).not.toHaveBeenCalled();
+      expect(tx.inventoryItem.update).not.toHaveBeenCalled();
+      expect(tx.stockMovement.create).not.toHaveBeenCalled();
+      expect(tx.order.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: {
+            status: 'CANCELLED',
+            cancelled_by_id: 'actor',
+            cancellation_reason: 'Customer changed their mind.',
+            cancelled_at: result.cancelled_at,
+            modified_at: result.cancelled_at,
+          },
+        }),
+      );
+    });
+
+    it.each([
+      ['CONFIRMED', 'QUEUED'],
+      ['CONFIRMED', 'ACKNOWLEDGED'],
+      ['PREPARING', 'PREPARING'],
+      ['CHECKING', 'CHECKING'],
+      ['REWORKING', 'REWORKING'],
+      ['READY', 'READY'],
+    ])(
+      'cancels a %s order and %s ticket in the same serializable transaction',
+      async (status, ticketStatus) => {
+        tx.order.findFirst.mockResolvedValue({
+          ...draft,
+          status,
+          kitchen_tickets_order: { status: ticketStatus },
+        });
+        const result = await service.cancel('brand', 'order', 'actor', reason);
+        expect(tx.kitchenTicket.update).toHaveBeenCalledWith({
+          where: { order_id: 'order' },
+          data: {
+            status: 'CANCELLED',
+            cancelled_at: result.cancelled_at,
+            modified_at: result.cancelled_at,
+          },
+        });
+        expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+          isolationLevel: 'Serializable',
+        });
+      },
+    );
+
+    it.each([null, { status: 'CANCELLED' }])(
+      'returns the original cancellation on retries without writing',
+      async (ticket) => {
+        const saved = {
+          ...draft,
+          status: 'CANCELLED',
+          kitchen_tickets_order: ticket,
+          cancelled_by_id: 'original-actor',
+          cancellation_reason: 'Original reason',
+          cancelled_at: new Date(),
+        };
+        tx.order.findFirst.mockResolvedValue(saved);
+        const result = await service.cancel(
+          'brand',
+          'order',
+          'other-actor',
+          reason,
+        );
+        expect(result).toMatchObject({
+          cancelled_by_id: saved.cancelled_by_id,
+          cancellation_reason: saved.cancellation_reason,
+          cancelled_at: saved.cancelled_at,
+        });
+        expect(tx.order.update).not.toHaveBeenCalled();
+        expect(tx.kitchenTicket.update).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      ['COMPLETED', 'HANDED_OVER'],
+      ['CONFIRMED', 'HANDED_OVER'],
+      ['DRAFT', 'QUEUED'],
+      ['CONFIRMED', null],
+      ['CANCELLED', 'QUEUED'],
+      ['CONFIRMED', 'CANCELLED'],
+    ])(
+      'rejects invalid state %s / %s before writing',
+      async (status, ticketStatus) => {
+        tx.order.findFirst.mockResolvedValue({
+          ...draft,
+          status,
+          kitchen_tickets_order: ticketStatus ? { status: ticketStatus } : null,
+        });
+        await expect(
+          service.cancel('brand', 'order', 'actor', reason),
+        ).rejects.toBeInstanceOf(ConflictException);
+        expect(tx.order.update).not.toHaveBeenCalled();
+        expect(tx.kitchenTicket.update).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(['', '   ', 'x'.repeat(1001), null, 123])(
+      'rejects an invalid cancellation reason (%p)',
+      async (value) => {
+        await expect(
+          service.cancel('brand', 'order', 'actor', {
+            cancellation_reason: value as string,
+          }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(prisma.$transaction).not.toHaveBeenCalled();
+      },
+    );
+
+    it('rejects a missing order or order outside the requested brand', async () => {
+      tx.order.findFirst.mockResolvedValue(null);
+      await expect(
+        service.cancel('other-brand', 'order', 'actor', reason),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(tx.order.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { order_id: 'order', brand_id: 'other-brand' },
+        }),
+      );
+    });
+
+    it('does not update the order if the ticket update fails', async () => {
+      tx.order.findFirst.mockResolvedValue({
+        ...draft,
+        status: 'CONFIRMED',
+        kitchen_tickets_order: { status: 'QUEUED' },
+      });
+      tx.kitchenTicket.update.mockRejectedValue(
+        new Error('Ticket write failed'),
+      );
+      await expect(
+        service.cancel('brand', 'order', 'actor', reason),
+      ).rejects.toThrow('Ticket write failed');
+      expect(tx.order.update).not.toHaveBeenCalled();
+    });
   });
 });
