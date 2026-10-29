@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/design_only_example_card.dart';
+import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_states/design_only_example_card.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_queue_panel.dart';
-import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/no_active_tickets_pill.dart';
+import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_states/no_active_tickets_pill.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/queue_clear_header.dart';
-import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/refresh_queue_button.dart';
-import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/what_happens_next_card.dart';
+import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_states/refresh_queue_button.dart';
+import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_states/what_happens_next_card.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_metrics.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_palette.dart';
 

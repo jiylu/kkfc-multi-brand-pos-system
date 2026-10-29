@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/empty_queue_view.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_board_heading.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_filter_bar.dart';
-import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_sample_badge.dart';
+import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_states/kitchen_sample_badge.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_stage_tabs.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_breakpoints.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_destination.dart';

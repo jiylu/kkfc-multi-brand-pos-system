@@ -22,11 +22,13 @@ class KitchenPhoneHeader extends StatelessWidget {
           Padding(
             padding: EdgeInsets.all(KitchenSpace.md),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Flexible(child: KitchenBrandCard()),
                 SizedBox(width: KitchenSpace.md),
                 const Flexible(child: KitchenStaffIdentity(status: 'Authorized')),
-                const Spacer(),
+                SizedBox(width: KitchenSpace.sm),
                 LogoutButton(
                   color: context.kitchenOnChrome,
                   constraints: const BoxConstraints(

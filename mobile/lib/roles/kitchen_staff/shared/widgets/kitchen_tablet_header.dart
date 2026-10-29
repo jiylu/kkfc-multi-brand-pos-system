@@ -16,9 +16,10 @@ class KitchenTabletHeader extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: KitchenSpace.lg, vertical: KitchenSpace.md),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SizedBox(width: KitchenMetrics.sideNavWidth - KitchenSpace.lg),
-            const KitchenBrandCard(),
+            const Flexible(child: KitchenBrandCard()),
             SizedBox(width: KitchenSpace.md),
             const Flexible(
               child: KitchenSegmentTabs(
