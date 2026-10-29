@@ -33,6 +33,7 @@ migrate_working_dir/
 /build/
 /coverage/
 /reports/
+/.fixtures/
 
 # Symbolication related
 app.*.symbols

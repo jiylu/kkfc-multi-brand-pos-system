@@ -82,4 +82,21 @@ void main() {
         .replaceAll('IT-MOB-AUTH-002', 'IT-MOB-AUTH-001');
     expect(() => readAuthScenarios(source), throwsFormatException);
   });
+
+  test('POS scenarios map only to their separate integration test IDs', () {
+    final pos = readAuthScenarios(
+      File('../features/mobile/pos-core.integration.feature')
+          .readAsStringSync(),
+    );
+    expect(pos.map((s) => s['id']), [
+      'IT-MOB-POS-001',
+      'IT-MOB-POS-002',
+      'IT-MOB-POS-003',
+    ]);
+    final results = scenarioResults(pos, [
+      {'name': 'IT-MOB-POS-001 core flow', 'status': 'Passed'},
+      {'name': 'IT-MOB-AUTH-001 login', 'status': 'Passed'},
+    ]);
+    expect(results.map((s) => s['status']), ['Passed', 'Not run', 'Not run']);
+  });
 }

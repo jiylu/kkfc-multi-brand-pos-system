@@ -8,6 +8,7 @@ Future<void> main(List<String> args) async {
   if (args.contains('--help') || args.contains('-h')) {
     stdout.writeln(
       'Run from mobile/: dart run tool/run_integration_tests.dart -d <device-id>\n'
+      'Use --suite=pos for the separate Login -> Brand/Channel -> Menu -> Cart suite.\n'
       'Additional Flutter test arguments are forwarded. The default config is\n'
       'env/test-emulator.json unless you supply any --dart-define option.\n'
       'Reports: reports/integration/<timestamp>/report.html, results.json, run.log',
@@ -15,6 +16,15 @@ Future<void> main(List<String> args) async {
     return;
   }
   final started = DateTime.now().toUtc();
+  final suiteOptions = args.where((arg) => arg.startsWith('--suite=')).toList();
+  final suite = suiteOptions.isEmpty
+      ? 'auth'
+      : suiteOptions.single.substring('--suite='.length);
+  final forwarded = args.where((arg) => !arg.startsWith('--suite=')).toList();
+  final isPos = suite == 'pos';
+  final featureFile = isPos
+      ? 'pos-core.integration.feature'
+      : 'auth-api.integration.feature';
   final directory = Directory.fromUri(
     Platform.script.resolve(
       '../reports/integration/${started.toIso8601String().replaceAll(':', '-')}/',
@@ -25,21 +35,24 @@ Future<void> main(List<String> args) async {
   final report = IntegrationReport();
   final arguments = [
     'test',
-    'integration_test/auth_api_test.dart',
-    if (!args.any((arg) => arg.startsWith('--dart-define')))
-      '--dart-define-from-file=env/test-emulator.json',
-    ...args,
+    isPos
+        ? 'integration_test/pos_core_test.dart'
+        : 'integration_test/auth_api_test.dart',
+    if (!forwarded.any((arg) => arg.startsWith('--dart-define')))
+      '--dart-define-from-file=${isPos ? '.fixtures/pos-flow.json' : 'env/test-emulator.json'}',
+    ...forwarded,
     '--machine',
   ];
   var resultCode = 1;
   String? launchError;
   var scenarios = <Map<String, String>>[];
   try {
+    if (suite != 'auth' && suite != 'pos') {
+      throw ArgumentError('Choose --suite=auth or --suite=pos.');
+    }
     scenarios = readAuthScenarios(
       await File.fromUri(
-        Platform.script.resolve(
-          '../../features/mobile/auth-api.integration.feature',
-        ),
+        Platform.script.resolve('../../features/mobile/$featureFile'),
       ).readAsString(),
     );
     if (!args.contains('-d') &&
@@ -84,7 +97,9 @@ Future<void> main(List<String> args) async {
     launchError: launchError,
     scenarios: scenarios,
   );
-  await File('${directory.path}/auth-api.integration.feature')
+  summary['gherkinFile'] = featureFile;
+  if (isPos) summary['title'] = 'Mobile POS core flow integration test report';
+  await File('${directory.path}/$featureFile')
       .writeAsString(gherkinWithResults(summary));
   await File('${directory.path}/results.json')
       .writeAsString(const JsonEncoder.withIndent('  ').convert(summary));
