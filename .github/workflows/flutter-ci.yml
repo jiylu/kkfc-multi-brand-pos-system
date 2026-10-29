@@ -44,8 +44,24 @@ jobs:
       - name: Static code analysis (flutter analyze)
         run: flutter analyze
 
-      - name: Run unit & widget tests (flutter test)
-        run: flutter test --coverage
+      - name: Run unit, widget & golden tests with reports
+        run: dart run tool/run_flutter_tests.dart --coverage
+
+      - name: Upload Flutter HTML, Gherkin & JSON test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-test-results
+          path: mobile/reports/flutter/
+          if-no-files-found: ignore
+
+      - name: Upload Golden Failure Images
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-golden-failures
+          path: mobile/test/**/failures/
+          if-no-files-found: ignore
 
       - name: Upload Test Coverage Artifact
         if: always()
