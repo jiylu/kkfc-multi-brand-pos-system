@@ -50,6 +50,11 @@ class MenuHeader extends ConsumerWidget {
     if (token == null) return;
 
     unawaited(ref.read(authRepositoryProvider).logout(token));
+    ref.read(cartProvider.notifier).clear();
+    ref.read(orderReferenceProvider.notifier).clear();
+    ref.read(storeReferenceProvider.notifier).clear();
+    ref.read(menuSearchProvider.notifier).clear();
+    ref.read(menuChannelProvider.notifier).reset();
     ref.read(sessionExpiredProvider.notifier).set(false);
     ref.read(sessionTokenProvider.notifier).setToken(null);
   }

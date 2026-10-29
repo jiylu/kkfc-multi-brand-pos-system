@@ -68,8 +68,8 @@ class OrderConfirmedViewData {
     final isPaid = payment.toLowerCase() == 'paid';
 
     return OrderConfirmedViewData(
-      tag: 'Order ${order.toLowerCase()}',
-      title: 'Order ${order.toLowerCase()}',
+      tag: 'Order confirmed',
+      title: 'Order confirmed',
       compactTitle: 'Order sent!',
       subtitle: '$ticketNumber is ready for the kitchen team.',
       eyebrow: 'KITCHEN HANDOFF',

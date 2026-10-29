@@ -29,6 +29,11 @@ class MenuChannelNotifier extends Notifier<MenuChannel> {
     state = previous;
     return true;
   }
+
+  void reset() {
+    _previous = null;
+    state = MenuChannel.dineIn;
+  }
 }
 
 final menuChannelProvider = NotifierProvider<MenuChannelNotifier, MenuChannel>(
@@ -221,7 +226,6 @@ class CartNotifier extends Notifier<List<CartLine>> {
 }
 
 /// Not autoDispose: the draft order must survive tab changes.
-/// TODO: clear on sign-out so the next cashier never sees it.
 final cartProvider = NotifierProvider<CartNotifier, List<CartLine>>(
   CartNotifier.new,
 );
