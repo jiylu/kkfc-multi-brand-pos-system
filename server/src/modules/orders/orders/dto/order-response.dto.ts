@@ -182,6 +182,35 @@ export class OrderResponseDTO {
   kitchen_tickets_order: OrderTicketResponseDTO | null;
 }
 
+export class CreateOrderConflictResponseDTO {
+  @ApiProperty({ example: 409, enum: [409] })
+  statusCode: number;
+
+  @ApiProperty({ example: 'Conflict' })
+  error: string;
+
+  @ApiProperty({
+    enum: [
+      'DUPLICATE_PLATFORM_ORDER',
+      'ORDER_ID_CONFLICT',
+      'ORDER_RETRY_REQUIRED',
+    ],
+  })
+  code: string;
+
+  @ApiProperty({ example: 'Platform order already exists.' })
+  message: string;
+
+  @ApiProperty({
+    type: OrderResponseDTO,
+    nullable: true,
+    required: false,
+    description:
+      'Only present for DUPLICATE_PLATFORM_ORDER. Saved order in the requested brand, otherwise null. Restricted recipe snapshots and request hashes are omitted.',
+  })
+  existing_order?: OrderResponseDTO | null;
+}
+
 export class VerifiedModifierResponseDTO {
   @ApiProperty({ type: String, format: 'uuid' })
   modifier_id: string;
