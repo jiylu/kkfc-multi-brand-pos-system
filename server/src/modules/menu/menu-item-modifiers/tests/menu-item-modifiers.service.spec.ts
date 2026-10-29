@@ -426,10 +426,18 @@ describe('Menu item modifiers persistence', () => {
         where: { menu_item_modifier_id: 'assignment-id', is_available },
       });
 
+      const assignmentWithModifier = {
+        ...assignment,
+        modifier: { modifier_id: 'modifier-id', name: 'Extra cheese' },
+      };
+      prisma.menuItemModifier.findMany.mockResolvedValueOnce([
+        assignmentWithModifier,
+      ]);
       await expect(
         repository.findManyForMenuItem('menu-id', activeOnly),
-      ).resolves.toEqual([assignment]);
+      ).resolves.toEqual([assignmentWithModifier]);
       expect(prisma.menuItemModifier.findMany).toHaveBeenLastCalledWith({
+        include: { modifier: true },
         where: { menu_item_id: 'menu-id', is_available },
       });
 
