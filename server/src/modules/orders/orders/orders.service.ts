@@ -132,9 +132,12 @@ export class OrdersService {
           existing.brand_id !== brandId ||
           existing.create_request_hash !== hash
         )
-          throw new ConflictException(
-            'Order ID was already used for a different request.',
-          );
+          throw new ConflictException({
+            statusCode: 409,
+            error: 'Conflict',
+            code: 'ORDER_ID_CONFLICT',
+            message: 'Order ID was already used for a different request.',
+          });
         return this.response(existing);
       }
       if (this.platform(dto.order_channel)) {
@@ -152,9 +155,16 @@ export class OrdersService {
           tx,
         );
         if (duplicate)
-          throw new ConflictException(
-            'Platform order already exists. Retry with its original order ID.',
-          );
+          throw new ConflictException({
+            statusCode: 409,
+            error: 'Conflict',
+            code: 'DUPLICATE_PLATFORM_ORDER',
+            message: 'Platform order already exists.',
+            // Creation authorizes the URL brand, not the globally unique
+            // platform identity. Never expose an order from another brand.
+            existing_order:
+              duplicate.brand_id === brandId ? this.response(duplicate) : null,
+          });
       } else if (dto.merchant_store_reference || dto.external_order_reference) {
         throw new BadRequestException(
           'Platform references are only valid for platform orders.',

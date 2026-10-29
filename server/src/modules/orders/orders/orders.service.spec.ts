@@ -639,6 +639,12 @@ describe('Order lifecycle', () => {
         merchant_store_reference: 'store',
         external_order_reference: 'external',
       },
+      include: {
+        order_items_order: {
+          include: { order_item_modifiers_order_item: true },
+        },
+        kitchen_tickets_order: true,
+      },
     });
     expect(tx.order.create).not.toHaveBeenCalled();
   });
@@ -703,6 +709,60 @@ describe('Order lifecycle', () => {
         external_order_reference: 'external',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+    expect(tx.order.create).not.toHaveBeenCalled();
+  });
+
+  it.each(['brand', 'other-brand'])(
+    'returns duplicate details only for the requested brand (%s)',
+    async (existingBrand) => {
+      tx.order.findFirst.mockResolvedValue({
+        ...draft,
+        brand_id: existingBrand,
+        create_request_hash: 'private-hash',
+        order_items_order: [
+          { ...draft.order_items_order[0], recipe_snapshot: recipe },
+        ],
+      });
+      const error = await service
+        .create('brand', 'actor', {
+          ...request,
+          order_id: 'different-order',
+          order_channel: 'GRABFOOD',
+          merchant_store_reference: 'store',
+          external_order_reference: 'external',
+        })
+        .catch((error: unknown) => error);
+      expect(error).toBeInstanceOf(ConflictException);
+      const body = (error as ConflictException).getResponse();
+      expect(body).toMatchObject({
+        statusCode: 409,
+        code: 'DUPLICATE_PLATFORM_ORDER',
+        existing_order:
+          existingBrand === 'brand' ? { order_id: 'order' } : null,
+      });
+      expect(JSON.stringify(body)).not.toContain('recipe_snapshot');
+      expect(JSON.stringify(body)).not.toContain('private-hash');
+      expect(JSON.stringify(body)).not.toContain('other-brand');
+      expect(tx.orderDailyCounter.upsert).not.toHaveBeenCalled();
+      expect(tx.order.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it('returns an opaque conflict when an order UUID belongs to another brand', async () => {
+    tx.order.findUnique.mockResolvedValue({
+      ...draft,
+      brand_id: 'other-brand',
+    });
+    const error = await service
+      .create('brand', 'actor', request)
+      .catch((error: unknown) => error);
+    expect(error).toBeInstanceOf(ConflictException);
+    expect((error as ConflictException).getResponse()).toEqual({
+      statusCode: 409,
+      error: 'Conflict',
+      code: 'ORDER_ID_CONFLICT',
+      message: 'Order ID was already used for a different request.',
+    });
     expect(tx.order.create).not.toHaveBeenCalled();
   });
   describe('cancellation', () => {

@@ -284,12 +284,90 @@ payment inputs are rejected. There is no later payment endpoint in this change.
 
 Reuse the same `order_id` and create payload after a timeout. A replay returns the
 existing order; changing that payload returns 409. Duplicate platform references
-with a different ID return 409. New IDs for otherwise identical internal orders
-represent distinct orders. Confirmation is first-success-wins: subsequent calls
-return the saved order/ticket and cannot change payment or snapshots.
+with a different ID return 409 with the authorized existing order as described
+below. New IDs for otherwise identical internal orders represent distinct orders.
+Confirmation is first-success-wins: subsequent calls return the saved order/ticket
+and cannot change payment or snapshots.
 Platform and table references are trimmed before hashing or saving. Verify and
 confirm reject cancelled orders and inconsistent order/ticket states, including
 on retries. Cancellation retries return the original saved cancellation.
+
+### Duplicate identity and timeout recovery contract
+
+The client must generate and persist one `order_id` UUID before its first create
+attempt and keep that UUID and payload across network errors, timeouts, application
+restarts, and retries. The UUID is globally unique; replay is allowed only within
+the requested, authorized brand. It is not scoped to a terminal or session: another
+authorized staff member in that brand can recover the same submission. Normal
+session, role and brand checks run on every request, including replays.
+
+The server stores a SHA-256 fingerprint with the order in the same transaction.
+It covers brand, channel, normalized store/external/table references, order notes,
+and the ordered lines (menu UUID, quantity, line notes and sorted modifier UUIDs).
+JSON property order and modifier order do not affect the fingerprint. Omitted
+notes and null notes are equivalent; other notes are compared exactly. Line order
+is significant. Actor, current catalog values and later payment/status changes
+are excluded. Fingerprints and UUIDs have no automatic expiry: they remain for the
+retained order's lifetime, including cancelled orders. Do not purge orders or reuse
+their UUIDs while clients can still retry; purged records cannot provide replay
+protection. Legacy orders with a null fingerprint cannot be replayed as creates
+and return `ORDER_ID_CONFLICT`.
+
+For GRABFOOD/FOODPANDA, both references must be nonblank strings of at most 255
+characters before persistence. Surrounding whitespace is removed using JavaScript
+`trim()`. Comparison after trimming is exact and case-sensitive: no case folding,
+Unicode normalization, internal whitespace removal or punctuation removal is
+performed. The identity is `(order_channel, merchant_store_reference,
+external_order_reference)` globally, matching the database unique constraint.
+A different channel or store is a permitted lookalike. Brand is not part of this
+platform identity. The same identity blocks a second order even when its new UUID,
+lines or notes differ, or the original order has been confirmed or cancelled.
+
+Create conflicts have these stable codes:
+
+| HTTP/code | Meaning and client behavior |
+| --- | --- |
+| `201` (saved order) | This UUID and payload committed, or were already committed. Use the returned current order and ticket; do not create another UUID after a timeout. |
+| `409 DUPLICATE_PLATFORM_ORDER` | A different UUID already owns the platform identity. `existing_order` contains the current saved order only if it belongs to the requested brand; otherwise it is null. Show the duplicate screen; never automatically confirm or replace its content. |
+| `409 ORDER_ID_CONFLICT` | The UUID belongs to a different brand or was reused with changed content (or has no legacy fingerprint). No existing-order data is returned. Reconcile the original submission; this is not a successful replay. |
+| `409 ORDER_RETRY_REQUIRED` | Five database-conflict attempts were exhausted. Retry with backoff using the same UUID and unchanged body; the next request will return the winner if it committed. |
+
+Example duplicate response, with the full redacted OrderResponse object abbreviated
+here for readability:
+
+```json
+{
+  "statusCode": 409,
+  "error": "Conflict",
+  "code": "DUPLICATE_PLATFORM_ORDER",
+  "message": "Platform order already exists.",
+  "existing_order": {
+    "order_id": "11111111-1111-4111-8111-111111111111",
+    "status": "DRAFT"
+  }
+}
+```
+
+No other brand's UUID, code, lines, payment or ticket details are included, even
+when a superadmin submits to a different brand route. Duplicate and replay order
+objects use the same redaction as successful create/confirm responses: request
+fingerprints and restricted recipe snapshots are omitted.
+
+A lost response does not mean the operation failed. Repeat the original create to
+recover its saved state, and repeat confirmation against the returned order UUID
+to recover its first committed ticket/payment/snapshots. Genuine pre-commit
+failures roll back the order/counter/lines or confirmation/ticket/snapshots together;
+the same request can then commit normally. Concurrent attempts run in serializable
+transactions with unique constraints and bounded whole-transaction retries, rather
+than depending on the duplicate lookup alone. Ticket sequence values can be
+consumed by failed transactions, leaving gaps without duplicate persisted numbers.
+
+Backend regression coverage is in `catalog-orders.http.spec.ts` (IT-ORD-005/006
+and IT-ORD-009 through IT-ORD-017), with a migrated isolated PostgreSQL test
+database required via `TEST_DATABASE_URL`. This provides implementation regression
+evidence; independently designed student QA and PO review remain separate. These
+tests do not establish exactly-once stock deduction: Sprint 1 performs no stock
+posting. This change does not update coursework checklists or sign-off status.
 
 Every draft receives a server-generated `order_code`, such as `GC-00001`.
 Create/confirm/cancel responses include `order_code`, `order_date` (the Manila calendar
@@ -319,7 +397,10 @@ maximum. Historical `created_at` timestamps are interpreted as UTC.
 Serializable transactions retry database conflicts up to five attempts. Database
 unique constraints protect order IDs, platform references, ticket numbers and
 one ticket per order. Snapshots and status roll back if ticket creation fails.
-Retries use bounded backoff with jitter. Stored line quantities, modifier
+Retries cover Prisma P2034/P2002 conflicts and pg adapter serialization/deadlock
+failures (SQLSTATE 40001/40P01) surfaced during COMMIT. They use bounded backoff
+with jitter. Connection failures with an unknown commit outcome are propagated;
+clients recover by retrying the original identity. Stored line quantities, modifier
 uniqueness, catalog prices and recipe component quantities are checked again
 before confirmation to catch invalid data introduced outside the HTTP API.
 

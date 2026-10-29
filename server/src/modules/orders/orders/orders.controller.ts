@@ -8,6 +8,7 @@ import {
 import {
   OrderResponseDTO,
   VerifyOrderResponseDTO,
+  CreateOrderConflictResponseDTO,
 } from './dto/order-response.dto';
 import {
   Body,
@@ -78,6 +79,12 @@ export class OrdersController {
     type: OrderResponseDTO,
     description:
       'Created draft or existing order on an identical replay. Internal drafts have null payment_method; platform drafts use PLATFORM_SETTLED/PAID. No ticket until confirmation.',
+  })
+  @ApiResponse({
+    status: 409,
+    type: CreateOrderConflictResponseDTO,
+    description:
+      'DUPLICATE_PLATFORM_ORDER blocks a second draft and includes existing_order only within the requested brand (otherwise null). ORDER_ID_CONFLICT rejects a changed payload or brand. ORDER_RETRY_REQUIRED means retry the same UUID and payload.',
   })
   @Post()
   @BrandResource(BrandResourceType.BRAND, 'brandId')
