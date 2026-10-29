@@ -29,7 +29,10 @@ Future<ProviderContainer> _pump(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final container = ProviderContainer(
-    overrides: [assignedBrandsProvider.overrideWithValue(_brands)],
+    overrides: [
+      assignedBrandsProvider.overrideWithValue(_brands),
+      assignedBrandProvider.overrideWith((ref) async => _brands[0]),
+    ],
   );
   addTearDown(container.dispose);
   container.read(activeBrandProvider.notifier).select(_brands[0]);
@@ -63,11 +66,7 @@ Future<ProviderContainer> _pump(
   return container;
 }
 
-Future<void> _continue(WidgetTester tester, {bool target = true}) async {
-  if (target) {
-    await tester.tap(find.text('BB · Brand B'));
-    await tester.pumpAndSettle();
-  }
+Future<void> _continue(WidgetTester tester) async {
   final button = find.text('Continue with selected brand');
   await tester.ensureVisible(button);
   await tester.tap(button);
@@ -76,29 +75,24 @@ Future<void> _continue(WidgetTester tester, {bool target = true}) async {
 
 void main() {
   testWidgets(
-    'IT-MOB-BRAND-001 Given a populated cart When cancelling a brand switch Then preserve brand and cart',
+    'IT-MOB-BRAND-001 Given a populated cart When continuing with the only assigned brand Then preserve brand and cart',
     (tester) async {
       final container = await _pump(tester);
       final before = container.read(cartProvider);
       await _continue(tester);
-      expect(find.text('Switch to Brand B?'), findsOneWidget);
-      await tester.tap(find.text('Keep current order'));
-      await tester.pumpAndSettle();
+      expect(find.text('Clear cart & switch'), findsNothing);
       expect(container.read(activeBrandProvider).id, 'a');
       expect(container.read(cartProvider), same(before));
     },
   );
 
   testWidgets(
-    'IT-MOB-BRAND-002 Given a populated cart When confirming a brand switch Then select the target and clear the cart',
+    'IT-MOB-BRAND-002 Given an assigned brand When opening the picker Then show no demo brands',
     (tester) async {
       final container = await _pump(tester);
-      await _continue(tester);
-      await tester.tap(find.text('Clear cart & switch'));
-      await tester.pumpAndSettle();
-      expect(container.read(activeBrandProvider).id, 'b');
-      expect(container.read(cartProvider), isEmpty);
-      expect(container.read(cartTotalProvider), 0);
+      expect(find.text('Brand A'), findsWidgets);
+      expect(find.text('Brand B'), findsNothing);
+      expect(container.read(activeBrandProvider).id, 'a');
     },
   );
 
@@ -107,7 +101,7 @@ void main() {
     (tester) async {
       final container = await _pump(tester);
       final before = container.read(cartProvider);
-      await _continue(tester, target: false);
+      await _continue(tester);
       expect(find.text('Clear cart & switch'), findsNothing);
       expect(container.read(activeBrandProvider).id, 'a');
       expect(container.read(cartProvider), same(before));
@@ -128,17 +122,12 @@ void main() {
   );
 
   testWidgets(
-    'IT-MOB-BRAND-005 Given an empty cart When switching brand Then skip confirmation and invalidate the menu',
+    'IT-MOB-BRAND-005 Given an empty cart When continuing with the assigned brand Then do not switch menus',
     (tester) async {
       final container = await _pump(tester, empty: true);
-      container.listen(menuItemsProvider, (_, _) {});
-      final before = container.read(menuItemsProvider.future);
-      await tester.pump(const Duration(seconds: 1));
       await _continue(tester);
       expect(find.text('Clear cart & switch'), findsNothing);
-      expect(container.read(activeBrandProvider).id, 'b');
-      expect(container.read(menuItemsProvider.future), isNot(same(before)));
-      await tester.pump(const Duration(seconds: 1));
+      expect(container.read(activeBrandProvider).id, 'a');
     },
   );
 
@@ -153,11 +142,8 @@ void main() {
       expect(tester.takeException(), isNull);
       await _continue(tester);
       expect(tester.takeException(), isNull);
-      final confirm = find.text('Clear cart & switch');
-      await tester.ensureVisible(confirm);
-      await tester.tap(confirm);
-      await tester.pumpAndSettle();
-      expect(container.read(activeBrandProvider).id, 'b');
+      expect(find.text('Clear cart & switch'), findsNothing);
+      expect(container.read(activeBrandProvider).id, 'a');
       expect(tester.takeException(), isNull);
     },
   );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/theme_context.dart';
 import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/shared/shared_layout.dart';
+import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
 import 'package:mobile/features/new_order/presentation/widgets/menu_dialog.dart';
 import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
 
@@ -139,12 +140,17 @@ class _BrandTile extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 80),
+                      child: BrandLogo(brand: brand, height: 32),
+                    ),
+                    const SizedBox(width: MenuSpace.sm),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${brand.code} · ${brand.name}',
+                            brand.name,
                             style: text.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),

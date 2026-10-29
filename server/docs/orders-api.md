@@ -26,6 +26,31 @@ return the saved order/ticket and cannot change payment or snapshots.
 Platform and table references are trimmed before hashing or saving. Cancelled
 orders and inconsistent order/ticket states are rejected, including on retries.
 
+Every draft receives a server-generated `order_code`, such as `GC-00001`.
+Create/confirm responses include `order_code`, `order_date` (the Manila calendar
+date, serialized as midnight UTC), and `order_number`. Clients must continue using
+the `order_id` UUID for identity, routes, and retries; codes repeat on later dates.
+Clients cannot supply the code fields in request bodies.
+
+Numbers start at 1 independently for each brand and reset at midnight in
+`Asia/Manila`, shared across all channels and terminals. Five digits is the minimum
+width: `GC-99999` is followed by `GC-100000`. Drafts, including abandoned or
+cancelled orders, keep their numbers. Brand code changes affect future orders;
+previous codes retain their saved prefix. UUID replays keep the original code,
+including across midnight.
+
+The per-brand/date database counter and order are saved in the same serializable
+transaction. A failed create rolls back the increment. A new date creates a new
+counter row automatically; no scheduled reset is required. A database constraint
+enforces uniqueness of `(brand_id, order_date, order_number)`, while `order_code`
+itself is not unique.
+
+Pause order writes while deploying the daily-code migration, then deploy the
+updated server before resuming writes. Existing orders are numbered by brand and
+Manila creation date, oldest first with UUID as the tie-breaker, using each brand's
+current code. UUIDs remain unchanged, and counters continue from the backfilled
+maximum. Historical `created_at` timestamps are interpreted as UTC.
+
 Serializable transactions retry database conflicts up to five attempts. Database
 unique constraints protect order IDs, platform references, ticket numbers and
 one ticket per order. Snapshots and status roll back if ticket creation fails.

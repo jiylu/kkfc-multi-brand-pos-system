@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
+import 'package:mobile/features/new_order/presentation/customize_flow.dart';
 
 class CartLineTile extends ConsumerWidget {
   const CartLineTile({super.key, required this.line, required this.channel});
@@ -14,9 +15,7 @@ class CartLineTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final modifier = line.extraRice
-        ? 'Plain rice · Extra rice +${formatPeso(kExtraRiceCentavos)}'
-        : 'Plain rice';
+    final modifiers = line.modifierSummary;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: MenuSpace.sm),
@@ -42,17 +41,19 @@ class CartLineTile extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  modifier,
-                  style: text.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
+                child: modifiers.isEmpty
+                    ? const SizedBox.shrink()
+                    : Text(
+                        modifiers.join(' · '),
+                        style: text.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
               ),
               IconButton.outlined(
                 tooltip: 'Remove one',
                 onPressed: () =>
-                    ref.read(cartProvider.notifier).decrement(line.item.id),
+                    ref.read(cartProvider.notifier).decrementLine(line.id),
                 icon: const Icon(Icons.remove),
               ),
               AnimatedSwitcher(
@@ -69,6 +70,12 @@ class CartLineTile extends ConsumerWidget {
                 tooltip: 'Add one',
                 onPressed: () => ref.read(cartProvider.notifier).add(line.item),
                 icon: const Icon(Icons.add),
+              ),
+              IconButton(
+                tooltip: 'Edit item',
+                icon: const Icon(Icons.tune),
+                onPressed: () =>
+                    openCustomize(context, ref, item: line.item, editing: line),
               ),
             ],
           ),

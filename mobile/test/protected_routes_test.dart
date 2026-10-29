@@ -6,8 +6,11 @@ import 'package:mobile/app/router.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/core/auth/token_store.dart';
 import 'package:mobile/features/auth/presentation/pages/login_screen.dart';
+import 'package:mobile/features/availability/providers/availability_providers.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
+import 'package:mobile/features/new_order/data/seed/sample_brands.dart';
+import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 
 class _MemoryTokenStore extends TokenStore {
@@ -57,6 +60,7 @@ void main() {
             initialTokenProvider.overrideWithValue('fixture-token'),
             tokenStoreProvider.overrideWithValue(_MemoryTokenStore()),
             menuItemsProvider.overrideWith((ref) async => []),
+            availabilityMenuItemsProvider.overrideWith((ref) async => []),
           ],
         );
         addTearDown(container.dispose);
@@ -101,6 +105,9 @@ void main() {
         overrides: [
           initialTokenProvider.overrideWithValue('fixture-token'),
           menuItemsProvider.overrideWith((ref) async => []),
+          assignedBrandProvider.overrideWith(
+            (ref) async => sampleAssignedBrands[1],
+          ),
         ],
       );
       addTearDown(container.dispose);

@@ -17,8 +17,11 @@ void main() {
     testWidgets('tapping a different channel updates state and notifies', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)],
+      );
       addTearDown(container.dispose);
+      container.read(cartProvider.notifier).add(sampleMenu[0]);
       MenuChannel? notified;
 
       await tester.pumpWidget(
@@ -41,8 +44,11 @@ void main() {
     });
 
     testWidgets('tapping the current channel does not notify', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)],
+      );
       addTearDown(container.dispose);
+      container.read(cartProvider.notifier).add(sampleMenu[0]);
       MenuChannel? notified;
 
       await tester.pumpWidget(
@@ -91,6 +97,7 @@ void main() {
         overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)],
       );
       addTearDown(container.dispose);
+      container.read(cartProvider.notifier).add(sampleMenu[0]);
 
       await tester.pumpWidget(
         UncontrolledProviderScope(

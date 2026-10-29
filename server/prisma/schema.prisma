@@ -235,16 +235,21 @@ model Brand {
   modified_at DateTime @default(now()) @db.Timestamp(6)
   is_active   Boolean  @default(true)
 
-  users_brand      User[]     @relation("UserBrand")
-  orders_brand     Order[]    @relation("OrderBrand")
-  menu_items_brand MenuItem[] @relation("MenuItemBrand")
-  recipes_brand    Recipe[]   @relation("RecipeBrand")
+  users_brand                User[]              @relation("UserBrand")
+  orders_brand               Order[]             @relation("OrderBrand")
+  menu_items_brand           MenuItem[]          @relation("MenuItemBrand")
+  recipes_brand              Recipe[]            @relation("RecipeBrand")
+  order_daily_counters_brand OrderDailyCounter[] @relation("OrderDailyCounterBrand")
 
   @@map("brands")
 }
 
 model Order {
   order_id                 String         @id @default(uuid()) @db.Uuid
+  /// Saved brand prefix and daily number; repeats on different Manila dates.
+  order_code               String         @db.VarChar(64)
+  order_date               DateTime       @db.Date
+  order_number             Int
   create_request_hash      String?        @db.VarChar(64)
   brand_id                 String         @db.Uuid
   created_by_id            String         @db.Uuid
@@ -276,8 +281,20 @@ model Order {
   kitchen_tickets_order KitchenTicket? @relation("KitchenTicketOrder")
 
   @@unique([order_channel, merchant_store_reference, external_order_reference])
+  @@unique([brand_id, order_date, order_number])
   @@index([brand_id, created_at])
   @@map("orders")
+}
+
+model OrderDailyCounter {
+  brand_id    String   @db.Uuid
+  order_date  DateTime @db.Date
+  last_number Int
+
+  brand Brand @relation("OrderDailyCounterBrand", fields: [brand_id], references: [brand_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([brand_id, order_date])
+  @@map("order_daily_counters")
 }
 
 model OrderItem {

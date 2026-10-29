@@ -23,7 +23,17 @@ class ChannelTabs extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final active = selected ?? ref.watch(menuChannelProvider);
+    final channels = ref.watch(availableChannelsProvider);
     final scheme = Theme.of(context).colorScheme;
+
+    // If the active channel isn't offered for this brand, fall back to the
+    // first one that is, so a tab is always highlighted.
+    if (selected == null && !channels.contains(active)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        ref.read(menuChannelProvider.notifier).select(channels.first);
+      });
+    }
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -40,7 +50,7 @@ class ChannelTabs extends ConsumerWidget {
           spacing: MenuSpace.xs,
           runSpacing: MenuSpace.xs,
           children: [
-            for (final channel in MenuChannel.values)
+            for (final channel in channels)
               _ChannelTab(
                 channel: channel,
                 selected: channel == active,

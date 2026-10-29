@@ -7,21 +7,28 @@ class BrandLogo extends StatelessWidget {
   final AssignedBrand brand;
   final double height;
 
-  static const _assets = <String, String>{
-    'gamcheon': 'assets/images/gamcheon.png',
-    'aurelias-inasal': 'assets/images/aurelia.png',
-    'king-kungs-kafe': 'assets/images/king_kungs.png',
+  static const _assetsByCode = <String, String>{
+    'GC': 'assets/images/gamcheon.png',
+    'AI': 'assets/images/aurelia.png',
+    'KK': 'assets/images/king_kungs.png',
   };
+
+  /// Asset path for a brand code (GC, AI, KK), or null when unknown.
+  static String? assetFor(String code) =>
+      _assetsByCode[code.trim().toUpperCase()];
 
   @override
   Widget build(BuildContext context) {
-    final asset = _assets[brand.id];
+    final asset = assetFor(brand.code);
     if (asset == null) return Text(brand.name);
 
     return Image.asset(
       asset,
+      key: ValueKey(asset),
       height: height,
       fit: BoxFit.contain,
+      filterQuality: FilterQuality.medium,
+      gaplessPlayback: true,
       semanticLabel: brand.name,
       errorBuilder: (_, _, _) => Text(brand.name),
     );

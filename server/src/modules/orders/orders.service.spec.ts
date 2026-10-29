@@ -17,6 +17,10 @@ describe('Order lifecycle', () => {
   };
   const draft = {
     order_id: 'order',
+    order_code: 'GC-00001',
+    order_date: new Date('2026-10-29T00:00:00Z'),
+    order_number: 1,
+    created_at: new Date('2026-10-28T16:00:00Z'),
     brand_id: 'brand',
     status: 'DRAFT',
     create_request_hash: null,
@@ -48,14 +52,27 @@ describe('Order lifecycle', () => {
       order: {
         findUnique: jest.fn().mockResolvedValue(null),
         findFirst: jest.fn().mockResolvedValue(draft),
-        create: jest.fn().mockResolvedValue(draft),
+        create: jest.fn(({ data }: { data: Record<string, unknown> }) =>
+          Promise.resolve({
+            ...draft,
+            ...data,
+            order_items_order: draft.order_items_order,
+          }),
+        ),
         update: jest.fn().mockResolvedValue({
           ...draft,
           status: 'CONFIRMED',
           kitchen_tickets_order: { ticket_number: 'T-014' },
         }),
       },
-      brand: { findFirst: jest.fn().mockResolvedValue({ brand_id: 'brand' }) },
+      brand: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValue({ brand_id: 'brand', code: 'GC  ' }),
+      },
+      orderDailyCounter: {
+        upsert: jest.fn().mockResolvedValue({ last_number: 1 }),
+      },
       menuItem: {
         findFirst: jest.fn().mockResolvedValue({
           menu_item_id: 'menu',
@@ -80,7 +97,13 @@ describe('Order lifecycle', () => {
       orderItem: { update: jest.fn() },
       orderItemModifier: { update: jest.fn() },
       kitchenTicket: { create: jest.fn() },
-      $queryRaw: jest.fn().mockResolvedValue([{ number: 14n }]),
+      $queryRaw: jest.fn().mockResolvedValue([
+        {
+          number: 14n,
+          created_at: draft.created_at,
+          order_date: draft.order_date,
+        },
+      ]),
       inventoryItem: { update: jest.fn() },
       stockMovement: { create: jest.fn() },
     };
@@ -274,6 +297,95 @@ describe('Order lifecycle', () => {
     expect(tx.orderItem.update).not.toHaveBeenCalled();
     expect(tx.order.update).not.toHaveBeenCalled();
     expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [1, 'GC-00001'],
+    [42, 'GC-00042'],
+    [99999, 'GC-99999'],
+    [100000, 'GC-100000'],
+  ])(
+    'assigns order number %s as %s on draft creation',
+    async (number, code) => {
+      tx.orderDailyCounter.upsert.mockResolvedValue({ last_number: number });
+      const result = await service.create('brand', 'actor', request);
+      expect(result).toMatchObject({
+        order_code: code,
+        order_date: draft.order_date,
+        order_number: number,
+        created_at: draft.created_at,
+      });
+      expect(tx.orderDailyCounter.upsert).toHaveBeenCalledWith({
+        where: {
+          brand_id_order_date: {
+            brand_id: 'brand',
+            order_date: draft.order_date,
+          },
+        },
+        create: {
+          brand_id: 'brand',
+          order_date: draft.order_date,
+          last_number: 1,
+        },
+        update: { last_number: { increment: 1 } },
+      });
+    },
+  );
+
+  it('uses the database Manila date to start a new counter after midnight', async () => {
+    const nextDate = new Date('2026-10-30T00:00:00Z');
+    tx.$queryRaw
+      .mockResolvedValueOnce([{ order_date: draft.order_date }])
+      .mockResolvedValueOnce([{ order_date: nextDate }]);
+    tx.orderDailyCounter.upsert
+      .mockResolvedValueOnce({ last_number: 25 })
+      .mockResolvedValueOnce({ last_number: 1 });
+    const before = await service.create('brand', 'actor', request);
+    const after = await service.create('brand', 'actor', {
+      ...request,
+      order_id: 'next-order',
+    });
+    expect(before).toMatchObject({
+      order_code: 'GC-00025',
+      order_date: draft.order_date,
+    });
+    expect(after).toMatchObject({
+      order_code: 'GC-00001',
+      order_date: nextDate,
+    });
+    expect(tx.$queryRaw).toHaveBeenCalledWith([
+      "SELECT CURRENT_TIMESTAMP AS created_at, (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date AS order_date",
+    ]);
+  });
+
+  it('preserves the original code on a UUID replay across midnight and a brand code change', async () => {
+    const original = await service.create('brand', 'actor', request);
+    const { data } = tx.order.create.mock.calls[0][0];
+    tx.order.findUnique.mockResolvedValue({
+      ...original,
+      create_request_hash: data.create_request_hash,
+    });
+    tx.$queryRaw.mockResolvedValue([
+      { order_date: new Date('2026-10-30T00:00:00Z') },
+    ]);
+    tx.brand.findFirst.mockResolvedValue({ brand_id: 'brand', code: 'NEW' });
+    expect(await service.create('brand', 'actor', request)).toEqual(original);
+    expect(tx.orderDailyCounter.upsert).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a counter serialization conflict before saving an order', async () => {
+    tx.orderDailyCounter.upsert.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('conflict', {
+        code: 'P2034',
+        clientVersion: '7',
+      }),
+    );
+    await expect(
+      service.create('brand', 'actor', request),
+    ).resolves.toMatchObject({ order_code: 'GC-00001' });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(tx.order.create).toHaveBeenCalledTimes(1);
   });
 
   it.each([
