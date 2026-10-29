@@ -29,6 +29,21 @@ describe('Menu catalog HTTP endpoints', () => {
       { modifier_id: '00000000-0000-4000-8000-000000000005' },
     ],
   };
+  const createdEntry = {
+    ...dto.menu_item,
+    menu_item_id: 'created-item',
+    menuChannels: [{ ...dto.menu_channel[0], menu_item_id: 'created-item' }],
+    menuItemModifiers: [
+      {
+        ...dto.menu_item_modifier[0],
+        menu_item_id: 'created-item',
+        modifier: {
+          modifier_id: dto.menu_item_modifier[0].modifier_id,
+          name: 'Extra cheese',
+        },
+      },
+    ],
+  };
   const service = { create: jest.fn(), findAll: jest.fn() };
   const auth = { validateSession: jest.fn() };
   const pin = { verifyPin: jest.fn() };
@@ -70,7 +85,7 @@ describe('Menu catalog HTTP endpoints', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    service.create.mockResolvedValue({ menu_item_id: 'created-item' });
+    service.create.mockResolvedValue(createdEntry);
     service.findAll.mockResolvedValue({ data: [], meta: { total: 0 } });
     auth.validateSession.mockResolvedValue({ user });
     pin.verifyPin.mockResolvedValue({ status: 'valid' });
@@ -87,7 +102,7 @@ describe('Menu catalog HTTP endpoints', () => {
     });
 
     expect(response.status).toBe(201);
-    expect(await response.json()).toEqual({ menu_item_id: 'created-item' });
+    expect(await response.json()).toEqual(createdEntry);
     expect(service.create).toHaveBeenCalledWith(dto);
     expect(brandLookup).toHaveBeenCalledWith({
       where: { brand_id: brandId },

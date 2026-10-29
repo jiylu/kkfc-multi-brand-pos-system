@@ -19,15 +19,22 @@ import { BrandsGuard } from '../../../shared/guards/brands.guard';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Authenticated } from '../../auth/auth.guard';
 import { PinGuard } from '../../pin/pin.guard';
+import {
+  CreateMenuCatalogDocs,
+  FindAllMenuCatalogDocs,
+  MenuCatalogDocs,
+} from './docs/menu-catalog.docs';
 import { MenuCatalogSetupDTO } from './dto/menu-catalog-setup.dto';
 import { MenuCatalogService } from './menu-catalog.service';
 
 @Controller('menu-catalog')
+@MenuCatalogDocs()
 @UseGuards(Authenticated, RolesGuard)
 export class MenuCatalogController {
   constructor(private readonly menuCatalogService: MenuCatalogService) {}
 
   @Post()
+  @CreateMenuCatalogDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseGuards(BrandsGuard, PinGuard)
   @BrandResource(BrandResourceType.BRAND, 'menu_item.brand_id', 'body')
@@ -36,6 +43,7 @@ export class MenuCatalogController {
   }
 
   @Get('brand/:brandId')
+  @FindAllMenuCatalogDocs()
   @UseGuards(BrandsGuard)
   async findAll(
     @Param('brandId', ParseUUIDPipe) brandId: string,

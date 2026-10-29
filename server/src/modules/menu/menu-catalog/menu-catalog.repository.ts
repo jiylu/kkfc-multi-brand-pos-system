@@ -37,7 +37,20 @@ export class MenuCatalogRepository {
         );
       }
 
-      return menuItem;
+      const menuChannels = await this.menuChannelsRepository.findManyByMenuItem(
+        menuItem.menu_item_id,
+        false,
+        undefined,
+        tx,
+      );
+      const menuItemModifiers =
+        await this.menuItemsModifiersRepository.findManyForMenuItem(
+          menuItem.menu_item_id,
+          false,
+          tx,
+        );
+
+      return { ...menuItem, menuChannels, menuItemModifiers };
     });
   }
 
