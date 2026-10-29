@@ -28,7 +28,11 @@ class PosShell extends StatefulWidget {
   final String subtitle;
   final String staffName;
   final String staffRole;
-  final List<Widget> Function(BuildContext context, bool isTablet)
+  final List<Widget> Function(
+    BuildContext context,
+    bool isTablet,
+    PosChannel channel,
+  )
   sectionsBuilder;
   final String actionLabel;
   final VoidCallback onAction;
@@ -108,7 +112,7 @@ class _PosShellState extends State<PosShell> {
   }
 
   Widget _body(BuildContext context, bool isTablet) {
-    final sections = widget.sectionsBuilder(context, isTablet);
+    final sections = widget.sectionsBuilder(context, isTablet, _channel);
 
     final left = Column(
       crossAxisAlignment: CrossAxisAlignment.start,

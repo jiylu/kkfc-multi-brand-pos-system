@@ -121,19 +121,22 @@ class MenuItem {
 
     final baseCentavos = decimalToCentavos(basePrice);
     final baseAvailable = json['is_available'] == true;
+    final isActive = json['is_active'] != false;
     final prices = <MenuChannel, int>{
       for (final channel in MenuChannel.values) channel: baseCentavos,
     };
     final availability = <MenuChannel, MenuAvailability>{
       for (final channel in MenuChannel.values)
-        channel: baseAvailable
+        channel: !isActive
+            ? MenuAvailability.inactive
+            : baseAvailable
             ? MenuAvailability.available
             : MenuAvailability.stockout,
     };
 
     final channelRows = json['menu_item_channels_menu_item'];
     final listed = <MenuChannel>{};
-    if (channelRows is List) {
+    if (isActive && channelRows is List) {
       listed.addAll(const [MenuChannel.dineIn, MenuChannel.takeaway]);
       for (final row in channelRows) {
         if (row is! Map<String, dynamic>) continue;
@@ -189,7 +192,9 @@ String formatPesoDelta(int centavos) =>
 int modifiersCentavosFor(MenuItem item, Map<String, String> selections) {
   var sum = 0;
   for (final g in item.modifierGroups) {
-    sum += g.optionById(selections[g.id] ?? g.defaultOptionId).priceDeltaCentavos;
+    sum += g
+        .optionById(selections[g.id] ?? g.defaultOptionId)
+        .priceDeltaCentavos;
   }
   return sum;
 }

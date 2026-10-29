@@ -8,26 +8,12 @@ import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/shared/shared_layout.dart';
-import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/availability/data/models/availability_model.dart';
-
-MenuChannel _menuChannelFor(PosChannel channel) => switch (channel) {
-  PosChannel.dineIn => MenuChannel.dineIn,
-  PosChannel.takeaway => MenuChannel.takeaway,
-  PosChannel.grabFood => MenuChannel.grabFood,
-  PosChannel.foodpanda => MenuChannel.foodpanda,
-};
-
-PosChannel _posChannelFor(MenuChannel channel) => switch (channel) {
-  MenuChannel.dineIn => PosChannel.dineIn,
-  MenuChannel.takeaway => PosChannel.takeaway,
-  MenuChannel.grabFood => PosChannel.grabFood,
-  MenuChannel.foodpanda => PosChannel.foodpanda,
-};
+import 'package:mobile/shared/menu_channel_mapping.dart';
 
 class MenuHeader extends ConsumerWidget {
   const MenuHeader({
@@ -103,10 +89,10 @@ class MenuHeader extends ConsumerWidget {
       });
     }
 
-    final AssignedBrand? assignedBrand =
-        hasSession ? ref.watch(assignedBrandProvider).value : null;
-    final AssignedBrand brand =
-        assignedBrand ?? ref.watch(activeBrandProvider);
+    final AssignedBrand? assignedBrand = hasSession
+        ? ref.watch(assignedBrandProvider).value
+        : null;
+    final AssignedBrand brand = assignedBrand ?? ref.watch(activeBrandProvider);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
@@ -149,8 +135,9 @@ class MenuHeader extends ConsumerWidget {
     if (onChannelChanged != null && channel != null) {
       channelWidget = ChannelTabs(
         inverted: true,
-        selected: _menuChannelFor(channel!),
-        onSelected: (selected) => onChannelChanged!(_posChannelFor(selected)),
+        selected: menuChannelForPos(channel!),
+        onSelected: (selected) =>
+            onChannelChanged!(posChannelForMenu(selected)),
       );
     } else {
       channelWidget = ChannelTabs(

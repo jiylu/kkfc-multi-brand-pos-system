@@ -32,7 +32,7 @@ class _AvailabilityManagementScreenState
       staffRole: 'D-03 pending',
       actionLabel: 'Back to menu',
       onAction: () {}, // TODO: navigate back to the menu route
-      sectionsBuilder: (context, isTablet) => [
+      sectionsBuilder: (context, isTablet, _) => [
         const NoteBanner(
           title: 'Channel-scoped availability',
           message:

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/api/api_client.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 
-/// Retrieves the complete active catalog for one brand.
+/// Retrieves the complete catalog for one brand.
 class MenuRepository {
   MenuRepository(this._dio);
 
@@ -11,7 +11,10 @@ class MenuRepository {
 
   static const _pageSize = 100;
 
-  Future<List<MenuItem>> getByBrand(String brandId) async {
+  Future<List<MenuItem>> getByBrand(
+    String brandId, {
+    bool activeOnly = true,
+  }) async {
     final items = <MenuItem>[];
     var page = 1;
     var totalPages = 1;
@@ -19,7 +22,11 @@ class MenuRepository {
     while (page <= totalPages) {
       final response = await _dio.get<Map<String, dynamic>>(
         '/menu-items/brand/$brandId',
-        queryParameters: {'page': page, 'limit': _pageSize},
+        queryParameters: {
+          'page': page,
+          'limit': _pageSize,
+          'activeOnly': activeOnly,
+        },
       );
       final body = response.data;
       final data = body?['data'];
@@ -52,7 +59,9 @@ class MenuRepository {
 
   Future<MenuItem> _toMenuItem(Map<String, dynamic> json) async {
     final id = json['menu_item_id'];
-    if (id is! String || json['menu_item_channels_menu_item'] is List) {
+    if (id is! String ||
+        json['is_active'] == false ||
+        json['menu_item_channels_menu_item'] is List) {
       return MenuItem.fromApiJson(json);
     }
 
