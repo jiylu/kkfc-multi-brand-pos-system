@@ -88,7 +88,9 @@ class KkfcPagination extends StatelessWidget {
                 if (showFirstLast)
                   IconButton(
                     tooltip: 'Last page',
-                    onPressed: canGoNext ? () => onPageChanged(totalPages) : null,
+                    onPressed: canGoNext
+                        ? () => onPageChanged(totalPages)
+                        : null,
                     icon: const Icon(Icons.last_page),
                   ),
               ],

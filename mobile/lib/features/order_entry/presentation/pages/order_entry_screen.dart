@@ -243,9 +243,7 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
             channelLabel: channel.label,
           )
         : enteredStoreReference;
-    final storeReferenceForDisplay = channel.isPlatform
-        ? ''
-        : storeReference;
+    final storeReferenceForDisplay = channel.isPlatform ? '' : storeReference;
     final count = ref.watch(cartCountProvider);
     final total = ref.watch(cartTotalProvider);
 

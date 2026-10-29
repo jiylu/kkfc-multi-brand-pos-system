@@ -46,10 +46,7 @@ void main() {
         data.rows.firstWhere((row) => row.label == 'Store').value,
         'King Kungs Kafe, Dine-in',
       );
-      expect(
-        data.channelLine,
-        'Dine-in · King Kungs Kafe, Dine-in · Table 3',
-      );
+      expect(data.channelLine, 'Dine-in · King Kungs Kafe, Dine-in · Table 3');
     });
   });
 }
