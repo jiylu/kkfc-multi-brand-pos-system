@@ -9,16 +9,12 @@ class PlatformReferenceCard extends StatelessWidget {
   const PlatformReferenceCard({
     super.key,
     required this.data,
-    this.storeController,
     this.externalReferenceController,
-    this.onStoreChanged,
     this.onExternalReferenceChanged,
   });
 
   final PlatformReferenceViewData data;
-  final TextEditingController? storeController;
   final TextEditingController? externalReferenceController;
-  final ValueChanged<String>? onStoreChanged;
   final ValueChanged<String>? onExternalReferenceChanged;
 
   @override
@@ -49,12 +45,8 @@ class PlatformReferenceCard extends StatelessWidget {
           for (final field in data.fields) ...[
             _FieldRow(
               field: field,
-              controller: field.label == data.storeLabel
-                  ? storeController
-                  : externalReferenceController,
-              onChanged: field.label == data.storeLabel
-                  ? onStoreChanged
-                  : onExternalReferenceChanged,
+              controller: field.readOnly ? null : externalReferenceController,
+              onChanged: field.readOnly ? null : onExternalReferenceChanged,
             ),
             const SizedBox(height: KkfcSpace.s20),
           ],
@@ -99,16 +91,55 @@ class _FieldRow extends StatelessWidget {
               ?.copyWith(color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: KkfcSpace.s8),
-        KkfcTextField(
-          label: '',
-          hint: field.hint,
-          controller: controller,
-          onChanged: onChanged,
-          errorText: field.errorText,
-          hasError: field.errorText != null,
-          valueStyle: const TextStyle(fontFamily: 'monospace'),
-        ),
+        if (field.readOnly)
+          _ReadOnlyValue(value: field.value ?? '')
+        else
+          KkfcTextField(
+            label: '',
+            hint: field.hint,
+            controller: controller,
+            onChanged: onChanged,
+            errorText: field.errorText,
+            hasError: field.errorText != null,
+            valueStyle: const TextStyle(fontFamily: 'monospace'),
+          ),
       ],
+    );
+  }
+}
+
+class _ReadOnlyValue extends StatelessWidget {
+  const _ReadOnlyValue({required this.value});
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: KkfcSizing.input),
+      padding: const EdgeInsets.symmetric(
+        horizontal: KkfcSpace.s16,
+        vertical: KkfcSpace.s12,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(KkfcRadius.lg),
+        border: Border.all(
+          color: scheme.outlineVariant,
+          width: KkfcBorderWidth.thin,
+        ),
+      ),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          value,
+          style: Theme.of(context).textTheme.bodyLarge
+              ?.copyWith(color: scheme.onSurface, fontFamily: 'monospace'),
+        ),
+      ),
     );
   }
 }

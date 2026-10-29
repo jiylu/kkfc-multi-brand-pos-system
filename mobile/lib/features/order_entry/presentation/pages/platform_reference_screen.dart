@@ -7,6 +7,7 @@ import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/order_entry/data/models/order_entry_view_data.dart';
 import 'package:mobile/shared/shared_layout.dart';
+import 'package:mobile/shared/store_reference.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/menu_header.dart';
@@ -37,16 +38,11 @@ class PlatformReferenceScreen extends ConsumerStatefulWidget {
 
 class _PlatformReferenceScreenState
     extends ConsumerState<PlatformReferenceScreen> {
-  late final TextEditingController _storeController;
   late final TextEditingController _externalReferenceController;
-  bool _submitted = false;
 
   @override
   void initState() {
     super.initState();
-    _storeController = TextEditingController(
-      text: ref.read(storeReferenceProvider),
-    );
     _externalReferenceController = TextEditingController(
       text: ref.read(orderReferenceProvider),
     );
@@ -54,20 +50,24 @@ class _PlatformReferenceScreenState
 
   @override
   void dispose() {
-    _storeController.dispose();
     _externalReferenceController.dispose();
     super.dispose();
   }
 
   void _submitReferences() {
-    final store = _storeController.text.trim();
+    final brand = ref.read(activeBrandProvider);
+    final channel = ref.read(menuChannelProvider);
+    final store = formatStoreReference(
+      brandName: brand.name,
+      channelLabel: channel.label,
+    );
     final externalReference = _externalReferenceController.text.trim();
 
     ref.read(storeReferenceProvider.notifier).set(store);
     ref.read(orderReferenceProvider.notifier).set(externalReference);
 
-    if (store.isEmpty || externalReference.isEmpty) {
-      setState(() => _submitted = true);
+    if (externalReference.isEmpty) {
+      setState(() {});
       return;
     }
 
@@ -88,11 +88,6 @@ class _PlatformReferenceScreenState
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<String>(storeReferenceProvider, (_, store) {
-      if (_storeController.text != store) {
-        _storeController.text = store;
-      }
-    });
     ref.listen<String>(orderReferenceProvider, (_, reference) {
       if (_externalReferenceController.text != reference) {
         _externalReferenceController.text = reference;
@@ -133,15 +128,11 @@ class _PlatformReferenceScreenState
   Widget _buildContent(BuildContext context) {
     final brand = ref.watch(activeBrandProvider);
     final channel = ref.watch(menuChannelProvider);
-    final storeText = _storeController.text.trim();
     final externalRefText = _externalReferenceController.text.trim();
 
     final effectiveData = widget.data.withContext(
       brandName: brand.name,
       channelLabel: channel.label,
-      storeErrorText: (_submitted && storeText.isEmpty)
-          ? 'Store required'
-          : null,
       externalReferenceErrorText: externalRefText.isEmpty
           ? 'External reference required'
           : null,
@@ -149,17 +140,13 @@ class _PlatformReferenceScreenState
     final channelLine = OrderEntryViewData.formatChannelLine(
       channel.label,
       externalRefText,
-      storeText,
+      null,
+      channel.isPlatform,
     );
 
     final referenceCard = PlatformReferenceCard(
       data: effectiveData,
-      storeController: _storeController,
       externalReferenceController: _externalReferenceController,
-      onStoreChanged: (value) {
-        ref.read(storeReferenceProvider.notifier).set(value);
-        setState(() {});
-      },
       onExternalReferenceChanged: (value) {
         ref.read(orderReferenceProvider.notifier).set(value);
         setState(() {});

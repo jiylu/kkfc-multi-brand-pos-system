@@ -12,6 +12,7 @@ import 'package:mobile/features/order_entry/data/models/order_confirmed_view_dat
 import 'package:mobile/features/order_entry/data/models/order_entry_view_data.dart';
 import 'package:mobile/features/order_entry/data/repositories/order_entry_repository.dart';
 import 'package:mobile/shared/shared_layout.dart';
+import 'package:mobile/shared/store_reference.dart';
 import 'package:mobile/shared/widgets/fade_slide_in.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/menu_header.dart';
@@ -121,17 +122,22 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
     final lines = ref.read(cartProvider);
     final channel = ref.read(menuChannelProvider);
     final reference = ref.read(orderReferenceProvider);
-    final storeReference = ref.read(storeReferenceProvider);
     final brand = ref.read(activeBrandProvider);
+    final enteredStoreReference = ref.read(storeReferenceProvider);
+    final storeReference = channel.isPlatform
+        ? formatStoreReference(
+            brandName: brand.name,
+            channelLabel: channel.label,
+          )
+        : enteredStoreReference;
 
     if (lines.isEmpty) {
       _showError('Add at least one item before sending the order.');
       return;
     }
 
-    if (channel.isPlatform &&
-        (reference.trim().isEmpty || storeReference.trim().isEmpty)) {
-      _showError('Add a reference label before sending the order.');
+    if (channel.isPlatform && reference.trim().isEmpty) {
+      _showError('Add the external order reference before sending the order.');
       _openPlatformReference();
       return;
     }
@@ -229,15 +235,24 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
     final lines = ref.watch(cartProvider);
     final channel = ref.watch(menuChannelProvider);
     final reference = ref.watch(orderReferenceProvider);
-    final storeReference = ref.watch(storeReferenceProvider);
     final brand = ref.watch(activeBrandProvider);
+    final enteredStoreReference = ref.watch(storeReferenceProvider);
+    final storeReference = channel.isPlatform
+        ? formatStoreReference(
+            brandName: brand.name,
+            channelLabel: channel.label,
+          )
+        : enteredStoreReference;
+    final storeReferenceForDisplay = channel.isPlatform
+        ? ''
+        : storeReference;
     final count = ref.watch(cartCountProvider);
     final total = ref.watch(cartTotalProvider);
 
     final hasDynamicDetails =
         lines.isNotEmpty ||
         reference.trim().isNotEmpty ||
-        storeReference.trim().isNotEmpty;
+        storeReferenceForDisplay.trim().isNotEmpty;
 
     final data = !hasDynamicDetails
         ? widget.data
@@ -245,8 +260,9 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
             brandName: brand.name,
             channel: channel.label,
             reference: reference,
-            storeReference: storeReference,
+            storeReference: storeReferenceForDisplay,
             itemCount: lines.isEmpty ? null : count,
+            isPlatform: channel.isPlatform,
             items: lines.isEmpty
                 ? null
                 : [

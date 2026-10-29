@@ -1,3 +1,5 @@
+import 'order_entry_view_data.dart';
+
 class OrderConfirmedViewData {
   const OrderConfirmedViewData({
     required this.tag,
@@ -66,6 +68,12 @@ class OrderConfirmedViewData {
       fallback: isPlatform ? 'Paid' : 'Unpaid',
     );
     final isPaid = payment.toLowerCase() == 'paid';
+    final channelLine = OrderEntryViewData.formatChannelLine(
+      channel,
+      ref,
+      null,
+      isPlatform,
+    );
 
     return OrderConfirmedViewData(
       tag: 'Order confirmed',
@@ -76,11 +84,13 @@ class OrderConfirmedViewData {
       compactEyebrow: 'KITCHEN TICKET',
       ticketNumber: ticketNumber,
       sentLabel: 'Sent to kitchen',
-      chips: [order, channel, if (ref.isNotEmpty) ref],
+      chips: isPlatform
+          ? [order, channelLine]
+          : [order, channel, if (ref.isNotEmpty) ref],
       description: 'One server-confirmed order → one kitchen ticket.',
       compactDescription: 'One order linked to one kitchen ticket.',
       brand: brand,
-      channelLine: ref.isEmpty ? channel : '$channel  ·  $ref',
+      channelLine: channelLine,
       orderStatus: order,
       paymentStatus: payment,
       contextNote: 'Payment and inventory posting are separate outcomes.',

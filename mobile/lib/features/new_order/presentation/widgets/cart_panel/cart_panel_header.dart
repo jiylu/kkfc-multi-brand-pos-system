@@ -4,6 +4,7 @@ import 'package:mobile/app/theme/typography.dart';
 import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
+import 'package:mobile/shared/store_reference.dart';
 import 'package:mobile/shared/widgets/kkfc_brand_tag.dart';
 import 'package:mobile/shared/widgets/kkfc_text_field.dart';
 
@@ -89,9 +90,12 @@ class CartPanelHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _ReferenceBlock(
+                _ReferenceBlock(
                   label: 'Store reference',
-                  value: 'From brand and channel setup',
+                  value: formatStoreReference(
+                    brandName: brand.name,
+                    channelLabel: channel.label,
+                  ),
                 ),
                 const SizedBox(height: KkfcSpace.s12),
                 _ReferenceBlock(

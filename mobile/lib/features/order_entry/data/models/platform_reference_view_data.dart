@@ -1,13 +1,19 @@
+import 'package:mobile/shared/store_reference.dart';
+
 class PlatformReferenceField {
   const PlatformReferenceField({
     required this.label,
-    required this.hint,
+    this.hint = '',
+    this.value,
+    this.readOnly = false,
     this.required = false,
     this.errorText,
   });
 
   final String label;
   final String hint;
+  final String? value;
+  final bool readOnly;
   final bool required;
   final String? errorText;
 }
@@ -17,8 +23,6 @@ class PlatformReferenceViewData {
     required this.eyebrow,
     required this.title,
     required this.subtitle,
-    required this.storeLabel,
-    required this.storeHint,
     required this.externalReferenceLabel,
     required this.externalReferenceHint,
     required this.rightTitle,
@@ -34,8 +38,6 @@ class PlatformReferenceViewData {
   final String eyebrow;
   final String title;
   final String subtitle;
-  final String storeLabel;
-  final String storeHint;
   final String externalReferenceLabel;
   final String externalReferenceHint;
   final String rightTitle;
@@ -50,15 +52,12 @@ class PlatformReferenceViewData {
   PlatformReferenceViewData withContext({
     required String brandName,
     required String channelLabel,
-    String? storeErrorText,
     String? externalReferenceErrorText,
   }) {
     return PlatformReferenceViewData(
       eyebrow: eyebrow,
       title: title,
       subtitle: '$channelLabel · Required merchant references',
-      storeLabel: storeLabel,
-      storeHint: storeHint,
       externalReferenceLabel: externalReferenceLabel,
       externalReferenceHint: externalReferenceHint,
       rightTitle: rightTitle,
@@ -70,10 +69,12 @@ class PlatformReferenceViewData {
       buttonLabel: buttonLabel,
       fields: [
         PlatformReferenceField(
-          label: storeLabel,
-          hint: storeHint,
-          required: true,
-          errorText: storeErrorText,
+          label: 'Store reference',
+          value: formatStoreReference(
+            brandName: brandName,
+            channelLabel: channelLabel,
+          ),
+          readOnly: true,
         ),
         PlatformReferenceField(
           label: externalReferenceLabel,
@@ -89,22 +90,20 @@ class PlatformReferenceViewData {
     eyebrow: 'ACTION NEEDED',
     title: 'Complete order details',
     subtitle: 'GrabFood · Required merchant references',
-    storeLabel: 'Store',
-    storeHint: 'Select store',
     externalReferenceLabel: 'External order reference',
     externalReferenceHint: 'Enter order #',
     rightTitle: 'ORDER CONTEXT',
-    rightSubtitle: 'Check the exact store and external reference before sending. No ticket exists yet.',
+    rightSubtitle: 'Store reference follows the active brand and channel. Check the external reference before sending.',
     warningTitle: 'ACTION NEEDED',
-    warningBody: 'Check the exact store and external reference before sending. No ticket exists yet.',
+    warningBody: 'Store reference follows the active brand and channel. Check the external reference before sending.',
     reviewTitle: 'DESIGN REVIEW STATE',
-    reviewBody: 'Aurelia’s Inasal · example only',
+    reviewBody: 'King Kungs Kafe · example only',
     buttonLabel: 'Edit references',
     fields: [
       PlatformReferenceField(
-        label: 'Store',
-        hint: 'Select store',
-        required: true,
+        label: 'Store reference',
+        value: 'King Kungs Kafe, GrabFood',
+        readOnly: true,
       ),
       PlatformReferenceField(
         label: 'External order reference',

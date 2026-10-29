@@ -67,18 +67,32 @@ class OrderEntryViewData {
 
   /// Formats the channel display string, combining [channel] and optional
   /// [storeReference] / [reference] when non-blank.
+  ///
+  /// Platform channels display their external reference inline, for example
+  /// `GrabFood (#GF-1001)`. Other channels keep the ` · ` separated format.
   static String formatChannelLine(
     String channel, [
     String? reference,
     String? storeReference,
+    bool isPlatform = false,
   ]) {
+    final trimmedRef = _trimReference(reference);
+    if (isPlatform) {
+      return trimmedRef.isEmpty ? channel : '$channel (#$trimmedRef)';
+    }
+
     final trimmedStore = storeReference?.trim() ?? '';
-    final trimmedRef = reference?.trim() ?? '';
     return [
       channel,
       if (trimmedStore.isNotEmpty) trimmedStore,
       if (trimmedRef.isNotEmpty) trimmedRef,
     ].join(' · ');
+  }
+
+  static String _trimReference(String? reference) {
+    final trimmed = reference?.trim() ?? '';
+    if (!trimmed.startsWith('#')) return trimmed;
+    return trimmed.substring(1).trim();
   }
 
   /// Formats item count as `1 item` or `<count> items`.
@@ -98,10 +112,11 @@ class OrderEntryViewData {
     int? itemCount,
     List<OrderEntryItem>? items,
     String? total,
+    bool isPlatform = false,
   }) {
     final trimmedStore = storeReference?.trim() ?? '';
     final nextChannelLine = channel != null
-        ? formatChannelLine(channel, reference, storeReference)
+        ? formatChannelLine(channel, reference, storeReference, isPlatform)
         : null;
     final nextItemsValue = itemCount != null
         ? formatItemCount(itemCount)
@@ -114,11 +129,11 @@ class OrderEntryViewData {
         updatedRows.add(OrderEntryRow('Brand', brandName));
       } else if (row.label == 'Store') {
         hasStoreRow = true;
-        if (trimmedStore.isNotEmpty) {
+        if (!isPlatform && trimmedStore.isNotEmpty) {
           updatedRows.add(OrderEntryRow('Store', trimmedStore));
         }
       } else if (row.label == 'Channel') {
-        if (trimmedStore.isNotEmpty && !hasStoreRow) {
+        if (!isPlatform && trimmedStore.isNotEmpty && !hasStoreRow) {
           updatedRows.add(OrderEntryRow('Store', trimmedStore));
           hasStoreRow = true;
         }

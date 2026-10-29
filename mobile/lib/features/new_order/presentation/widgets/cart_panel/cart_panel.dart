@@ -150,6 +150,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                         ),
                     ],
                     total: formatPeso(total),
+                    isPlatform: channel.isPlatform,
                   ),
                 );
               },
