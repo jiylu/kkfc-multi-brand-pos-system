@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/app/theme/theme_context.dart';
+import 'package:mobile/app/theme/semantic_colors.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_metrics.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_palette.dart';
 
-/// White card with the green accent on top that holds the queue content.
+/// White card with a tone-coloured accent on top that holds the queue content.
 class KitchenQueuePanel extends StatelessWidget {
-  const KitchenQueuePanel({super.key, required this.child});
+  const KitchenQueuePanel({super.key, required this.tone, required this.child});
 
+  final KkfcTone tone;
   final Widget child;
 
   @override
@@ -16,10 +17,7 @@ class KitchenQueuePanel extends StatelessWidget {
         color: context.kitchenCard,
         borderRadius: BorderRadius.circular(KitchenRadius.lg),
         border: Border(
-          top: BorderSide(
-            color: context.semanticColors.success.fg,
-            width: KitchenMetrics.panelAccentWidth,
-          ),
+          top: BorderSide(color: tone.fg, width: KitchenMetrics.panelAccentWidth),
         ),
       ),
       child: Padding(padding: EdgeInsets.all(KitchenSpace.lg), child: child),

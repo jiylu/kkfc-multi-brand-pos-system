@@ -3,9 +3,11 @@ import 'package:mobile/app/theme/theme_context.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_metrics.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_palette.dart';
 
-/// Muted info card explaining when new tickets show up.
+/// Muted info card explaining what the state means for the user.
 class WhatHappensNextCard extends StatelessWidget {
-  const WhatHappensNextCard({super.key});
+  const WhatHappensNextCard({super.key, required this.message});
+
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +31,7 @@ class WhatHappensNextCard extends StatelessWidget {
                       color: context.semanticColors.info.fg,
                       fontWeight: FontWeight.w700)),
               SizedBox(height: KitchenSpace.sm),
-              Text('New tickets appear after an order is confirmed by the server.',
+              Text(message,
                   style: text.bodySmall?.copyWith(color: context.kitchenText)),
             ],
           ),

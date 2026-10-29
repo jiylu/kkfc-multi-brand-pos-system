@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_metrics.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_palette.dart';
 
-/// Tablet-only "DESIGN-ONLY EXAMPLE / No active tasks" card.
+/// Tablet-only "DESIGN-ONLY EXAMPLE" side card.
 class DesignOnlyExampleCard extends StatelessWidget {
-  const DesignOnlyExampleCard({super.key});
+  const DesignOnlyExampleCard({
+    super.key,
+    required this.title,
+    required this.message,
+  });
+
+  final String title;
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +33,12 @@ class DesignOnlyExampleCard extends StatelessWidget {
               Text('DESIGN-ONLY EXAMPLE',
                   style: text.labelSmall?.copyWith(color: context.kitchenTextMuted)),
               SizedBox(height: KitchenSpace.lg),
-              Text('No active tasks',
+              Text(title,
                   style: text.titleMedium?.copyWith(
                       color: context.kitchenText, fontWeight: FontWeight.w700)),
               SizedBox(height: KitchenSpace.lg),
-              Text(
-                'A confirmed empty queue means no pending tickets for these '
-                'filters. Check again after new orders arrive.',
-                style: text.bodySmall?.copyWith(color: context.kitchenTextMuted),
-              ),
+              Text(message,
+                  style: text.bodySmall?.copyWith(color: context.kitchenTextMuted)),
             ],
           ),
         ),
