@@ -11,10 +11,6 @@ export const AUDIT_LOG_SELECT = {
   entity_type: true,
   entity_id: true,
   outcome: true,
-  reason: true,
-  before_data: true,
-  after_data: true,
-  request_id: true,
   created_at: true,
 } as const satisfies Prisma.AuditLogSelect;
 

@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { validateSync } from 'class-validator';
 import { assertValidPagination } from '../../shared/assertions/assert-valid-pagination';
 import { AuditRepository } from './audit.repository';
@@ -28,16 +33,35 @@ export class AuditService {
     const { page, limit, action, outcome } = validated;
     const skip = (page - 1) * limit;
     assertValidPagination(skip, this.logger);
-    const { logs, total } = await this.repository.findAll(
-      {
-        ...(action !== undefined ? { action } : {}),
-        ...(outcome !== undefined ? { outcome } : {}),
-      },
-      skip,
-      limit,
-    );
+    const { logs, total } = await this.repository
+      .findAll(
+        {
+          ...(action !== undefined ? { action } : {}),
+          ...(outcome !== undefined ? { outcome } : {}),
+        },
+        skip,
+        limit,
+      )
+      .catch(() => {
+        this.logger.error('Failed to read audit history.');
+        throw new ServiceUnavailableException({
+          code: 'AUDIT_LIST_UNAVAILABLE',
+          message: 'Audit history is temporarily unavailable.',
+        });
+      });
     return {
-      data: logs,
+      data: logs.map((log) => ({
+        audit_log_id: log.audit_log_id,
+        actor_id: log.actor_id,
+        action: log.action,
+        entity_type: log.entity_type,
+        entity_id: log.entity_id,
+        outcome: log.outcome,
+        // No free-text reason catalog has been approved. Do not guess which
+        // portions of a legacy reason are safe to disclose.
+        reason: null,
+        created_at: log.created_at,
+      })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }

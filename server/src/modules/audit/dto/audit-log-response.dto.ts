@@ -20,39 +20,13 @@ export class AuditLogResponseDTO {
   @ApiProperty({ type: String, nullable: true, format: 'uuid' })
   entity_id: string | null;
 
-  @ApiProperty({ type: String, nullable: true })
-  reason: string | null;
-
   @ApiProperty({
-    description:
-      'Nullable JSON snapshot; structure depends on the audited action.',
+    type: String,
     nullable: true,
-    oneOf: [
-      { type: 'object', additionalProperties: true },
-      { type: 'array', items: {} },
-      { type: 'string' },
-      { type: 'number' },
-      { type: 'boolean' },
-    ],
-  })
-  before_data: unknown;
-
-  @ApiProperty({
     description:
-      'Nullable JSON snapshot; structure depends on the audited action.',
-    nullable: true,
-    oneOf: [
-      { type: 'object', additionalProperties: true },
-      { type: 'array', items: {} },
-      { type: 'string' },
-      { type: 'number' },
-      { type: 'boolean' },
-    ],
+      'Currently always null. Free-text reasons are withheld pending an approved safe reason catalog.',
   })
-  after_data: unknown;
-
-  @ApiProperty({ type: String, nullable: true })
-  request_id: string | null;
+  reason: null;
 
   @ApiProperty({ type: String, format: 'date-time' })
   created_at: string;

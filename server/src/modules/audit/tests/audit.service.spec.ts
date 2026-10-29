@@ -1,4 +1,7 @@
-import { BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { AuditRepository } from '../audit.repository';
 import { AuditService } from '../audit.service';
 import { FindAuditLogsDTO } from '../dto/find-audit-logs.dto';
@@ -65,9 +68,43 @@ describe('AuditService defensive boundaries', () => {
     );
   });
 
-  it('propagates storage failure instead of reporting an empty successful history', async () => {
-    const error = new Error('Database unavailable');
+  it('returns a safe storage failure instead of an empty successful history', async () => {
+    const error = new Error('Database unavailable with private details');
     repository.findAll.mockRejectedValue(error);
-    await expect(service.findAll()).rejects.toBe(error);
+    const result = await service.findAll().catch((error: unknown) => error);
+    expect(result).toBeInstanceOf(ServiceUnavailableException);
+    expect((result as ServiceUnavailableException).getResponse()).toEqual({
+      code: 'AUDIT_LIST_UNAVAILABLE',
+      message: 'Audit history is temporarily unavailable.',
+    });
+  });
+
+  it('projects safe fields even if storage returns sensitive legacy or nested data', async () => {
+    const safe = {
+      audit_log_id: 'log',
+      actor_id: 'actor',
+      action: 'RECIPE_READ',
+      entity_type: 'recipes',
+      entity_id: 'recipe',
+      outcome: 'DENIED',
+      created_at: new Date('2026-10-20T00:00:00Z'),
+    };
+    repository.findAll.mockResolvedValue({
+      logs: [
+        {
+          ...safe,
+          reason: 'password=secret',
+          request_id: 'Bearer token',
+          before_data: { password: 'secret', recipe: { instructions: 'BOM' } },
+          after_data: { pin: '1234' },
+          actor: { password_hash: 'hash', token: 'token' },
+        },
+      ],
+      total: 1,
+    });
+    expect(await service.findAll()).toEqual({
+      data: [{ ...safe, reason: null }],
+      meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+    });
   });
 });
