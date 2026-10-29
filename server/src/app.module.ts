@@ -10,7 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { PinModule } from './modules/pin/pin.module';
 import { BrandsModule } from './modules/brands/brands.module';
 import { AuditModule } from './modules/audit/audit.module';
-import { OrdersModule } from './modules/orders/orders.module';
+import { OrdersModule } from './modules/orders/orders/orders.module';
 import { MenuItemsModule } from './modules/menu/menu-items/menu-items.module';
 import { MenuChannelsModule } from './modules/menu/menu-channels/menu-channels.module';
 import { ModifiersModule } from './modules/menu/modifiers/modifiers.module';
