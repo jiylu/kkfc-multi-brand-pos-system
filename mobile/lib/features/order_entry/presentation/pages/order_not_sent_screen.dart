@@ -7,6 +7,7 @@ import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/menu_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
+
 import '../../data/models/order_not_sent_view_data.dart';
 import '../widgets/draft_safe_card.dart';
 import '../widgets/order_not_sent_context_card.dart';
@@ -101,10 +102,7 @@ class OrderNotSentScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             OrderEntryHeader(
-                              tag: StatusTag(
-                                text: data.tag,
-                                tone: danger,
-                              ),
+                              tag: StatusTag(text: data.tag, tone: danger),
                               title: wide ? data.title : data.compactTitle,
                               subtitle: data.subtitle,
                               trailing: wide
@@ -150,10 +148,7 @@ class OrderNotSentScreen extends StatelessWidget {
                             else ...[
                               DraftSafeCard(data: data, compact: true),
                               const SizedBox(height: KkfcSpace.s16),
-                              ToneNotice(
-                                body: data.noticeBody,
-                                tone: danger,
-                              ),
+                              ToneNotice(body: data.noticeBody, tone: danger),
                             ],
                           ],
                         ),

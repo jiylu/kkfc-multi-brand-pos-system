@@ -38,17 +38,16 @@ class KkfcPagination extends StatelessWidget {
               icon: const Icon(Icons.first_page),
             ),
           TextButton.icon(
-            onPressed:
-                canGoPrevious ? () => onPageChanged(currentPage - 1) : null,
+            onPressed: canGoPrevious
+                ? () => onPageChanged(currentPage - 1)
+                : null,
             icon: const Icon(Icons.chevron_left),
             label: const Text('Previous'),
           ),
           const SizedBox(width: KkfcSpace.s24),
           Text(
             'Page $currentPage of $totalPages',
-            style: text.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
           ),
           const SizedBox(width: KkfcSpace.s24),
           TextButton.icon(

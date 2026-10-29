@@ -66,9 +66,7 @@ class ChannelRepricingScreen extends StatelessWidget {
                     ),
                     if (showContext) ...[
                       const VerticalDivider(width: 1),
-                      const SizedBox(
-                        width: MenuLayout.cartPanelWidth,
-                      ),
+                      const SizedBox(width: MenuLayout.cartPanelWidth),
                     ],
                   ],
                 ),
@@ -183,9 +181,7 @@ class _RepricingBody extends ConsumerWidget {
               child: const Text('Undo'),
             ),
           ),
-          if (showContext) ...[
-            const SizedBox(height: MenuSpace.lg),
-          ],
+          if (showContext) ...[const SizedBox(height: MenuSpace.lg)],
         ],
       ),
     );

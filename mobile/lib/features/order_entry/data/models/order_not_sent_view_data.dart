@@ -49,8 +49,11 @@ class OrderNotSentViewData {
     String? status,
     String? errorMessage,
   }) {
-    final itemText = itemCount == 1 ? '1 item preserved' : '$itemCount items preserved';
-    final desc = errorMessage ??
+    final itemText = itemCount == 1
+        ? '1 item preserved'
+        : '$itemCount items preserved';
+    final desc =
+        errorMessage ??
         'Fix the reported error. Retry only through the agreed safe submission path.';
 
     return OrderNotSentViewData(
@@ -91,12 +94,10 @@ class OrderNotSentViewData {
     totalValue: '₱597.00',
     contextEyebrow: 'ORDER CONTEXT',
     contextTitle: 'NOT SENT',
-    contextDescription:
-        'Fix the reported error. Retry only through the agreed safe submission path.',
+    contextDescription: 'Fix the reported error. Retry only through the agreed safe submission path.',
     reviewBadgeText: 'DESIGN REVIEW STATE',
     brandFooter: 'Aurelia\'s Inasal · example only',
-    noticeBody:
-        'Fix the reported error. Retry only through the agreed safe submission path.',
+    noticeBody: 'Fix the reported error. Retry only through the agreed safe submission path.',
     secondaryLabel: 'Edit order',
     primaryLabel: 'Retry safely',
   );

@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/new_order/data/seed/sample_menu.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
-import 'package:flutter/foundation.dart' show mapEquals;  
+import 'package:flutter/foundation.dart' show mapEquals;
 
 class MenuChannelNotifier extends Notifier<MenuChannel> {
   @override
@@ -58,17 +58,26 @@ class CartNotifier extends Notifier<List<CartLine>> {
   List<CartLine> build() => const [];
 
   Map<String, String> _normalize(MenuItem item, Map<String, String> s) => {
-        for (final g in item.modifierGroups) g.id: s[g.id] ?? g.defaultOptionId,
-      };
+    for (final g in item.modifierGroups) g.id: s[g.id] ?? g.defaultOptionId,
+  };
 
-  int _findIdentical(MenuItem item, Map<String, String> sel, {String? except}) =>
-      state.indexWhere((l) =>
-          l.id != except && l.item.id == item.id && mapEquals(l.selections, sel));
+  int _findIdentical(
+    MenuItem item,
+    Map<String, String> sel, {
+    String? except,
+  }) => state.indexWhere(
+    (l) =>
+        l.id != except && l.item.id == item.id && mapEquals(l.selections, sel),
+  );
 
   /// Quick add with defaults (no modifiers).
   void add(MenuItem item) => addConfigured(item, const {}, 1);
 
-  void addConfigured(MenuItem item, Map<String, String> selections, int quantity) {
+  void addConfigured(
+    MenuItem item,
+    Map<String, String> selections,
+    int quantity,
+  ) {
     final sel = _normalize(item, selections);
     final i = _findIdentical(item, sel);
     if (i != -1) {
@@ -83,7 +92,12 @@ class CartNotifier extends Notifier<List<CartLine>> {
     }
     state = [
       ...state,
-      CartLine(id: 'line-${_seq++}', item: item, quantity: quantity, selections: sel),
+      CartLine(
+        id: 'line-${_seq++}',
+        item: item,
+        quantity: quantity,
+        selections: sel,
+      ),
     ];
   }
 
@@ -106,22 +120,25 @@ class CartNotifier extends Notifier<List<CartLine>> {
     }
     state = [
       for (final l in state)
-        if (l.id == lineId) l.copyWith(quantity: quantity, selections: sel) else l,
+        if (l.id == lineId)
+          l.copyWith(quantity: quantity, selections: sel)
+        else
+          l,
     ];
   }
 
   void incrementLine(String lineId) => state = [
-        for (final l in state)
-          if (l.id == lineId) l.copyWith(quantity: l.quantity + 1) else l,
-      ];
+    for (final l in state)
+      if (l.id == lineId) l.copyWith(quantity: l.quantity + 1) else l,
+  ];
 
   void decrementLine(String lineId) => state = [
-        for (final l in state)
-          if (l.id != lineId)
-            l
-          else if (l.quantity > 1)
-            l.copyWith(quantity: l.quantity - 1),
-      ];
+    for (final l in state)
+      if (l.id != lineId)
+        l
+      else if (l.quantity > 1)
+        l.copyWith(quantity: l.quantity - 1),
+  ];
 
   void clear() => state = const [];
 }

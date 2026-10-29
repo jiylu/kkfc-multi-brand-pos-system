@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/widgets/kkfc_text_field.dart';
 import 'package:mobile/features/order_entry/data/models/platform_reference_view_data.dart';
+
 import 'order_entry_shadows.dart';
 
 class PlatformReferenceCard extends StatelessWidget {
@@ -64,11 +65,7 @@ class PlatformReferenceCard extends StatelessWidget {
 }
 
 class _FieldRow extends StatelessWidget {
-  const _FieldRow({
-    required this.field,
-    this.controller,
-    this.onChanged,
-  });
+  const _FieldRow({required this.field, this.controller, this.onChanged});
 
   final PlatformReferenceField field;
   final TextEditingController? controller;
@@ -91,13 +88,15 @@ class _FieldRow extends StatelessWidget {
               if (field.required)
                 const TextSpan(
                   text: '  ·  Required',
-                  style: TextStyle(color: Color(0xFF6E7E9C), fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    color: Color(0xFF6E7E9C),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
             ],
           ),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: KkfcSpace.s8),
         KkfcTextField(

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/data/repositories/menu_item_modifier_repository.dart';
@@ -96,11 +96,13 @@ Future<CustomizeResult?> _present(BuildContext context, Widget panel) {
     ),
     transitionBuilder: (context, animation, _, child) => SlideTransition(
       position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-          .animate(CurvedAnimation(
-        parent: animation,
-        curve: MenuMotion.curve,
-        reverseCurve: Curves.easeIn,
-      )),
+          .animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: MenuMotion.curve,
+              reverseCurve: Curves.easeIn,
+            ),
+          ),
       child: child,
     ),
   );

@@ -84,7 +84,9 @@ final menuItemsProvider = FutureProvider.autoDispose<List<MenuItem>>((
 /// Channels to show as tabs: those the loaded menu items are sold on, in
 /// [MenuChannel] order. Falls back to every channel while the menu is
 /// loading, on error, or when the backend lists no channels.
-final availableChannelsProvider = Provider.autoDispose<List<MenuChannel>>((ref) {
+final availableChannelsProvider = Provider.autoDispose<List<MenuChannel>>((
+  ref,
+) {
   final items = ref.watch(menuItemsProvider).asData?.value;
   if (items == null) return MenuChannel.values;
   final listed = {for (final item in items) ...item.channels};
@@ -130,9 +132,7 @@ class CartNotifier extends Notifier<List<CartLine>> {
     String? except,
   }) => state.indexWhere(
     (l) =>
-        l.id != except &&
-        l.item.id == item.id &&
-        mapEquals(l.selections, sel),
+        l.id != except && l.item.id == item.id && mapEquals(l.selections, sel),
   );
 
   /// Quick add with defaults (no modifiers).

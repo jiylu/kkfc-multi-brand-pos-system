@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/semantic_colors.dart';
 import 'package:mobile/app/theme/tokens.dart';
+
 import '../../data/models/duplicate_platform_order_view_data.dart';
 import 'order_entry_shadows.dart';
 
@@ -53,16 +54,11 @@ class DuplicateOrderContextCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: KkfcSpace.s20),
-          _DesignReviewPill(
-            text: data.reviewBadgeText,
-            tone: tone,
-          ),
+          _DesignReviewPill(text: data.reviewBadgeText, tone: tone),
           const SizedBox(height: KkfcSpace.s16),
           Text(
             data.brandFooter,
-            style: text.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -71,10 +67,7 @@ class DuplicateOrderContextCard extends StatelessWidget {
 }
 
 class _DesignReviewPill extends StatelessWidget {
-  const _DesignReviewPill({
-    required this.text,
-    required this.tone,
-  });
+  const _DesignReviewPill({required this.text, required this.tone});
 
   final String text;
   final KkfcTone tone;

@@ -25,7 +25,9 @@ class MenuItemModifierRepository {
     return Future.wait(
       rows.map((row) async {
         if (row is! Map<String, dynamic>) {
-          throw const FormatException('Invalid menu item modifier in response.');
+          throw const FormatException(
+            'Invalid menu item modifier in response.',
+          );
         }
         final id = row['menu_item_modifier_id'];
         final modifierId = row['modifier_id'];

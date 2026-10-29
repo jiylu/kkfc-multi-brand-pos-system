@@ -17,6 +17,7 @@ import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/menu_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/shared/widgets/toast/kkfc_toaster.dart';
+
 import 'order_confirmed_screen.dart';
 import 'platform_reference_screen.dart';
 import '../widgets/order_entry_action_bar.dart';
@@ -60,8 +61,8 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
   }
 
   static bool _isUuid(String value) => RegExp(
-        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
-      ).hasMatch(value);
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  ).hasMatch(value);
 
   String _extractErrorMessage(Object error) {
     if (error is DioException) {
@@ -86,9 +87,8 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
     if (Overlay.maybeOf(context, rootOverlay: true) != null) {
       KkfcToaster.error(context, message: message);
     } else {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -97,9 +97,8 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
     if (Overlay.maybeOf(context, rootOverlay: true) != null) {
       KkfcToaster.success(context, message: message);
     } else {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -138,14 +137,18 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
     }
 
     if (!channel.isPlatform && reference.trim().isEmpty) {
-      _showError('Add a ${channel.referenceLabel.toLowerCase()} before sending the order.');
+      _showError(
+        'Add a ${channel.referenceLabel.toLowerCase()} before sending the order.',
+      );
       return;
     }
 
     setState(() => _isSending = true);
     try {
       final brandId = await _resolveBrandId();
-      final created = await ref.read(orderEntryRepositoryProvider).createOrder(
+      final created = await ref
+          .read(orderEntryRepositoryProvider)
+          .createOrder(
             brandId: brandId,
             orderId: _orderId,
             channel: channel,
@@ -231,7 +234,8 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
     final count = ref.watch(cartCountProvider);
     final total = ref.watch(cartTotalProvider);
 
-    final hasDynamicDetails = lines.isNotEmpty ||
+    final hasDynamicDetails =
+        lines.isNotEmpty ||
         reference.trim().isNotEmpty ||
         storeReference.trim().isNotEmpty;
 
@@ -264,7 +268,8 @@ class _OrderEntryScreenState extends ConsumerState<OrderEntryScreen> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, c) {
-                final wide = c.maxWidth >= OrderEntryScreen._twoColumnBreakpoint;
+                final wide =
+                    c.maxWidth >= OrderEntryScreen._twoColumnBreakpoint;
                 final summary = FadeSlideIn(
                   index: 1,
                   child: OrderSummaryCard(data: data),

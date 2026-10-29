@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
+
 import '../../data/models/order_not_sent_view_data.dart';
 import 'order_entry_shadows.dart';
 
 class DraftSafeCard extends StatelessWidget {
-  const DraftSafeCard({
-    super.key,
-    required this.data,
-    required this.compact,
-  });
+  const DraftSafeCard({super.key, required this.data, required this.compact});
 
   final OrderNotSentViewData data;
   final bool compact;
@@ -69,9 +66,7 @@ class _DraftRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: text.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ),
         const SizedBox(width: KkfcSpace.s16),

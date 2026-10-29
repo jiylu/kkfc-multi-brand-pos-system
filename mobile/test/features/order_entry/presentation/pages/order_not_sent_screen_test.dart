@@ -27,121 +27,123 @@ void main() {
   }
 
   group('OrderNotSentScreen Tablet layout', () {
-    testWidgets('renders all tablet components including rail, cards and actions', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1024, 768);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'renders all tablet components including rail, cards and actions',
+      (tester) async {
+        tester.view.physicalSize = const Size(1024, 768);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      bool editPressed = false;
-      bool retryPressed = false;
+        bool editPressed = false;
+        bool retryPressed = false;
 
-      await tester.pumpWidget(
-        buildScreen(
-          onEditOrder: () => editPressed = true,
-          onRetrySafely: () => retryPressed = true,
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildScreen(
+            onEditOrder: () => editPressed = true,
+            onRetrySafely: () => retryPressed = true,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Navigation rail is shown on tablet
-      expect(find.byType(MenuRail), findsOneWidget);
-      expect(find.byType(MenuBottomNav), findsNothing);
+        // Navigation rail is shown on tablet
+        expect(find.byType(MenuRail), findsOneWidget);
+        expect(find.byType(MenuBottomNav), findsNothing);
 
-      // Header components
-      expect(find.text('NOT SENT'), findsWidgets);
-      expect(find.text('Order not sent'), findsOneWidget);
-      expect(
-        find.text('A definite server rejection was received'),
-        findsOneWidget,
-      );
-      expect(find.byIcon(Icons.cancel_outlined), findsOneWidget);
+        // Header components
+        expect(find.text('NOT SENT'), findsWidgets);
+        expect(find.text('Order not sent'), findsOneWidget);
+        expect(
+          find.text('A definite server rejection was received'),
+          findsOneWidget,
+        );
+        expect(find.byIcon(Icons.cancel_outlined), findsOneWidget);
 
-      // Draft safe card
-      expect(find.text('YOUR DRAFT IS SAFE'), findsOneWidget);
-      expect(find.text('Status'), findsOneWidget);
-      expect(find.text('Not created'), findsOneWidget);
-      expect(find.text('Cart'), findsOneWidget);
-      expect(find.text('3 items preserved'), findsOneWidget);
-      expect(find.text('Total'), findsOneWidget);
-      expect(find.text('₱597.00'), findsOneWidget);
+        // Draft safe card
+        expect(find.text('YOUR DRAFT IS SAFE'), findsOneWidget);
+        expect(find.text('Status'), findsOneWidget);
+        expect(find.text('Not created'), findsOneWidget);
+        expect(find.text('Cart'), findsOneWidget);
+        expect(find.text('3 items preserved'), findsOneWidget);
+        expect(find.text('Total'), findsOneWidget);
+        expect(find.text('₱597.00'), findsOneWidget);
 
-      // Order context card
-      expect(find.text('ORDER CONTEXT'), findsOneWidget);
-      expect(
-        find.text(
-          'Fix the reported error. Retry only through the agreed safe submission path.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('DESIGN REVIEW STATE'), findsOneWidget);
-      expect(find.text("Aurelia's Inasal · example only"), findsOneWidget);
+        // Order context card
+        expect(find.text('ORDER CONTEXT'), findsOneWidget);
+        expect(
+          find.text(
+            'Fix the reported error. Retry only through the agreed safe submission path.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('DESIGN REVIEW STATE'), findsOneWidget);
+        expect(find.text("Aurelia's Inasal · example only"), findsOneWidget);
 
-      // Action buttons
-      expect(find.text('Edit order'), findsOneWidget);
-      expect(find.text('Retry safely'), findsOneWidget);
+        // Action buttons
+        expect(find.text('Edit order'), findsOneWidget);
+        expect(find.text('Retry safely'), findsOneWidget);
 
-      // Action button interactions
-      await tester.tap(find.text('Edit order'));
-      await tester.pump();
-      expect(editPressed, isTrue);
+        // Action button interactions
+        await tester.tap(find.text('Edit order'));
+        await tester.pump();
+        expect(editPressed, isTrue);
 
-      await tester.tap(find.text('Retry safely'));
-      await tester.pump();
-      expect(retryPressed, isTrue);
-    });
+        await tester.tap(find.text('Retry safely'));
+        await tester.pump();
+        expect(retryPressed, isTrue);
+      },
+    );
   });
 
   group('OrderNotSentScreen Phone layout', () {
-    testWidgets('renders compact phone layout with bottom nav and tone notice', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'renders compact phone layout with bottom nav and tone notice',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(buildScreen());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildScreen());
+        await tester.pumpAndSettle();
 
-      // Bottom nav is shown on phone, rail is hidden
-      expect(find.byType(MenuBottomNav), findsOneWidget);
-      expect(find.byType(MenuRail), findsNothing);
+        // Bottom nav is shown on phone, rail is hidden
+        expect(find.byType(MenuBottomNav), findsOneWidget);
+        expect(find.byType(MenuRail), findsNothing);
 
-      // Header components on phone (no trailing cancel icon on header)
-      expect(find.text('NOT SENT'), findsWidgets);
-      expect(find.text('Order not sent'), findsOneWidget);
-      expect(
-        find.text('A definite server rejection was received'),
-        findsOneWidget,
-      );
-      expect(find.byIcon(Icons.cancel_outlined), findsNothing);
+        // Header components on phone (no trailing cancel icon on header)
+        expect(find.text('NOT SENT'), findsWidgets);
+        expect(find.text('Order not sent'), findsOneWidget);
+        expect(
+          find.text('A definite server rejection was received'),
+          findsOneWidget,
+        );
+        expect(find.byIcon(Icons.cancel_outlined), findsNothing);
 
-      // Draft safe card is displayed
-      expect(find.text('YOUR DRAFT IS SAFE'), findsOneWidget);
-      expect(find.text('Status'), findsOneWidget);
-      expect(find.text('Not created'), findsOneWidget);
-      expect(find.text('Cart'), findsOneWidget);
-      expect(find.text('3 items preserved'), findsOneWidget);
-      expect(find.text('Total'), findsOneWidget);
-      expect(find.text('₱597.00'), findsOneWidget);
+        // Draft safe card is displayed
+        expect(find.text('YOUR DRAFT IS SAFE'), findsOneWidget);
+        expect(find.text('Status'), findsOneWidget);
+        expect(find.text('Not created'), findsOneWidget);
+        expect(find.text('Cart'), findsOneWidget);
+        expect(find.text('3 items preserved'), findsOneWidget);
+        expect(find.text('Total'), findsOneWidget);
+        expect(find.text('₱597.00'), findsOneWidget);
 
-      // Context card eyebrow is not shown in compact view
-      expect(find.text('ORDER CONTEXT'), findsNothing);
+        // Context card eyebrow is not shown in compact view
+        expect(find.text('ORDER CONTEXT'), findsNothing);
 
-      // Notice message is displayed
-      expect(
-        find.text(
-          'Fix the reported error. Retry only through the agreed safe submission path.',
-        ),
-        findsOneWidget,
-      );
+        // Notice message is displayed
+        expect(
+          find.text(
+            'Fix the reported error. Retry only through the agreed safe submission path.',
+          ),
+          findsOneWidget,
+        );
 
-      // Both buttons are visible
-      expect(find.text('Edit order'), findsOneWidget);
-      expect(find.text('Retry safely'), findsOneWidget);
-    });
+        // Both buttons are visible
+        expect(find.text('Edit order'), findsOneWidget);
+        expect(find.text('Retry safely'), findsOneWidget);
+      },
+    );
   });
 }

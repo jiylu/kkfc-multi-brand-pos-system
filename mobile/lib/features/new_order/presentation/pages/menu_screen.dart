@@ -188,11 +188,7 @@ class _MenuBodyState extends ConsumerState<_MenuBody> {
             child: body,
           ),
         ),
-        KkfcPagination(
-          currentPage: 1,
-          totalPages: 1,
-          onPageChanged: (_) {},
-        ),
+        KkfcPagination(currentPage: 1, totalPages: 1, onPageChanged: (_) {}),
       ],
     );
   }

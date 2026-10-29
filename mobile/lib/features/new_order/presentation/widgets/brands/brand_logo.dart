@@ -28,7 +28,7 @@ class BrandLogo extends StatelessWidget {
       height: height,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.medium,
-      gaplessPlayback: true, 
+      gaplessPlayback: true,
       semanticLabel: brand.name,
       errorBuilder: (_, _, _) => Text(brand.name),
     );

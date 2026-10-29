@@ -7,6 +7,7 @@ import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/menu_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
+
 import '../../data/models/duplicate_platform_order_view_data.dart';
 import '../widgets/matched_reference_card.dart';
 import '../widgets/duplicate_order_context_card.dart';
@@ -97,10 +98,7 @@ class DuplicatePlatformOrderScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             OrderEntryHeader(
-                              tag: StatusTag(
-                                text: data.tag,
-                                tone: warning,
-                              ),
+                              tag: StatusTag(text: data.tag, tone: warning),
                               title: wide ? data.title : data.compactTitle,
                               subtitle: data.subtitle,
                               trailing: wide
@@ -146,10 +144,7 @@ class DuplicatePlatformOrderScreen extends StatelessWidget {
                             else ...[
                               MatchedReferenceCard(data: data, compact: true),
                               const SizedBox(height: KkfcSpace.s16),
-                              ToneNotice(
-                                body: data.noticeBody,
-                                tone: warning,
-                              ),
+                              ToneNotice(body: data.noticeBody, tone: warning),
                             ],
                           ],
                         ),

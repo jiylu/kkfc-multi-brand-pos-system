@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/shared/widgets/kkfc_loading_button.dart';
+
 import 'order_entry_shadows.dart';
 
 class OrderEntryActionBar extends StatelessWidget {
@@ -49,11 +50,7 @@ class OrderEntryActionBar extends StatelessWidget {
               if (narrow) {
                 return primary;
               }
-              return Row(
-                children: [
-                  SizedBox(width: 300, child: primary),
-                ],
-              );
+              return Row(children: [SizedBox(width: 300, child: primary)]);
             }
 
             final secondary = OutlinedButton(

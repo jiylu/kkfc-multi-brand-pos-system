@@ -45,7 +45,9 @@ class CartLineTile extends ConsumerWidget {
                     ? const SizedBox.shrink()
                     : Text(
                         modifiers.join(' · '),
-                        style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                        style: text.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
                       ),
               ),
               IconButton.outlined(
@@ -72,7 +74,8 @@ class CartLineTile extends ConsumerWidget {
               IconButton(
                 tooltip: 'Edit item',
                 icon: const Icon(Icons.tune),
-                onPressed: () => openCustomize(context, ref, item: line.item, editing: line),
+                onPressed: () =>
+                    openCustomize(context, ref, item: line.item, editing: line),
               ),
             ],
           ),

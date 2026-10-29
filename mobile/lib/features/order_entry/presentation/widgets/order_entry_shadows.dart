@@ -53,5 +53,5 @@ abstract final class OrderEntryShadows {
         offset: const Offset(0, 16),
       ),
     ];
-  } 
+  }
 }

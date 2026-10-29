@@ -82,8 +82,9 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
     final thumbWidth = thumbBase * (_pressed && _enabled ? 1.2 : 1.0);
     final trackWidth = widget.compact ? 44.0 : KkfcSizing.switchTrack;
     final trackHeight = widget.compact ? 36.0 : KkfcSizing.thumb;
-    final minHeight =
-        widget.compact ? KkfcSizing.controlMd : KkfcSizing.controlLg;
+    final minHeight = widget.compact
+        ? KkfcSizing.controlMd
+        : KkfcSizing.controlLg;
 
     return Semantics(
       container: true,
@@ -122,9 +123,7 @@ class _KkfcSwitchState extends State<KkfcSwitch> {
             // minHeight, not a fixed height, so large text scale still fits
             child: AnimatedContainer(
               duration: KkfcMotion.fast, // verify
-              constraints: BoxConstraints(
-                minHeight: minHeight,
-              ),
+              constraints: BoxConstraints(minHeight: minHeight),
               padding: EdgeInsets.symmetric(
                 horizontal: widget.compact ? KkfcSpace.s12 : KkfcSpace.s16,
                 vertical: widget.compact ? KkfcSpace.s8 : KkfcSpace.s12,

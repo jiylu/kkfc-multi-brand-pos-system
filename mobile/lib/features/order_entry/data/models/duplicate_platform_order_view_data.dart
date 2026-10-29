@@ -87,12 +87,10 @@ class DuplicatePlatformOrderViewData {
     externalValue: 'GF-1001',
     contextEyebrow: 'ORDER CONTEXT',
     contextTitle: 'DUPLICATE FOUND',
-    contextDescription:
-        'Same channel + store + external reference. No second kitchen ticket was created.',
+    contextDescription: 'Same channel + store + external reference. No second kitchen ticket was created.',
     reviewBadgeText: 'DESIGN REVIEW STATE',
     brandFooter: 'Aurelia\'s Inasal · example only',
-    noticeBody:
-        'Same channel + store + external reference. No second kitchen ticket was created.',
+    noticeBody: 'Same channel + store + external reference. No second kitchen ticket was created.',
     primaryLabel: 'Back to order',
   );
 }

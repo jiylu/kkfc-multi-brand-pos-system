@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
 import 'package:mobile/features/order_entry/data/models/order_entry_view_data.dart';
+
 import 'order_entry_shadows.dart';
 
 class OrderSummaryCard extends StatelessWidget {
@@ -83,9 +84,7 @@ class _ItemRow extends StatelessWidget {
               padding: const EdgeInsets.only(top: KkfcSpace.s4),
               child: Text(
                 item.modifiers.join(' · '),
-                style: text.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
+                style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
               ),
             ),
         ],

@@ -88,8 +88,8 @@ class OrderConfirmedViewData {
           'Order ${order.toLowerCase()}  ·  Payment ${payment.toLowerCase()}',
       noticeBody: isPaid
           ? (isPlatform
-              ? 'Payment is settled by the platform. No stock posting is implied.'
-              : 'Payment has been received. No stock posting is implied.')
+                ? 'Payment is settled by the platform. No stock posting is implied.'
+                : 'Payment has been received. No stock posting is implied.')
           : 'Payment can be collected after dining. No refund or stock posting is implied.',
       secondaryLabel: 'New order',
       primaryLabel: 'Cancel if permitted',
@@ -121,8 +121,7 @@ class OrderConfirmedViewData {
     paymentStatus: 'Unpaid',
     contextNote: 'Payment and inventory posting are separate outcomes.',
     noticeTitle: 'Order confirmed  ·  Payment unpaid',
-    noticeBody:
-        'Payment can be collected after dining. No refund or stock posting is implied.',
+    noticeBody: 'Payment can be collected after dining. No refund or stock posting is implied.',
     secondaryLabel: 'New order',
     primaryLabel: 'Cancel if permitted',
   );

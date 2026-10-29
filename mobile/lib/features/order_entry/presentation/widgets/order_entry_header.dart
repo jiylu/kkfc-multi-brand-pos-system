@@ -25,10 +25,7 @@ class OrderEntryHeader extends StatelessWidget {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (tag != null) ...[
-          tag!,
-          const SizedBox(height: 12),
-        ],
+        if (tag != null) ...[tag!, const SizedBox(height: 12)],
         if (eyebrow != null) ...[
           Text(
             eyebrow!,
@@ -41,16 +38,12 @@ class OrderEntryHeader extends StatelessWidget {
         ],
         Text(
           title,
-          style: text.headlineLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+          style: text.headlineLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 4),
         Text(
           subtitle,
-          style: text.bodyMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
+          style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
         ),
       ],
     );

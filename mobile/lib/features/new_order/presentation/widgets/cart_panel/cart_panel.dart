@@ -119,7 +119,8 @@ class _CartPanelState extends ConsumerState<CartPanel> {
             CartPanelFooter(
               count: count,
               total: total,
-              canSend: lines.isNotEmpty &&
+              canSend:
+                  lines.isNotEmpty &&
                   (channel.isPlatform || reference.trim().isNotEmpty),
               onSend: () {
                 if (!channel.isPlatform && reference.trim().isEmpty) {

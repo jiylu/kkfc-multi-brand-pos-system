@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app/theme/tokens.dart';
+
 import '../../data/models/duplicate_platform_order_view_data.dart';
 import 'order_entry_shadows.dart';
 
@@ -46,15 +47,9 @@ class MatchedReferenceCard extends StatelessWidget {
             value: data.orderTicketValue,
           ),
           const SizedBox(height: KkfcSpace.s16),
-          _ReferenceRow(
-            label: data.storeLabel,
-            value: data.storeValue,
-          ),
+          _ReferenceRow(label: data.storeLabel, value: data.storeValue),
           const SizedBox(height: KkfcSpace.s16),
-          _ReferenceRow(
-            label: data.externalLabel,
-            value: data.externalValue,
-          ),
+          _ReferenceRow(label: data.externalLabel, value: data.externalValue),
         ],
       ),
     );
@@ -78,9 +73,7 @@ class _ReferenceRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: text.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ),
         const SizedBox(width: KkfcSpace.s16),

@@ -12,6 +12,7 @@ import 'package:mobile/shared/widgets/kkfc_scaffold.dart';
 import 'package:mobile/shared/widgets/menu_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
 import 'package:mobile/features/order_entry/data/models/platform_reference_view_data.dart';
+
 import '../widgets/order_entry_header.dart';
 import '../widgets/order_entry_action_bar.dart';
 import '../widgets/order_context_card.dart';
@@ -138,9 +139,12 @@ class _PlatformReferenceScreenState
     final effectiveData = widget.data.withContext(
       brandName: brand.name,
       channelLabel: channel.label,
-      storeErrorText: (_submitted && storeText.isEmpty) ? 'Store required' : null,
-      externalReferenceErrorText:
-          externalRefText.isEmpty ? 'External reference required' : null,
+      storeErrorText: (_submitted && storeText.isEmpty)
+          ? 'Store required'
+          : null,
+      externalReferenceErrorText: externalRefText.isEmpty
+          ? 'External reference required'
+          : null,
     );
     final channelLine = OrderEntryViewData.formatChannelLine(
       channel.label,
@@ -219,15 +223,9 @@ class _PlatformReferenceScreenState
                                 ],
                               )
                             else ...[
-                              FadeSlideIn(
-                                index: 1,
-                                child: referenceCard,
-                              ),
+                              FadeSlideIn(index: 1, child: referenceCard),
                               const SizedBox(height: KkfcSpace.s16),
-                              FadeSlideIn(
-                                index: 2,
-                                child: contextCard,
-                              ),
+                              FadeSlideIn(index: 2, child: contextCard),
                             ],
                           ],
                         ),

@@ -48,8 +48,9 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
         addOns: addOns,
         selections: _selections,
         onChanged: (group, on) => setState(
-          () => _selections[group.id] =
-              on ? ModifierGroup.addOnOn : ModifierGroup.addOnOff,
+          () => _selections[group.id] = on
+              ? ModifierGroup.addOnOn
+              : ModifierGroup.addOnOff,
         ),
       ),
     ];
@@ -64,7 +65,8 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
     final base = item.priceFor(widget.channel);
     final unit = base + modifiersCentavosFor(item, _selections);
     final total = unit * _quantity;
-    final eyebrow = '${isEditing ? 'EDIT ORDER' : 'NEW ORDER'} / '
+    final eyebrow =
+        '${isEditing ? 'EDIT ORDER' : 'NEW ORDER'} / '
         'ITEM ${widget.itemNumber.toString().padLeft(2, '0')}';
 
     return Column(
@@ -78,9 +80,12 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(eyebrow,
-                          style: text.labelSmall
-                              ?.copyWith(color: scheme.onSurfaceVariant)),
+                      child: Text(
+                        eyebrow,
+                        style: text.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                     IconButton(
                       tooltip: 'Close',
@@ -89,9 +94,12 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
                     ),
                   ],
                 ),
-                Text('Customize item',
-                    style: text.headlineMedium
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Customize item',
+                  style: text.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: MenuSpace.lg),
                 _ItemSummary(
                   brandCode: widget.brandCode,
@@ -99,7 +107,9 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
                   basePrice: base,
                 ),
                 ..._addOnSection(item),
-                for (final group in item.modifierGroups.where((g) => !g.isAddOn)) ...[
+                for (final group in item.modifierGroups.where(
+                  (g) => !g.isAddOn,
+                )) ...[
                   const SizedBox(height: MenuSpace.md),
                   _ModifierGroupCard(
                     group: group,
@@ -111,8 +121,9 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
                 const SizedBox(height: MenuSpace.lg),
                 _QuantityRow(
                   quantity: _quantity,
-                  onDecrement:
-                      _quantity > 1 ? () => setState(() => _quantity--) : null,
+                  onDecrement: _quantity > 1
+                      ? () => setState(() => _quantity--)
+                      : null,
                   onIncrement: _quantity < _maxQuantity
                       ? () => setState(() => _quantity++)
                       : null,
@@ -128,14 +139,18 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Text('LINE TOTAL',
-                              style: text.labelSmall?.copyWith(
-                                  color: scheme.onSurfaceVariant)),
+                          child: Text(
+                            'LINE TOTAL',
+                            style: text.labelSmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
                         ),
                         AnimatedPeso(
                           centavos: total,
-                          style: text.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                          style: text.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ],
                     ),
@@ -144,8 +159,9 @@ class _CustomizeItemPanelState extends State<CustomizeItemPanel> {
                 const SizedBox(height: MenuSpace.md),
                 Text(
                   'Add-ons and prices are loaded from the server.',
-                  style: text.bodySmall
-                      ?.copyWith(color: scheme.onSurfaceVariant),
+                  style: text.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -202,10 +218,13 @@ class _ItemSummary extends StatelessWidget {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(MenuSpace.sm),
-                child: Text(brandCode,
-                    style: text.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onPrimaryContainer)),
+                child: Text(
+                  brandCode,
+                  style: text.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onPrimaryContainer,
+                  ),
+                ),
               ),
             ),
           ),
@@ -215,12 +234,14 @@ class _ItemSummary extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(name,
-                  style: text.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700)),
-              Text('Base price ${formatPeso(basePrice)} · Sample',
-                  style: text.bodySmall
-                      ?.copyWith(color: scheme.onSurfaceVariant)),
+              Text(
+                name,
+                style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              Text(
+                'Base price ${formatPeso(basePrice)} · Sample',
+                style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
             ],
           ),
         ),
@@ -256,8 +277,10 @@ class _AddOnsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ADD-ONS',
-                style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
+            Text(
+              'ADD-ONS',
+              style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
             const SizedBox(height: MenuSpace.xs),
             for (final group in addOns)
               CheckboxListTile(
@@ -304,9 +327,10 @@ class _ModifierGroupCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(group.title.toUpperCase(),
-                style: text.labelSmall
-                    ?.copyWith(color: scheme.onSurfaceVariant)),
+            Text(
+              group.title.toUpperCase(),
+              style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
             const SizedBox(height: MenuSpace.xs),
             for (final option in group.options)
               _OptionRow(
@@ -352,10 +376,12 @@ class _OptionRow extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Text('${option.label} · $price',
-                    style: text.bodyMedium?.copyWith(
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w400)),
+                child: Text(
+                  '${option.label} · $price',
+                  style: text.bodyMedium?.copyWith(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                  ),
+                ),
               ),
               AnimatedSwitcher(
                 duration: context.motion(MenuMotion.fast),
@@ -396,8 +422,10 @@ class _QuantityRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text('QUANTITY',
-              style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant)),
+          child: Text(
+            'QUANTITY',
+            style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
         ),
         IconButton.outlined(
           tooltip: 'Remove one',
@@ -417,8 +445,11 @@ class _QuantityRow extends StatelessWidget {
                 duration: context.motion(MenuMotion.fast),
                 transitionBuilder: (child, anim) =>
                     ScaleTransition(scale: anim, child: child),
-                child: Text('$quantity',
-                    key: ValueKey(quantity), style: text.titleMedium),
+                child: Text(
+                  '$quantity',
+                  key: ValueKey(quantity),
+                  style: text.titleMedium,
+                ),
               ),
             ),
           ),

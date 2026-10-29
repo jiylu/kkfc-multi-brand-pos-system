@@ -86,10 +86,13 @@ void main() {
     expect(modified.read(cartTotalProvider), 29000);
     expect(modified.read(cartCountProvider), 2);
     expect(modified.read(cartProvider), same(before));
-    expect(modified.read(cartProvider).single.selections[_extraRice.id],
-        ModifierGroup.addOnOn);
-    expect(modified.read(cartProvider).single.modifierSummary,
-        ['Extra rice +₱25.00']);
+    expect(
+      modified.read(cartProvider).single.selections[_extraRice.id],
+      ModifierGroup.addOnOn,
+    );
+    expect(modified.read(cartProvider).single.modifierSummary, [
+      'Extra rice +₱25.00',
+    ]);
   });
 
   for (final entry in {
