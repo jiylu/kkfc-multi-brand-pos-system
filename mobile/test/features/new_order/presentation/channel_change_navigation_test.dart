@@ -21,6 +21,7 @@ void main() {
         overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)],
       );
       addTearDown(container.dispose);
+      container.read(cartProvider.notifier).add(sampleMenu[0]);
       MenuChannel? notified;
 
       await tester.pumpWidget(
@@ -47,6 +48,7 @@ void main() {
         overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)],
       );
       addTearDown(container.dispose);
+      container.read(cartProvider.notifier).add(sampleMenu[0]);
       MenuChannel? notified;
 
       await tester.pumpWidget(
@@ -95,6 +97,7 @@ void main() {
         overrides: [menuItemsProvider.overrideWith((ref) async => sampleMenu)],
       );
       addTearDown(container.dispose);
+      container.read(cartProvider.notifier).add(sampleMenu[0]);
 
       await tester.pumpWidget(
         UncontrolledProviderScope(

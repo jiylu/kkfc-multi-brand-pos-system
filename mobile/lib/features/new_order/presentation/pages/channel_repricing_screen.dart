@@ -8,6 +8,7 @@ import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/presentation/widgets/animated_peso.dart';
 import 'package:mobile/shared/widgets/menu_header.dart';
 import 'package:mobile/shared/widgets/menu_navigation.dart';
+import 'package:mobile/features/new_order/presentation/widgets/repricing/operational_context_card.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_notice.dart';
 import 'package:mobile/features/new_order/presentation/widgets/repricing/repricing_row.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
@@ -36,7 +37,7 @@ class ChannelRepricingScreen extends StatelessWidget {
         builder: (context, constraints) {
           final width = constraints.maxWidth;
           final showRail = width >= MenuLayout.compactMax;
-          final showContext = width >= MenuLayout.wideMin;
+          final showContext = width >= MenuLayout.compactMax;
 
           return Column(
             children: [
@@ -66,7 +67,10 @@ class ChannelRepricingScreen extends StatelessWidget {
                     ),
                     if (showContext) ...[
                       const VerticalDivider(width: 1),
-                      const SizedBox(width: MenuLayout.cartPanelWidth),
+                      const SizedBox(
+                        width: MenuLayout.cartPanelWidth,
+                        child: OperationalContextCard(),
+                      ),
                     ],
                   ],
                 ),
