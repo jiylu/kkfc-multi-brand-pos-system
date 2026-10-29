@@ -47,6 +47,35 @@ Both must pass. After changing a model or enum with `freezed` or `json_serializa
 dart run build_runner build --delete-conflicting-outputs
 ```
 
+### Unit, widget, and golden test reports
+
+Run from `mobile/`:
+
+```powershell
+dart run tool/run_flutter_tests.dart --coverage
+```
+
+This runs `test/` (including golden tests) and writes a new folder under
+`reports/flutter/<timestamp>/` containing `report.html`, `test-results.feature`,
+`results.json`, and `run.log`. The HTML groups counts by test type and includes
+test durations, failure details, blockers, and Given/When/Then scenarios. Each
+executed test, including parameter variants, gets its own scenario and result.
+Descriptions are generated from the test names and fixtures; existing
+Given/When/Then wording in names is preserved. Results apply to complete tests,
+not independently executed Gherkin steps.
+
+Use this runner whenever you want saved reports; plain `flutter test` still
+prints results only. Additional Flutter test options such as
+`--exclude-tags golden` are forwarded. Golden tests use the existing local or CI
+baselines; this runner never updates them automatically.
+
+Flutter CI uses this command and uploads the `flutter-test-results` artifact
+even when tests fail. Coverage remains in `flutter-coverage-report`; golden
+failure comparison images are uploaded as `flutter-golden-failures` when present.
+Download and extract the results artifact, then open its `report.html` file.
+This CI job runs unit, widget, and golden tests only; real API integration tests
+continue to run separately.
+
 ### Real API login integration tests
 
 `integration_test/auth_api_test.dart` runs the actual app on an Android emulator,

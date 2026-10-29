@@ -5,6 +5,7 @@ import 'gherkin_scenarios.dart';
 /// Interprets Dart's JSON test protocol, including errors after testDone.
 class IntegrationReport {
   final Map<int, Map<String, dynamic>> _tests = {};
+  final Map<int, String> _suites = {};
   bool? runnerSuccess;
   bool completed = false;
 
@@ -18,11 +19,15 @@ class IntegrationReport {
     if (event is! Map<String, dynamic>) return;
     final id = event['testID'] ?? event['test']?['id'];
     switch (event['type']) {
+      case 'suite':
+        final suite = event['suite'] as Map<String, dynamic>;
+        _suites[suite['id'] as int] = suite['path'] as String;
       case 'testStart':
         final test = event['test'] as Map<String, dynamic>;
         final record = _record(test['id'] as int);
         record['name'] = test['name'];
         record['startedMs'] = event['time'];
+        record['suiteID'] = test['suiteID'];
       case 'error':
         if (id is! int) return;
         final record = _record(id);
@@ -84,7 +89,11 @@ class IntegrationReport {
         }
         continue;
       }
-      tests.add(Map<String, dynamic>.from(record));
+      tests.add({
+        ...record,
+        if (_suites[record['suiteID']] != null)
+          'source': _suites[record['suiteID']],
+      });
     }
     int count(String status) =>
         tests.where((t) => t['status'] == status).length;
@@ -132,13 +141,16 @@ String reportHtml(Map<String, dynamic> report) {
   final blockers = report['blockers'] as List;
   final failures = tests.where((t) => t['status'] == 'Failed');
   final scenarios = report['scenarios'] as List? ?? [];
+  final title = report['title'] ?? 'Flutter integration test report';
+  final gherkinFile = report['gherkinFile'] ?? 'auth-api.integration.feature';
+  final categoryCounts = report['categoryCounts'] as Map? ?? {};
   String errors(dynamic test) => (test['errors'] as List)
       .map((e) => '${e['message']}\n${e['stackTrace']}')
       .join('\n\n');
   return '''<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Flutter integration test report</title>
+<title>${escape(title)}</title>
 <style>
 body{font:16px/1.5 system-ui,sans-serif;max-width:1080px;margin:40px auto;padding:0 20px;color:#172333;background:#f5f7fa}
 section{background:white;border:1px solid #cbd5e1;border-radius:10px;padding:20px;margin:20px 0}
@@ -146,18 +158,20 @@ h1,h2{line-height:1.2}table{border-collapse:collapse;width:100%}th,td{text-align
 pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#eef2f6;padding:12px;font-size:13px}
 .Passed{color:#146332}.Failed{color:#a51d24}.Blocked{color:#805500}a{color:#174ea6}
 </style></head><body>
-<h1>Flutter integration test report</h1>
+<h1>${escape(title)}</h1>
 <h2 class="${escape(report['status'])}">${escape(report['status'])}</h2>
 <p>Started: ${escape(report['started'])}<br>Finished: ${escape(report['finished'])}<br>
 Duration: ${escape(((report['durationMs'] as num) / 1000).toStringAsFixed(1))} seconds · Exit code: ${escape(report['exitCode'])}</p>
 <p>${(report['counts'] as Map).entries.map((e) => '${escape(e.key)}: ${escape(e.value)}').join(' · ')}</p>
 <p><a href="run.log">Full execution log</a> · <a href="results.json">Structured results</a></p>
-<section><h2>Test results</h2><table><thead><tr><th>Test</th><th>Result</th><th>Duration</th></tr></thead><tbody>
-${tests.map((t) => '<tr><td>${escape(t['name'])}</td><td class="${escape(t['status'])}">${escape(t['status'])}</td><td>${escape(t['durationMs'] ?? '—')} ms</td></tr>').join('\n')}
+${categoryCounts.isEmpty ? '' : '<section><h2>Results by test type</h2><table><tr><th>Type</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Not completed</th></tr>${categoryCounts.entries.map((e) => '<tr><td>${escape(e.key)}</td>${['Passed', 'Failed', 'Skipped', 'Not completed'].map((s) => '<td>${escape(e.value[s])}</td>').join()}</tr>').join()}</table></section>'}
+<section><h2>Test results</h2><table><thead><tr><th>Type</th><th>Test</th><th>Result</th><th>Duration</th></tr></thead><tbody>
+${tests.map((t) => '<tr><td>${escape(t['category'] ?? 'Integration')}</td><td>${escape(t['name'])}${t['source'] == null ? '' : '<br><small>${escape(t['source'])}</small>'}</td><td class="${escape(t['status'])}">${escape(t['status'])}</td><td>${escape(t['durationMs'] ?? '—')} ms</td></tr>').join('\n')}
 </tbody></table>${tests.isEmpty ? '<p>No test cases were executed.</p>' : ''}</section>
 <section><h2>Gherkin scenarios</h2>
-<p><a href="auth-api.integration.feature">Gherkin file with scenario results</a></p>
+<p><a href="${escape(gherkinFile)}">Gherkin file with scenario results</a></p>
 <p>Results apply to each complete scenario. Individual steps are descriptions; Flutter does not report separate step results.</p>
+${report['scenarioNote'] == null ? '' : '<p>${escape(report['scenarioNote'])}</p>'}
 ${scenarios.map((s) => '<h3>${escape(s['id'])} — ${escape(s['status'])}</h3><pre>${escape(s['gherkin'])}</pre>').join('\n')}
 ${scenarios.isEmpty ? '<p>No scenarios were mapped.</p>' : ''}</section>
 <section><h2>Failures to investigate</h2>

@@ -87,6 +87,11 @@ String gherkinWithResults(Map<String, dynamic> report) {
   }
   for (final scenario in scenarios) {
     buffer.writeln('\n  # Result: ${scenario['status']}');
+    if (scenario['category'] != null) {
+      buffer.writeln(
+        '  @${(scenario['category'] as String).toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_')}',
+      );
+    }
     buffer.writeln('  @${scenario['id']}');
     for (final line in (scenario['gherkin'] as String).split('\n')) {
       buffer.writeln('  $line');
