@@ -10,7 +10,11 @@ import {
 import { OrderChannel, Prisma } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { OrdersRepository, type SavedOrder } from './orders.repository';
-import { ConfirmOrderDTO, CreateOrderDTO } from './dto/order.dto';
+import {
+  ConfirmOrderDTO,
+  CreateOrderDTO,
+  CancelOrderDTO,
+} from './dto/order.dto';
 
 function omit<T, K extends keyof T>(value: T, ...keys: K[]): Omit<T, K> {
   const copy = { ...value };
@@ -299,6 +303,57 @@ export class OrdersService {
       );
       // Sprint 1 deliberately performs no inventory writes or stock availability checks.
       return this.response(confirmed);
+    });
+  }
+
+  async cancel(
+    brandId: string,
+    orderId: string,
+    actorId: string,
+    dto: CancelOrderDTO,
+  ) {
+    const reason = dto?.cancellation_reason;
+    if (typeof reason !== 'string' || !reason.trim() || reason.length > 1000) {
+      throw new BadRequestException(
+        'Cancellation reason must be nonblank and at most 1000 characters.',
+      );
+    }
+    return this.repository.transaction(async (tx) => {
+      const order = await this.load(tx, brandId, orderId);
+      const ticket = order.kitchen_tickets_order;
+      if (order.status === 'CANCELLED') {
+        if (ticket && ticket.status !== 'CANCELLED') {
+          throw new ConflictException(
+            'Cancelled order has an active ticket; repair is required.',
+          );
+        }
+        return this.response(order);
+      }
+      if (order.status === 'COMPLETED' || ticket?.status === 'HANDED_OVER') {
+        throw new ConflictException(
+          'Completed orders or handed-over tickets cannot be cancelled.',
+        );
+      }
+      this.assertConfirmable(order);
+      if (ticket?.status === 'CANCELLED') {
+        throw new ConflictException(
+          'Active order has a cancelled ticket; repair is required.',
+        );
+      }
+      const cancelledAt = new Date();
+      if (ticket) await this.repository.cancelTicket(orderId, cancelledAt, tx);
+      const cancelled = await this.repository.update(
+        orderId,
+        {
+          status: 'CANCELLED',
+          cancelled_by_id: actorId,
+          cancellation_reason: reason.trim(),
+          cancelled_at: cancelledAt,
+          modified_at: cancelledAt,
+        },
+        tx,
+      );
+      return this.response(cancelled);
     });
   }
 }
