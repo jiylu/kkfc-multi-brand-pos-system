@@ -74,9 +74,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .read(authRepositoryProvider)
           .login(username: _username.text.trim(), password: _password.text);
 
-      // Holding the token flips sessionProvider, which the router watches,
-      // so the redirect to AppRoutes.orders happens on its own.
       if (!mounted) return;
+      final role = ref.read(authRepositoryProvider).cachedRole;
+      if (role != null) {
+        ref.read(userRoleProvider.notifier).setRole(role);
+      }
       ref.read(sessionTokenProvider.notifier).setToken(token);
     } on AuthException catch (e) {
       if (!mounted) return;

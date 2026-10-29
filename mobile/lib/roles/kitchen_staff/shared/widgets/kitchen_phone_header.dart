@@ -4,6 +4,7 @@ import 'package:mobile/roles/kitchen_staff/shared/kitchen_metrics.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_palette.dart';
 import 'package:mobile/roles/kitchen_staff/shared/widgets/kitchen_brand_card.dart';
 import 'package:mobile/roles/kitchen_staff/shared/widgets/kitchen_staff_identity.dart';
+import 'package:mobile/shared/widgets/logout_button.dart';
 
 /// Phone header. [bottom] hosts the stage tabs when a screen has them.
 class KitchenPhoneHeader extends StatelessWidget {
@@ -26,6 +27,13 @@ class KitchenPhoneHeader extends StatelessWidget {
                 SizedBox(width: KitchenSpace.md),
                 const Flexible(child: KitchenStaffIdentity(status: 'Authorized')),
                 const Spacer(),
+                LogoutButton(
+                  color: context.kitchenOnChrome,
+                  constraints: const BoxConstraints(
+                    minWidth: KitchenMetrics.controlHeight,
+                    minHeight: KitchenMetrics.controlHeight,
+                  ),
+                ),
                 IconButton(
                   tooltip: 'More',
                   constraints: const BoxConstraints(

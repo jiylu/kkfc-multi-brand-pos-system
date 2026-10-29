@@ -28,7 +28,7 @@ class KitchenSegmentTabs extends StatelessWidget {
           onTap: onSelected == null ? null : () => onSelected!(i),
         ),
     ];
-    return IntrinsicHeight(
+    final row = IntrinsicHeight(
       child: Row(
         mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -36,6 +36,11 @@ class KitchenSegmentTabs extends StatelessWidget {
           for (final s in segments) expand ? Expanded(child: s) : s,
         ],
       ),
+    );
+    if (expand) return row;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: row,
     );
   }
 }

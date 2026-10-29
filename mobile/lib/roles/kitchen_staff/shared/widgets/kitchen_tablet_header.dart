@@ -4,6 +4,7 @@ import 'package:mobile/roles/kitchen_staff/shared/kitchen_palette.dart';
 import 'package:mobile/roles/kitchen_staff/shared/widgets/kitchen_brand_card.dart';
 import 'package:mobile/roles/kitchen_staff/shared/widgets/kitchen_segment_tabs.dart';
 import 'package:mobile/roles/kitchen_staff/shared/widgets/kitchen_staff_identity.dart';
+import 'package:mobile/shared/widgets/logout_button.dart';
 
 class KitchenTabletHeader extends StatelessWidget {
   const KitchenTabletHeader({super.key});
@@ -27,6 +28,8 @@ class KitchenTabletHeader extends StatelessWidget {
             ),
             SizedBox(width: KitchenSpace.lg),
             const KitchenStaffIdentity(),
+            SizedBox(width: KitchenSpace.sm),
+            LogoutButton(color: context.kitchenOnChrome),
           ],
         ),
       ),
