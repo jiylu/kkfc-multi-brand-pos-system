@@ -151,10 +151,37 @@ describe('Menu items HTTP endpoints', () => {
         ),
     );
     for (const handler of Object.values(service))
-      handler.mockResolvedValue({ ok: true });
+      handler.mockResolvedValue({ name: 'Safe menu result' });
   });
 
   afterAll(async () => app?.close());
+
+  it.each(Object.values(UserRole))(
+    'returns only safe MENU fields for %s even when a service includes nested recipe data',
+    async (callerRole) => {
+      role = callerRole;
+      const confidential = {
+        instructions: 'secret cooking instructions',
+        notes: 'private recipe notes',
+        recipe_components_recipe: [{ quantity: '123.456' }],
+      };
+      service.findOneMenuItem.mockResolvedValue({
+        menu_item_id: menuId,
+        name: 'Safe menu',
+        recipe: confidential,
+        recipe_snapshot: confidential,
+        ...confidential,
+        modifier: { name: 'Extra', quantity: '123.456' },
+      });
+      const response = await fetch(`${url}/${menuId}`, { headers });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        menu_item_id: menuId,
+        name: 'Safe menu',
+        modifier: { name: 'Extra' },
+      });
+    },
+  );
 
   it('documents every menu route and preserves the create/update field contracts', () => {
     const document = SwaggerModule.createDocument(
@@ -235,7 +262,7 @@ describe('Menu items HTTP endpoints', () => {
         body: JSON.stringify(body),
       });
       expect(response.status).toBe(status);
-      expect(await response.json()).toEqual({ ok: true });
+      expect(await response.json()).toEqual({ name: 'Safe menu result' });
       if (handler === 'createMenuItem')
         expect(service[handler]).toHaveBeenCalledWith(create);
       else if (handler === 'updateMenuItem')
