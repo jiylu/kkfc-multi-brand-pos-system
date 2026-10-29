@@ -14,11 +14,12 @@ class BrandLogo extends StatelessWidget {
   };
 
   /// Asset path for a brand code (GC, AI, KK), or null when unknown.
-  static String? assetFor(String code) => _assetsByCode[code.toUpperCase()];
+  static String? assetFor(String code) =>
+      _assetsByCode[code.trim().toUpperCase()];
 
   @override
   Widget build(BuildContext context) {
-    final asset = _assetsByCode[brand.code.toUpperCase()];
+    final asset = assetFor(brand.code);
     if (asset == null) return Text(brand.name);
 
     return Image.asset(

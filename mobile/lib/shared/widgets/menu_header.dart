@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/app/routes.dart';
+import 'package:mobile/core/models/brand_models.dart';
 import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/shared/shared_layout.dart';
 import 'package:mobile/features/new_order/data/models/menu_models.dart';
 import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
-import 'package:mobile/features/new_order/presentation/brand_switch_flow.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
 import 'package:mobile/features/new_order/providers/menu_providers.dart';
 import 'package:mobile/features/availability/data/models/availability_model.dart';
@@ -88,47 +88,33 @@ class MenuHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final brand = ref.watch(activeBrandProvider);
+    final hasSession = ref.watch(sessionProvider);
+    if (hasSession) {
+      ref.listen<AsyncValue<AssignedBrand>>(assignedBrandProvider, (_, next) {
+        final b = next.value;
+        if (b != null) {
+          ref.read(activeBrandProvider.notifier).select(b);
+        }
+      });
+    }
+
+    final AssignedBrand? assignedBrand =
+        hasSession ? ref.watch(assignedBrandProvider).value : null;
+    final AssignedBrand brand =
+        assignedBrand ?? ref.watch(activeBrandProvider);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
-    final themedBrand = OutlinedButton(
-      onPressed: () => startBrandSwitch(context, ref),
-      style: OutlinedButton.styleFrom(
-        backgroundColor: scheme.surface,
-        foregroundColor: scheme.onInverseSurface,
-        padding: const EdgeInsets.symmetric(
-          horizontal: MenuSpace.md,
-          vertical: MenuSpace.sm,
-        ),
-        side: BorderSide(color: scheme.onInverseSurface.withValues(alpha: 0.5)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(MenuRadius.md),
-        ),
+    final themedBrand = Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MenuSpace.sm,
+        vertical: MenuSpace.xs,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: MenuSpace.sm,
-                vertical: MenuSpace.xs,
-              ),
-              decoration: BoxDecoration(
-                color: scheme.surface,
-                borderRadius: BorderRadius.circular(MenuRadius.sm),
-              ),
-              child: BrandLogo(brand: brand, height: MenuSpace.xl),
-            ),
-          ),
-          const SizedBox(width: MenuSpace.sm),
-          Icon(
-            Icons.expand_more,
-            color: scheme.inverseSurface,
-          ),
-        ],
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(MenuRadius.sm),
       ),
+      child: BrandLogo(brand: brand, height: MenuSpace.xl),
     );
 
     final themedUser = Column(

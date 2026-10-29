@@ -16,6 +16,6 @@ class AssignedBrand {
     if (id is! String || code is! String || name is! String) {
       throw const FormatException('Brand is missing required fields.');
     }
-    return AssignedBrand(id: id, code: code, name: name);
+    return AssignedBrand(id: id, code: code.trim(), name: name.trim());
   }
 }
