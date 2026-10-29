@@ -95,6 +95,50 @@ and `--dart-define=TEST_PASSWORD=...` if using other dedicated test fixtures.
 `ENV=test` and an explicit `API_URL` are required. For a physical device, replace
 the emulator URL with an address that reaches the test backend.
 
+#### Save a test report
+
+With the API and device ready, run this from `mobile/` instead of the plain
+`flutter test` command:
+
+```powershell
+dart run tool/run_integration_tests.dart -d emulator-5554
+```
+
+Replace the device ID as needed. Each run creates a timestamped folder under
+`mobile/reports/integration/` with:
+
+- `report.html`: open in a browser to see the summary, individual test results,
+  durations, failure details and stack traces, and run blockers.
+- `results.json`: structured results for automation.
+- `auth-api.integration.feature`: Given/When/Then scenarios with their observed
+  results in Gherkin comments.
+- `run.log`: full Flutter output, including build and device diagnostics.
+
+The terminal prints the report path. Reports are generated even if Flutter cannot
+start or no device is specified, and previous reports are retained. Failed runs
+return a nonzero exit code. Generated reports are gitignored.
+
+The HTML report also displays the Given/When/Then scenarios from
+`features/mobile/auth-api.integration.feature`, matched to Flutter tests by their
+`@IT-MOB-AUTH-*` tags. Scenarios that did not execute are marked **Not run**.
+Results apply to the whole scenario; individual steps are descriptive and do not
+have separately measured pass/fail statuses. Flutter remains the test executor.
+
+Additional Flutter test options are forwarded. Supplying any `--dart-define`
+option replaces the default emulator config, so include both `ENV=test` and
+`API_URL` for a physical device or custom backend. For example, after configuring
+`adb reverse tcp:3001 tcp:3001` for a USB-connected phone:
+
+```powershell
+dart run tool/run_integration_tests.dart -d <device-id> --dart-define=ENV=test --dart-define=API_URL=http://localhost:3001/api
+```
+
+Setup/build/device problems that prevent a completed run are reported as blockers;
+individual test failures remain failures to investigate. A failure does not
+automatically prove an application bug. Check the details and raw log to establish
+the cause. An abruptly terminated report runner (for example Ctrl+C or power loss)
+may leave only a partial log; rerun it to generate a complete report.
+
 The tests clear the app's saved token before each case and revoke sessions they
 create afterward, including when assertions fail. Use a test emulator or app
 installation. HTTP failures or an unavailable backend fail the tests; responses
