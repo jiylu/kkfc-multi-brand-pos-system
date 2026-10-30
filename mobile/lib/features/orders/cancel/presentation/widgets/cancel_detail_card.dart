@@ -69,10 +69,7 @@ class CancelDetailCard extends StatelessWidget {
             SizedBox(height: MenuSpace.lg),
             _CancelDetailValueRow(row: row),
           ],
-          if (footer != null) ...[
-            SizedBox(height: MenuSpace.lg),
-            footer!,
-          ],
+          if (footer != null) ...[SizedBox(height: MenuSpace.lg), footer!],
         ],
       ),
     );
@@ -111,9 +108,7 @@ class _CancelDetailValueRow extends StatelessWidget {
             textAlign: TextAlign.right,
             style: style?.copyWith(
               color: color,
-              fontWeight: row.emphasized || row.danger
-                  ? FontWeight.w700
-                  : null,
+              fontWeight: row.emphasized || row.danger ? FontWeight.w700 : null,
             ),
           ),
         ),
