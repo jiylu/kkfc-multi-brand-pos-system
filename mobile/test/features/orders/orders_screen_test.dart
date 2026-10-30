@@ -83,6 +83,43 @@ void main() {
     expect(repo.logoutTokens, isEmpty);
   });
 
+  testWidgets('opens the live cancel screen with the entered order UUID', (
+    tester,
+  ) async {
+    const orderId = '11111111-1111-4111-8111-111111111111';
+    final router = GoRouter(
+      initialLocation: AppRoutes.orders,
+      routes: [
+        GoRoute(
+          path: AppRoutes.orders,
+          builder: (context, state) => const OrdersScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.cancelOrder,
+          builder: (context, state) => Scaffold(
+            body: Text('order=${state.uri.queryParameters['orderId']}'),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(theme: counterTheme, routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cancel a real order (live API, QA)'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), orderId);
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('order=$orderId'), findsOneWidget);
+  });
+
   testWidgets('shows the navigation rail on a wide screen', (tester) async {
     final router = GoRouter(
       initialLocation: AppRoutes.orders,
