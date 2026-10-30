@@ -15,6 +15,30 @@ export type SavedOrder = Prisma.OrderGetPayload<{
   include: typeof includeOrder;
 }>;
 
+function isRetryableConflict(error: unknown): boolean {
+  if (error instanceof Prisma.PrismaClientKnownRequestError)
+    return ['P2034', 'P2002'].includes(error.code);
+
+  // The pg adapter can surface a COMMIT failure before Prisma wraps it as
+  // P2034. Retry only explicit serialization/deadlock errors, never ambiguous
+  // connection failures whose commit outcome is unknown.
+  if (
+    !(error instanceof Error) ||
+    error.name !== 'DriverAdapterError' ||
+    !('cause' in error)
+  )
+    return false;
+  const cause: unknown = error.cause;
+  return (
+    typeof cause === 'object' &&
+    cause !== null &&
+    'kind' in cause &&
+    cause.kind === 'TransactionWriteConflict' &&
+    'originalCode' in cause &&
+    (cause.originalCode === '40001' || cause.originalCode === '40P01')
+  );
+}
+
 @Injectable()
 export class OrdersRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -29,15 +53,14 @@ export class OrdersRepository {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
         });
       } catch (error) {
-        if (
-          !(error instanceof Prisma.PrismaClientKnownRequestError) ||
-          !['P2034', 'P2002'].includes(error.code)
-        )
-          throw error;
+        if (!isRetryableConflict(error)) throw error;
         if (attempt === 4)
-          throw new ConflictException(
-            'Concurrent order request; retry using the same order ID.',
-          );
+          throw new ConflictException({
+            statusCode: 409,
+            error: 'Conflict',
+            code: 'ORDER_RETRY_REQUIRED',
+            message: 'Concurrent order request; retry using the same order ID.',
+          });
         // Avoid immediate retry storms when multiple terminals confirm at once.
         await delay(10 * 2 ** attempt + Math.floor(Math.random() * 10));
       }
@@ -77,6 +100,7 @@ export class OrdersRepository {
         merchant_store_reference: merchant,
         external_order_reference: external,
       },
+      include: includeOrder,
     });
   }
 
@@ -125,6 +149,21 @@ export class OrdersRepository {
         order_id: orderId,
         ticket_number: ticketNumber,
         created_by_id: actorId,
+      },
+    });
+  }
+
+  cancelTicket(
+    orderId: string,
+    cancelledAt: Date,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.kitchenTicket.update({
+      where: { order_id: orderId },
+      data: {
+        status: 'CANCELLED',
+        cancelled_at: cancelledAt,
+        modified_at: cancelledAt,
       },
     });
   }

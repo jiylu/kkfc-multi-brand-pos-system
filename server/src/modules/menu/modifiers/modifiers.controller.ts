@@ -1,3 +1,5 @@
+import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
+import { SafeMenuInterceptor } from '../safe-menu.interceptor';
 import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
@@ -31,6 +33,7 @@ import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 
+@UseMenuInterceptors(SafeMenuInterceptor)
 @Controller('modifiers')
 @ModifiersDocs()
 @UseGuards(Authenticated, RolesGuard)
