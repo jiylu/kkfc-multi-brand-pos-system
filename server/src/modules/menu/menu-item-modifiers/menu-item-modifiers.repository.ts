@@ -62,6 +62,7 @@ export class MenuItemModifiersRepository {
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.menuItemModifier.findMany({
+      include: { modifier: true },
       where: {
         menu_item_id: menuItemId,
         is_available: activeOnly ? true : undefined,

@@ -120,7 +120,7 @@ describe('Modifiers HTTP endpoints', () => {
       Promise.resolve({ user: { role } }),
     );
     for (const handler of Object.values(service))
-      handler.mockResolvedValue({ ok: true });
+      handler.mockResolvedValue({ name: 'Safe menu result' });
   });
 
   afterAll(async () => app?.close());
@@ -262,7 +262,7 @@ describe('Modifiers HTTP endpoints', () => {
         body: JSON.stringify(body),
       });
       expect(response.status).toBe(route.status);
-      expect(await response.json()).toEqual({ ok: true });
+      expect(await response.json()).toEqual({ name: 'Safe menu result' });
       expect(service[route.handler]).toHaveBeenCalledTimes(1);
       expect(service[route.handler]).toHaveBeenCalledWith(...route.args);
       expect(auth.validateSession).toHaveBeenCalledWith('test-session');

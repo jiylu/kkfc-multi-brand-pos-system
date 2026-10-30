@@ -1,3 +1,5 @@
+import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
+import { SafeMenuInterceptor } from '../safe-menu.interceptor';
 import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
@@ -37,6 +39,7 @@ import {
   DeleteMenuChannelDocs,
 } from './docs/menu-channels.docs';
 
+@UseMenuInterceptors(SafeMenuInterceptor)
 @Controller('menu-channels')
 @MenuChannelsDocs()
 @UseGuards(Authenticated, RolesGuard)

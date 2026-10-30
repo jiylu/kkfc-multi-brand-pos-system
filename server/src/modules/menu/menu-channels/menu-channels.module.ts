@@ -9,5 +9,6 @@ import { MenuItemsModule } from '../menu-items/menu-items.module';
   imports: [PrismaModule, MenuItemsModule],
   controllers: [MenuChannelsController],
   providers: [MenuChannelsService, MenuChannelsRepository],
+  exports: [MenuChannelsRepository],
 })
 export class MenuChannelsModule {}

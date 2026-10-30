@@ -18,6 +18,7 @@ import { AssetsModule } from './modules/assets/assets.module';
 import { InventoryItemsModule } from './modules/inventory/inventory-items/inventory-items.module';
 import { RecipesModule } from './modules/recipe/recipes/recipes.module';
 import { MenuItemModifiersModule } from './modules/menu/menu-item-modifiers/menu-item-modifiers.module';
+import { MenuCatalogModule } from './modules/menu/menu-catalog/menu-catalog.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { MenuItemModifiersModule } from './modules/menu/menu-item-modifiers/menu
     InventoryItemsModule,
     RecipesModule,
     MenuItemModifiersModule,
+    MenuCatalogModule,
   ],
   controllers: [],
   providers: [
