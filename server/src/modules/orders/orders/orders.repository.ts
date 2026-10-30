@@ -68,7 +68,11 @@ export class OrdersRepository {
     throw new ServiceUnavailableException();
   }
 
-  findByBrand(brandId: string, orderId: string, tx: Prisma.TransactionClient) {
+  findByBrand(
+    brandId: string,
+    orderId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
     return tx.order.findFirst({
       where: { order_id: orderId, brand_id: brandId },
       include: includeOrder,
@@ -81,7 +85,10 @@ export class OrdersRepository {
     });
   }
 
-  findById(orderId: string, tx: Prisma.TransactionClient) {
+  findById(
+    orderId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
     return tx.order.findUnique({
       where: { order_id: orderId },
       include: includeOrder,

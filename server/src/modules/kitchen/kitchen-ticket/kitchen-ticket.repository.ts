@@ -92,6 +92,8 @@ export class KitchenTicketRepository {
     return tx.kitchenTicket.update({
       where: {
         kitchen_ticket_id: kitchenTicketId,
+        status: KitchenTicketStatus.QUEUED,
+        preparer_id: null,
       },
       data: {
         preparer_id: preparerId,
@@ -102,13 +104,35 @@ export class KitchenTicketRepository {
     });
   }
 
-  async prepare(
+  async check(
     kitchenTicketId: string,
+    checkerId: string,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.kitchenTicket.update({
       where: {
         kitchen_ticket_id: kitchenTicketId,
+        status: KitchenTicketStatus.READY,
+        checker_id: checkerId,
+        preparer_id: { not: null },
+      },
+      data: {
+        status: KitchenTicketStatus.CHECKING,
+        modified_at: new Date(),
+      },
+    });
+  }
+
+  async prepare(
+    kitchenTicketId: string,
+    preparerId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.kitchenTicket.update({
+      where: {
+        kitchen_ticket_id: kitchenTicketId,
+        status: KitchenTicketStatus.ACKNOWLEDGED,
+        preparer_id: preparerId,
       },
       data: {
         status: KitchenTicketStatus.PREPARING,
@@ -125,6 +149,9 @@ export class KitchenTicketRepository {
     return tx.kitchenTicket.update({
       where: {
         kitchen_ticket_id: kitchenTicketId,
+        status: KitchenTicketStatus.CHECKING,
+        preparer_id: { not: null },
+        checker_id: { not: null },
       },
       data: {
         status: KitchenTicketStatus.REWORKING,
@@ -153,6 +180,7 @@ export class KitchenTicketRepository {
 
   async handover(
     kitchenTicketId: string,
+    checkerId: string,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     const now = new Date();
@@ -160,6 +188,9 @@ export class KitchenTicketRepository {
     return tx.kitchenTicket.update({
       where: {
         kitchen_ticket_id: kitchenTicketId,
+        status: KitchenTicketStatus.CHECKING,
+        checker_id: checkerId,
+        preparer_id: { not: null },
       },
       data: {
         status: KitchenTicketStatus.HANDED_OVER,
