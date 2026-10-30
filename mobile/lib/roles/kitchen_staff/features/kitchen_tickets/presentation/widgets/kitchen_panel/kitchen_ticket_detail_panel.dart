@@ -22,6 +22,9 @@ enum KitchenTicketPanelState {
   /// Quality check / inspection state (05 · Quality Check).
   qualityCheck,
 
+  /// Missing QC reason state when QC is failed without a reason (07 · Missing QC Reason).
+  missingQCReason,
+
   /// Ready for dispatch / outgoing check state (09 · Ready for Dispatch).
   readyForDispatch,
 
@@ -54,6 +57,8 @@ class KitchenTicketDetailPanel extends StatelessWidget {
     this.onSendToQC,
     this.onPassQC,
     this.onFailQC,
+    this.onBackToQC,
+    this.onUseSampleReason,
     this.onContinueToHandover,
     this.onAddPhoto,
     this.onRetakePhoto,
@@ -62,6 +67,9 @@ class KitchenTicketDetailPanel extends StatelessWidget {
     this.onNotYet,
     this.onBackToKitchenBoard,
     this.onHistoryPending,
+    this.reasonController,
+    this.onReasonChanged,
+    this.reasonPlaceholder,
     this.width,
     this.borderRadius,
     this.badgeText,
@@ -102,6 +110,12 @@ class KitchenTicketDetailPanel extends StatelessWidget {
   /// Callback when user taps "Fail QC".
   final VoidCallback? onFailQC;
 
+  /// Callback when user taps "Back to QC".
+  final VoidCallback? onBackToQC;
+
+  /// Callback when user taps "Submit reason".
+  final VoidCallback? onUseSampleReason;
+
   /// Callback when user taps "Continue to handover".
   final VoidCallback? onContinueToHandover;
 
@@ -125,6 +139,15 @@ class KitchenTicketDetailPanel extends StatelessWidget {
 
   /// Callback when user taps "History (pending)".
   final VoidCallback? onHistoryPending;
+
+  /// Optional controller for the QC reason text field in [KitchenTicketPanelState.missingQCReason].
+  final TextEditingController? reasonController;
+
+  /// Callback when QC reason text field changes.
+  final ValueChanged<String>? onReasonChanged;
+
+  /// Custom placeholder for the reason text field. Defaults to 'Enter reason...'.
+  final String? reasonPlaceholder;
 
   /// Optional fixed width for the panel (e.g. 400 or 440 on tablet).
   final double? width;
@@ -158,6 +181,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
     final isPhotoPreview = panelState == KitchenTicketPanelState.photoPreview;
     final isPhotoRequired = panelState == KitchenTicketPanelState.photoRequired;
     final isReady = panelState == KitchenTicketPanelState.readyForDispatch;
+    final isMissingQCReason = panelState == KitchenTicketPanelState.missingQCReason;
     final isQC = panelState == KitchenTicketPanelState.qualityCheck;
     final isPreparing = panelState == KitchenTicketPanelState.preparing;
     final isAcknowledged = panelState == KitchenTicketPanelState.acknowledged;
@@ -173,7 +197,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                         ? 'PHOTO MISSING · BLOCKED'
                         : (isReady
                             ? 'READY · OUTGOING CHECK'
-                            : (isQC
+                            : ((isMissingQCReason || isQC)
                                 ? 'QC · CHECKER AUTHORIZATION PENDING'
                                 : (isPreparing
                                     ? 'COOKING · PREPARING'
@@ -185,7 +209,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
             ? const Color(0xFF0284C7)
             : (isReady
                 ? const Color(0xFF16A34A)
-                : (isQC
+                : ((isMissingQCReason || isQC)
                     ? const Color(0xFF7C3AED)
                     : (isPreparing
                         ? const Color(0xFFD97706)
@@ -195,14 +219,15 @@ class KitchenTicketDetailPanel extends StatelessWidget {
         ? const Color(0xFFF0FAF4)
         : ((isPhotoPreview || isPhotoRequired)
             ? Colors.white
-            : (isQC
+            : ((isMissingQCReason || isQC)
                 ? const Color(0xFFF7F3FD)
                 : (isPreparing
                     ? const Color(0xFFFDF6EE)
                     : Colors.white)));
 
-    final resolvedTopAccentColor =
-        (isHandoverComplete || isDispatcherCheck || isReady) ? const Color(0xFF16A34A) : null;
+    final resolvedTopAccentColor = (isHandoverComplete || isDispatcherCheck || isReady)
+        ? const Color(0xFF16A34A)
+        : ((isMissingQCReason || isQC) ? const Color(0xFF7C3AED) : null);
 
     final rawNumber = ticketData.ticketNumber.replaceFirst('Ticket ', '');
     final resolvedTitle = title ??
@@ -216,15 +241,17 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                         ? 'Photo required'
                         : (isReady
                             ? 'Outgoing check'
-                            : (isQC
-                                ? 'Inspect $rawNumber'
-                                : (isPreparing
-                                    ? 'Prepare $rawNumber'
-                                    : (isAcknowledged
-                                        ? 'Begin preparation'
-                                        : (ticketData.ticketNumber.startsWith('Ticket')
-                                            ? ticketData.ticketNumber
-                                            : 'Ticket ${ticketData.ticketNumber}')))))))));
+                            : (isMissingQCReason
+                                ? 'Reason required'
+                                : (isQC
+                                    ? 'Inspect $rawNumber'
+                                    : (isPreparing
+                                        ? 'Prepare $rawNumber'
+                                        : (isAcknowledged
+                                            ? 'Begin preparation'
+                                            : (ticketData.ticketNumber.startsWith('Ticket')
+                                                ? ticketData.ticketNumber
+                                                : 'Ticket ${ticketData.ticketNumber}'))))))))));
 
     final resolvedSubtitle = subtitle ??
         (isHandoverComplete
@@ -237,13 +264,15 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                         ? 'Handover remains unavailable'
                         : (isReady
                             ? 'Dispatcher final review'
-                            : (isQC
-                                ? 'Verify the prepared order'
-                                : (isPreparing
-                                    ? 'Cooking in progress'
-                                    : (isAcknowledged
-                                        ? 'Ticket claimed by kitchen staff'
-                                        : 'Ready to acknowledge'))))))));
+                            : (isMissingQCReason
+                                ? 'QC failure was not submitted'
+                                : (isQC
+                                    ? 'Verify the prepared order'
+                                    : (isPreparing
+                                        ? 'Cooking in progress'
+                                        : (isAcknowledged
+                                            ? 'Ticket claimed by kitchen staff'
+                                            : 'Ready to acknowledge')))))))));
 
     final resolvedConfirmTitle = confirmationTitle ??
         (isHandoverComplete
@@ -256,11 +285,13 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                         ? 'REQUIRED EVIDENCE MISSING'
                         : (isReady
                             ? 'DISPATCHER CHECK'
-                            : (isQC
-                                ? 'QUALITY CHECKLIST'
-                                : (isPreparing
-                                    ? 'PREPARATION CHECK'
-                                    : (isAcknowledged ? 'START COOKING' : 'CONFIRM THE ORDER'))))))));
+                            : (isMissingQCReason
+                                ? 'CORRECT THE ERROR'
+                                : (isQC
+                                    ? 'QUALITY CHECKLIST'
+                                    : (isPreparing
+                                        ? 'PREPARATION CHECK'
+                                        : (isAcknowledged ? 'START COOKING' : 'CONFIRM THE ORDER')))))))));
 
     final resolvedConfirmColor = (isHandoverComplete ||
             isDispatcherCheck ||
@@ -268,7 +299,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
             isPhotoRequired ||
             isReady)
         ? const Color(0xFF16A34A)
-        : (isQC
+        : ((isMissingQCReason || isQC)
             ? const Color(0xFF7C3AED)
             : (isPreparing
                 ? const Color(0xFFD97706)
@@ -300,25 +331,30 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                                 'Confirm packing and destination',
                                 'Review photo evidence rule',
                               ]
-                            : (isQC
+                            : (isMissingQCReason
                                 ? const [
-                                    'Quantities and modifiers match',
-                                    'Packaging and destination correct',
+                                    'Enter a reason before confirming',
+                                    'Ticket remains in CHECKING',
                                   ]
-                                : (isPreparing
+                                : (isQC
                                     ? const [
-                                        '2 × Paa Inasal · extra rice',
-                                        '1 × Pecho Inasal · no onions',
+                                        'Quantities and modifiers match',
+                                        'Packaging and destination correct',
                                       ]
-                                    : (isAcknowledged
+                                    : (isPreparing
                                         ? const [
-                                            'Review quantities and modifiers',
-                                            'Begin preparation when ready',
+                                            '2 × Paa Inasal · extra rice',
+                                            '1 × Pecho Inasal · no onions',
                                           ]
-                                        : const [
-                                            'Check all items and modifiers',
-                                            'Verify brand and destination',
-                                          ]))))))));
+                                        : (isAcknowledged
+                                            ? const [
+                                                'Review quantities and modifiers',
+                                                'Begin preparation when ready',
+                                              ]
+                                            : const [
+                                                'Check all items and modifiers',
+                                                'Verify brand and destination',
+                                              ])))))))));
 
     final resolvedPermissionNotice = permissionNotice ??
         (isHandoverComplete
@@ -331,7 +367,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                         ? 'No completion is implied by missing evidence.'
                         : (isReady
                             ? 'Dispatcher authorization and photo policy pending.'
-                            : (isQC
+                            : ((isMissingQCReason || isQC)
                                 ? 'QC action shown as demo; approved checker rights required.'
                                 : (isPreparing
                                     ? 'Next approved transition is CHECKING.'
@@ -347,13 +383,15 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                 ? 'Retake photo'
                 : ((isPhotoRequired || isReady)
                     ? 'Keep READY'
-                    : (isQC
-                        ? 'Pass QC'
-                        : (isPreparing
-                            ? 'Keep preparing'
-                            : (isAcknowledged
-                                ? (context.isKitchenTablet ? 'Stay acknowledged' : 'Stay here')
-                                : 'Back to board'))))));
+                    : (isMissingQCReason
+                        ? 'Back to QC'
+                        : (isQC
+                            ? 'Pass QC'
+                            : (isPreparing
+                                ? 'Keep preparing'
+                                : (isAcknowledged
+                                    ? (context.isKitchenTablet ? 'Stay acknowledged' : 'Stay here')
+                                    : 'Back to board')))))));
     final resolvedBackLabel = backButtonLabel ?? defaultBack;
 
     final resolvedActionLabel = acknowledgeButtonLabel ??
@@ -367,11 +405,13 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                         ? 'Add photo'
                         : (isReady
                             ? 'Continue to handover'
-                            : (isQC
-                                ? 'Fail QC'
-                                : (isPreparing
-                                    ? 'Send to QC'
-                                    : (isAcknowledged ? 'Begin preparation' : 'Acknowledge ticket'))))))));
+                            : (isMissingQCReason
+                                ? 'Submit reason'
+                                : (isQC
+                                    ? 'Fail QC'
+                                    : (isPreparing
+                                        ? 'Send to QC'
+                                        : (isAcknowledged ? 'Begin preparation' : 'Acknowledge ticket')))))))));
 
     final resolvedOnAction = isHandoverComplete
         ? (onBackToKitchenBoard ?? onClose ?? _handleDismiss)
@@ -383,13 +423,15 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                     ? (onAddPhoto ?? onAcknowledge)
                     : (isReady
                         ? onContinueToHandover
-                        : (isQC
-                            ? onFailQC
-                            : (isPreparing
-                                ? onSendToQC
-                                : (isAcknowledged
-                                    ? (onBeginPreparation ?? onAcknowledge)
-                                    : onAcknowledge)))))));
+                        : (isMissingQCReason
+                            ? (onUseSampleReason ?? onAcknowledge)
+                            : (isQC
+                                ? onFailQC
+                                : (isPreparing
+                                    ? onSendToQC
+                                    : (isAcknowledged
+                                        ? (onBeginPreparation ?? onAcknowledge)
+                                        : onAcknowledge))))))));
 
     final panelWidget = Container(
       width: width,
@@ -445,7 +487,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                                 isPhotoRequired ||
                                 isReady)
                             ? KkfcStatus.ready
-                            : (isQC
+                            : ((isMissingQCReason || isQC)
                                 ? KkfcStatus.checking
                                 : (isPreparing
                                     ? KkfcStatus.preparing
@@ -460,9 +502,48 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                     showCheckIcon: !(isPhotoPreview || isPhotoRequired),
                   ),
                   const SizedBox(height: 12),
-                  KitchenPanelPermissionBanner(
-                    message: resolvedPermissionNotice,
-                  ),
+                  if (isMissingQCReason)
+                    Container(
+                      key: const ValueKey('kitchen_panel_qc_reason_field'),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFCBD5E1),
+                          width: 1,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: reasonController,
+                        onChanged: onReasonChanged,
+                        minLines: 2,
+                        maxLines: 3,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF0F172A),
+                        ),
+                        decoration: InputDecoration(
+                          hintText: reasonPlaceholder ?? 'Enter reason...',
+                          hintStyle: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xFF94A3B8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                        ),
+                      ),
+                    )
+                  else
+                    KitchenPanelPermissionBanner(
+                      message: resolvedPermissionNotice,
+                    ),
                 ],
               ),
             ),
@@ -484,11 +565,13 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                     ? (onNotYet ?? onBack ?? _handleDismiss)
                     : (isPhotoPreview
                         ? (onRetakePhoto ?? onBack ?? _handleDismiss)
-                        : _handleDismiss)),
+                        : (isMissingQCReason
+                            ? (onBackToQC ?? onBack ?? _handleDismiss)
+                            : _handleDismiss))),
             onAcknowledge: resolvedOnAction,
             onPassQC: onPassQC ?? _handleDismiss,
             onFailQC: onFailQC,
-            isAcknowledgeEnabled: isHandoverComplete ? true : ticket.isActionEnabled,
+            isAcknowledgeEnabled: (isHandoverComplete || isMissingQCReason) ? true : ticket.isActionEnabled,
           ),
         ],
       ),
