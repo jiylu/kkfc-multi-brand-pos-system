@@ -113,7 +113,7 @@ export class KitchenTicketService {
 
   async acknowledge(kitchenTicketId: string, tx?: Prisma.TransactionClient) {
     this.logger.debug(`Acknowledging kitchen ticket ${kitchenTicketId}`);
-    const kitchenTicket = await this.findOne(kitchenTicketId);
+    const kitchenTicket = await this.findOne(kitchenTicketId, tx);
 
     if (kitchenTicket.status !== KitchenTicketStatus.QUEUED) {
       this.logger.warn(

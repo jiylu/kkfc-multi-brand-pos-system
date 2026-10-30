@@ -7,23 +7,39 @@ import { KitchenTicketService } from './kitchen-ticket.service';
 
 const now = new Date('2026-10-30T04:00:00Z');
 const earlier = new Date('2026-10-30T03:00:00Z');
-const actions = [
-  'acknowledge',
-  'prepare',
-  'forChecking',
-  'check',
-  'rework',
-  'ready',
-  'handOver',
-  'cancel',
+const transitions = [
+  ['acknowledge', 'QUEUED', 'ACKNOWLEDGED', 'acknowledged_at'],
+  ['prepare', 'ACKNOWLEDGED', 'PREPARING', 'preparation_started_at'],
+  ['forChecking', 'PREPARING', 'FOR_CHECKING', null],
+  ['forChecking', 'REWORKING', 'FOR_CHECKING', null],
+  ['check', 'FOR_CHECKING', 'CHECKING', null],
+  ['rework', 'CHECKING', 'REWORKING', null],
+  ['ready', 'CHECKING', 'READY', 'ready_at'],
+  ['handOver', 'READY', 'HANDED_OVER', 'handed_over_at'],
+  ['cancel', 'QUEUED', 'CANCELLED', 'cancelled_at'],
 ] as const;
+
+function runAction(
+  service: KitchenTicketService,
+  action: (typeof transitions)[number][0],
+  tx?: Prisma.TransactionClient,
+) {
+  if (
+    action === 'acknowledge' ||
+    action === 'handOver' ||
+    action === 'cancel'
+  ) {
+    return service[action]('ticket', tx);
+  }
+  return service[action]('ticket', 'user', tx);
+}
 
 function setup(status: KitchenTicketStatus = KitchenTicketStatus.QUEUED) {
   const ticket = {
     kitchen_ticket_id: 'ticket',
     status,
-    preparer_id: null,
-    checker_id: null,
+    preparer_id: null as string | null,
+    checker_id: null as string | null,
     acknowledged_at: earlier,
     preparation_started_at: earlier,
     ready_at: null,
@@ -125,19 +141,93 @@ describe('KitchenTicketService', () => {
     expect(successLog).not.toHaveBeenCalled();
   });
 
-  it.each(actions)(
-    '%s remains a stub without reading or updating state',
-    (action) => {
-      const { service, client, ticket } = setup();
+  it.each(transitions)(
+    '%s transitions from %s to %s',
+    async (action, from, to, timestamp) => {
+      const { service, client, ticket } = setup(from);
+      ticket.preparer_id = 'user';
+      ticket.checker_id = 'user';
       const before = { ...ticket };
 
-      expect(service[action]('ticket')).toBeUndefined();
+      const data = {
+        status: to,
+        modified_at: now,
+        ...(timestamp === null ? {} : { [timestamp]: now }),
+      };
+      expect(await runAction(service, action)).toEqual({ ...before, ...data });
 
-      expect(client.kitchenTicket.findUnique).not.toHaveBeenCalled();
-      expect(client.kitchenTicket.update).not.toHaveBeenCalled();
-      expect(ticket).toEqual(before);
+      expect(client.kitchenTicket.findUnique).toHaveBeenCalledWith({
+        where: { kitchen_ticket_id: 'ticket' },
+      });
+      expect(client.kitchenTicket.update).toHaveBeenCalledWith({
+        where: { kitchen_ticket_id: 'ticket', status: from },
+        data,
+      });
       expect(debugLog).toHaveBeenCalled();
-      expect(successLog).not.toHaveBeenCalled();
+      expect(successLog).toHaveBeenCalled();
+    },
+  );
+
+  it.each(transitions)(
+    '%s rejects a handed-over ticket (transition from %s to %s)',
+    async (action) => {
+      const { service, client, ticket } = setup(
+        KitchenTicketStatus.HANDED_OVER,
+      );
+      ticket.preparer_id = 'user';
+      ticket.checker_id = 'user';
+
+      await expect(runAction(service, action)).rejects.toMatchObject({
+        response: { code: 'KITCHEN_TICKET_INVALID_STATUS' },
+        status: 409,
+      });
+      expect(client.kitchenTicket.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    ['prepare', 'ACKNOWLEDGED', 'PREPARER'],
+    ['forChecking', 'PREPARING', 'PREPARER'],
+    ['check', 'FOR_CHECKING', 'CHECKER'],
+    ['rework', 'CHECKING', 'CHECKER'],
+    ['ready', 'CHECKING', 'CHECKER'],
+  ] as const)(
+    '%s rejects an unassigned caller',
+    async (action, status, role) => {
+      const { service, client } = setup(status);
+
+      await expect(runAction(service, action)).rejects.toMatchObject({
+        response: { code: `KITCHEN_TICKET_${role}_MISMATCH` },
+        status: 403,
+      });
+      expect(client.kitchenTicket.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it('returns an already-cancelled ticket without updating it', async () => {
+    const { service, client, ticket } = setup(KitchenTicketStatus.CANCELLED);
+
+    expect(await service.cancel('ticket')).toEqual(ticket);
+    expect(client.kitchenTicket.update).not.toHaveBeenCalled();
+  });
+
+  it.each(transitions)(
+    '%s forwards the transaction when transitioning from %s to %s',
+    async (action, from) => {
+      const primary = setup();
+      const transaction = setup(from);
+      transaction.ticket.preparer_id = 'user';
+      transaction.ticket.checker_id = 'user';
+      const tx = transaction.client as unknown as Prisma.TransactionClient;
+
+      await runAction(primary.service, action, tx);
+
+      expect(transaction.client.kitchenTicket.findUnique).toHaveBeenCalledTimes(
+        1,
+      );
+      expect(transaction.client.kitchenTicket.update).toHaveBeenCalledTimes(1);
+      expect(primary.client.kitchenTicket.findUnique).not.toHaveBeenCalled();
+      expect(primary.client.kitchenTicket.update).not.toHaveBeenCalled();
     },
   );
 
@@ -153,28 +243,28 @@ describe('KitchenTicketService', () => {
       [field]: 'user',
     });
     expect(client.kitchenTicket.update).toHaveBeenCalledWith({
-      where: { kitchen_ticket_id: 'ticket' },
+      where: { kitchen_ticket_id: 'ticket', [field]: null },
       data: { [field]: 'user' },
     });
     expect(debugLog).toHaveBeenCalled();
     expect(successLog).toHaveBeenCalled();
   });
 
-  it.each(['assignPreparer', 'assignChecker'] as const)(
-    '%s forwards the supplied transaction',
-    async (action) => {
-      const primary = setup();
-      const transaction = setup();
-      const tx = transaction.client as unknown as Prisma.TransactionClient;
+  it.each([
+    ['assignPreparer', 'preparer_id', 'PREPARER'],
+    ['assignChecker', 'checker_id', 'CHECKER'],
+  ] as const)(
+    '%s rejects replacing an assigned %s',
+    async (action, field, role) => {
+      const { service, client, ticket } = setup();
+      ticket[field] = 'existing-user';
 
-      await primary.service[action]('ticket', 'user', tx);
-
-      expect(transaction.client.kitchenTicket.update).toHaveBeenCalledTimes(1);
-      expect(transaction.client.kitchenTicket.findUnique).toHaveBeenCalledWith({
-        where: { kitchen_ticket_id: 'ticket' },
+      await expect(service[action]('ticket', 'user')).rejects.toMatchObject({
+        response: { code: `KITCHEN_TICKET_${role}_ALREADY_ASSIGNED` },
+        status: 409,
       });
-      expect(primary.client.kitchenTicket.findUnique).not.toHaveBeenCalled();
-      expect(primary.client.kitchenTicket.update).not.toHaveBeenCalled();
+      expect(client.kitchenTicket.update).not.toHaveBeenCalled();
+      expect(ticket[field]).toBe('existing-user');
     },
   );
 
@@ -183,7 +273,10 @@ describe('KitchenTicketService', () => {
     async (action) => {
       const { service, client } = setup();
       client.kitchenTicket.findUnique.mockResolvedValueOnce(null);
-      const result = service[action]('missing', 'user');
+      const result =
+        action === 'findOne'
+          ? service.findOne('missing')
+          : service[action]('missing', 'user');
 
       await expect(result).rejects.toMatchObject({
         response: { code: 'KITCHEN_TICKET_NOT_FOUND' },
