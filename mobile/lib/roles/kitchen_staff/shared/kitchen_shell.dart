@@ -17,12 +17,16 @@ class KitchenShell extends StatelessWidget {
     required this.body,
     this.phoneHeaderBottom,
     this.onDestinationSelected,
+    this.staffRole,
+    this.staffStatus,
   });
 
   final KitchenDestination selectedDestination;
   final Widget body;
   final Widget? phoneHeaderBottom;
   final ValueChanged<KitchenDestination>? onDestinationSelected;
+  final String? staffRole;
+  final String? staffStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +41,10 @@ class KitchenShell extends StatelessWidget {
 
   Widget _tablet() => Column(
         children: [
-          const KitchenTabletHeader(),
+          KitchenTabletHeader(
+            role: staffRole ?? 'Kitchen staff',
+            status: staffStatus ?? 'Authorized workspace',
+          ),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -55,7 +62,11 @@ class KitchenShell extends StatelessWidget {
 
   Widget _phone() => Column(
         children: [
-          KitchenPhoneHeader(bottom: phoneHeaderBottom),
+          KitchenPhoneHeader(
+            bottom: phoneHeaderBottom,
+            role: staffRole ?? 'Kitchen staff',
+            status: staffStatus ?? 'Authorized',
+          ),
           Expanded(child: body),
           KitchenBottomNav(
             selected: selectedDestination,

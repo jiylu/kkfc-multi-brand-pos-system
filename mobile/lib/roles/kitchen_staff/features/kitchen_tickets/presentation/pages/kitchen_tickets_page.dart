@@ -29,6 +29,8 @@ class KitchenTicketsPage extends StatefulWidget {
     this.onAcknowledgeTicket,
     this.onBeginPreparation,
     this.onSendToQC,
+    this.onPassQC,
+    this.onFailQC,
   });
 
   final KitchenTicketsViewState viewState;
@@ -39,6 +41,8 @@ class KitchenTicketsPage extends StatefulWidget {
   final VoidCallback? onAcknowledgeTicket;
   final VoidCallback? onBeginPreparation;
   final VoidCallback? onSendToQC;
+  final VoidCallback? onPassQC;
+  final VoidCallback? onFailQC;
 
   @override
   State<KitchenTicketsPage> createState() => _KitchenTicketsPageState();
@@ -60,7 +64,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     super.initState();
     _displayedTicket = widget.selectedTicket;
     _panelState = widget.initialPanelState;
-    if (widget.selectedTicket?.ticket.status == KkfcStatus.preparing) {
+    if (widget.selectedTicket?.ticket.status == KkfcStatus.checking) {
+      _panelState = KitchenTicketPanelState.qualityCheck;
+    } else if (widget.selectedTicket?.ticket.status == KkfcStatus.preparing) {
       _panelState = KitchenTicketPanelState.preparing;
     } else if (widget.selectedTicket?.ticket.status == KkfcStatus.acknowledged) {
       _panelState = KitchenTicketPanelState.acknowledged;
@@ -94,7 +100,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     super.didUpdateWidget(oldWidget);
     if (widget.selectedTicket != null && oldWidget.selectedTicket == null) {
       _displayedTicket = widget.selectedTicket;
-      if (widget.selectedTicket?.ticket.status == KkfcStatus.preparing) {
+      if (widget.selectedTicket?.ticket.status == KkfcStatus.checking) {
+        _panelState = KitchenTicketPanelState.qualityCheck;
+      } else if (widget.selectedTicket?.ticket.status == KkfcStatus.preparing) {
         _panelState = KitchenTicketPanelState.preparing;
       } else if (widget.selectedTicket?.ticket.status == KkfcStatus.acknowledged) {
         _panelState = KitchenTicketPanelState.acknowledged;
@@ -138,7 +146,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     setState(() {
       _localSelectedTicket = item;
       _displayedTicket = item;
-      if (item.ticket.status == KkfcStatus.preparing) {
+      if (item.ticket.status == KkfcStatus.checking) {
+        _panelState = KitchenTicketPanelState.qualityCheck;
+      } else if (item.ticket.status == KkfcStatus.preparing) {
         _panelState = KitchenTicketPanelState.preparing;
       } else if (item.ticket.status == KkfcStatus.acknowledged) {
         _panelState = KitchenTicketPanelState.acknowledged;
@@ -174,6 +184,28 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
         _displayedTicket = KitchenBoardSampleData.t014Preparing;
       }
     });
+  }
+
+  void _handleSendToQC() {
+    widget.onSendToQC?.call();
+    setState(() {
+      _panelState = KitchenTicketPanelState.qualityCheck;
+      if (_localSelectedTicket?.ticket.ticketNumber == 'T-014' ||
+          _displayedTicket?.ticket.ticketNumber == 'T-014' ||
+          widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
+        _localSelectedTicket = KitchenBoardSampleData.t014Checking;
+        _displayedTicket = KitchenBoardSampleData.t014Checking;
+      }
+    });
+  }
+
+  void _handlePassQC() {
+    widget.onPassQC?.call();
+    _handleClosePanel();
+  }
+
+  void _handleFailQC() {
+    widget.onFailQC?.call();
   }
 
   void _handleClosePanel() {
@@ -244,7 +276,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onClose: _handleClosePanel,
                 onAcknowledge: _handleAcknowledgeTicket,
                 onBeginPreparation: _handleBeginPreparation,
-                onSendToQC: widget.onSendToQC,
+                onSendToQC: _handleSendToQC,
+                onPassQC: _handlePassQC,
+                onFailQC: _handleFailQC,
               ),
             ),
           ),
@@ -264,7 +298,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onClose: _handleClosePanel,
                 onAcknowledge: _handleAcknowledgeTicket,
                 onBeginPreparation: _handleBeginPreparation,
-                onSendToQC: widget.onSendToQC,
+                onSendToQC: _handleSendToQC,
+                onPassQC: _handlePassQC,
+                onFailQC: _handleFailQC,
               ),
             ),
           ),
@@ -274,20 +310,30 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
       body = _buildBoard(context, tablet);
     }
 
+    final isQC = _panelState == KitchenTicketPanelState.qualityCheck;
+    final isPreparing = _panelState == KitchenTicketPanelState.preparing;
+
     return KitchenShell(
       selectedDestination: KitchenDestination.orders,
       phoneHeaderBottom: KitchenStageTabs(
-        selectedIndex: _panelState == KitchenTicketPanelState.preparing ? 1 : 0,
+        selectedIndex: isQC ? 2 : (isPreparing ? 1 : 0),
       ),
+      staffRole: isQC
+          ? (tablet ? 'QC checker · demo' : 'QC scenario')
+          : 'Kitchen staff',
+      staffStatus: isQC
+          ? (tablet ? 'Access policy pending' : 'Access TBD')
+          : (tablet ? 'Authorized workspace' : 'Authorized'),
       body: body,
     );
   }
 
   Widget _buildBoard(BuildContext context, bool tablet) {
+    final isQC = _panelState == KitchenTicketPanelState.qualityCheck;
     final isPreparing = _panelState == KitchenTicketPanelState.preparing;
     final isAcknowledged = _panelState == KitchenTicketPanelState.acknowledged;
 
-    final effectiveNewOrders = isPreparing
+    final effectiveNewOrders = (isQC || isPreparing)
         ? const [KitchenBoardSampleData.t018]
         : (isAcknowledged
             ? const [
@@ -296,23 +342,46 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
               ]
             : KitchenBoardSampleData.newOrders);
 
-    final effectiveCooking = isPreparing
+    final effectiveCooking = isQC
         ? const [
-            KitchenBoardSampleData.t014Preparing,
             KitchenBoardSampleData.t015,
             KitchenBoardSampleData.t019,
           ]
-        : KitchenBoardSampleData.cooking;
+        : (isPreparing
+            ? const [
+                KitchenBoardSampleData.t014Preparing,
+                KitchenBoardSampleData.t015,
+                KitchenBoardSampleData.t019,
+              ]
+            : KitchenBoardSampleData.cooking);
 
-    final effectiveActivePhoneTicket = isPreparing
-        ? KitchenBoardSampleData.t014Preparing
-        : (isAcknowledged
-            ? KitchenBoardSampleData.t014Acknowledged
-            : KitchenBoardSampleData.t014);
+    final effectiveQualityCheck = isQC
+        ? const [
+            KitchenBoardSampleData.t014Checking,
+            KitchenBoardSampleData.t016,
+            KitchenBoardSampleData.t020,
+          ]
+        : KitchenBoardSampleData.qualityCheck;
 
-    final effectiveUpNextPhoneTicket = isPreparing
-        ? KitchenBoardSampleData.t015
-        : KitchenBoardSampleData.t018;
+    final effectiveActivePhoneTicket = isQC
+        ? KitchenBoardSampleData.t014Checking
+        : (isPreparing
+            ? KitchenBoardSampleData.t014Preparing
+            : (isAcknowledged
+                ? KitchenBoardSampleData.t014Acknowledged
+                : KitchenBoardSampleData.t014));
+
+    final effectiveUpNextPhoneTicket = isQC
+        ? KitchenBoardSampleData.t016
+        : (isPreparing
+            ? KitchenBoardSampleData.t015
+            : KitchenBoardSampleData.t018);
+
+    final effectivePhoneStageTitle = isQC
+        ? 'QUALITY CHECK'
+        : (isPreparing ? 'COOKING' : 'NEW ORDERS');
+
+    final effectivePhoneStageCount = (isQC || isPreparing) ? '03' : '02';
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(tablet ? 24 : KitchenSpace.md),
@@ -354,11 +423,12 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                     ? KitchenBoardTabletView(
                         newOrders: effectiveNewOrders,
                         cooking: effectiveCooking,
+                        qualityCheck: effectiveQualityCheck,
                         onTicketAction: _handleTicketAction,
                       )
                     : KitchenBoardPhoneView(
-                        stageTitle: isPreparing ? 'COOKING' : 'NEW ORDERS',
-                        stageCount: isPreparing ? '03' : '02',
+                        stageTitle: effectivePhoneStageTitle,
+                        stageCount: effectivePhoneStageCount,
                         activeTicket: effectiveActivePhoneTicket,
                         upNextTicket: effectiveUpNextPhoneTicket,
                         onTicketAction: _handleTicketAction,

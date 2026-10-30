@@ -15,7 +15,10 @@ void main() {
     VoidCallback? onAcknowledge,
     VoidCallback? onBeginPreparation,
     VoidCallback? onSendToQC,
+    VoidCallback? onPassQC,
+    VoidCallback? onFailQC,
     String? backButtonLabel,
+    String? acknowledgeButtonLabel,
   }) {
     return MaterialApp(
       theme: counterTheme,
@@ -28,7 +31,10 @@ void main() {
           onAcknowledge: onAcknowledge,
           onBeginPreparation: onBeginPreparation,
           onSendToQC: onSendToQC,
+          onPassQC: onPassQC,
+          onFailQC: onFailQC,
           backButtonLabel: backButtonLabel,
+          acknowledgeButtonLabel: acknowledgeButtonLabel,
         ),
       ),
     );
@@ -41,6 +47,8 @@ void main() {
     VoidCallback? onClosePanel,
     VoidCallback? onBeginPreparation,
     VoidCallback? onSendToQC,
+    VoidCallback? onPassQC,
+    VoidCallback? onFailQC,
   }) {
     return MaterialApp(
       theme: counterTheme,
@@ -52,6 +60,8 @@ void main() {
           onClosePanel: onClosePanel,
           onBeginPreparation: onBeginPreparation,
           onSendToQC: onSendToQC,
+          onPassQC: onPassQC,
+          onFailQC: onFailQC,
         ),
       ),
     );
@@ -263,6 +273,78 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(sentToQC, isTrue);
+    });
+
+    testWidgets(
+        'renders all required elements for quality check state (05 · Quality Check)',
+        (tester) async {
+      await tester.pumpWidget(buildPanelSubject(
+        panelState: KitchenTicketPanelState.qualityCheck,
+      ));
+      await tester.pumpAndSettle();
+
+      // Header
+      expect(find.text('QC · CHECKER AUTHORIZATION PENDING'), findsOneWidget);
+      expect(find.text('Inspect T-014'), findsOneWidget);
+      expect(find.text('Verify the prepared order'), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      // Ticket Summary Info
+      expect(find.text("T-014 · AURELIA'S INASAL"), findsOneWidget);
+      expect(find.text('Dine-in · Table 3 · sample'), findsOneWidget);
+      expect(find.text('CHECKING'), findsOneWidget);
+      expect(find.text('PAYMENT · UNPAID'), findsOneWidget);
+
+      // Items & Modifiers
+      expect(find.textContaining('Paa Inasal'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Pecho Inasal'), findsAtLeastNWidgets(1));
+
+      // Quality Checklist
+      expect(find.text('QUALITY CHECKLIST'), findsOneWidget);
+      expect(find.text('Quantities and modifiers match'), findsOneWidget);
+      expect(find.text('Packaging and destination correct'), findsOneWidget);
+
+      // Permission Note Banner
+      expect(
+        find.text('QC action shown as demo; approved checker rights required.'),
+        findsOneWidget,
+      );
+
+      // Bottom Actions (Pass QC green button, Fail QC red button)
+      expect(find.text('Pass QC'), findsOneWidget);
+      expect(find.text('Fail QC'), findsOneWidget);
+    });
+
+    testWidgets('Pass QC button triggers onPassQC callback', (tester) async {
+      var passedQC = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.qualityCheck,
+          onPassQC: () => passedQC = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Pass QC'));
+      await tester.pumpAndSettle();
+
+      expect(passedQC, isTrue);
+    });
+
+    testWidgets('Fail QC button triggers onFailQC callback', (tester) async {
+      var failedQC = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.qualityCheck,
+          onFailQC: () => failedQC = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Fail QC'));
+      await tester.pumpAndSettle();
+
+      expect(failedQC, isTrue);
     });
   });
 
@@ -585,6 +667,107 @@ void main() {
       expect(find.text('Prepare T-014'), findsOneWidget);
       expect(find.text('Keep preparing'), findsOneWidget);
       expect(find.text('Send to QC'), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets(
+        'Pressing Send to QC on panel transitions panel to Quality Check state and moves ticket to Quality Check lane',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      var passQCCalled = false;
+      await tester.pumpWidget(
+        buildPageSubject(
+          size: const Size(1280, 1000),
+          onPassQC: () => passQCCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap "Acknowledge" on T-014
+      final boardAcknowledgeButtons =
+          find.widgetWithText(FilledButton, 'Acknowledge');
+      await tester.tap(boardAcknowledgeButtons.first);
+      await tester.pumpAndSettle();
+
+      // Tap "Acknowledge ticket" -> leads to Acknowledged state
+      await tester.tap(find.text('Acknowledge ticket'));
+      await tester.pumpAndSettle();
+
+      // Tap "Begin preparation" -> leads to Preparing state
+      await tester.tap(find.byKey(const ValueKey('kitchen_panel_acknowledge_button')));
+      await tester.pumpAndSettle();
+
+      // Now tap "Send to QC" on panel -> leads to Quality Check state
+      await tester.tap(find.byKey(const ValueKey('kitchen_panel_acknowledge_button')));
+      await tester.pumpAndSettle();
+
+      // Panel is now in Quality Check state (05 · Quality Check)
+      expect(find.text('QC · CHECKER AUTHORIZATION PENDING'), findsOneWidget);
+      expect(find.text('Inspect T-014'), findsOneWidget);
+      expect(find.text('Verify the prepared order'), findsOneWidget);
+      expect(find.text('QUALITY CHECKLIST'), findsOneWidget);
+      expect(find.text('Quantities and modifiers match'), findsOneWidget);
+      expect(find.text('Packaging and destination correct'), findsOneWidget);
+      expect(
+        find.text('QC action shown as demo; approved checker rights required.'),
+        findsOneWidget,
+      );
+      expect(find.text('Pass QC'), findsOneWidget);
+      expect(find.text('Fail QC'), findsOneWidget);
+
+      // Header shows QC identity
+      expect(find.text('QC checker · demo'), findsOneWidget);
+      expect(find.text('Access policy pending'), findsOneWidget);
+
+      // Board lane counts updated:
+      // NEW ORDERS: 01
+      expect(find.text('01'), findsOneWidget);
+      // COOKING: 02 (and READY is also 02)
+      expect(find.text('02'), findsNWidgets(2));
+      // QUALITY CHECK: 03
+      expect(find.text('03'), findsOneWidget);
+
+      // Tap "Pass QC" on panel
+      await tester.tap(find.text('Pass QC'));
+      await tester.pumpAndSettle();
+
+      expect(passQCCalled, isTrue);
+      // Panel is closed, board remains in QC state
+      expect(find.byType(KitchenTicketDetailPanel), findsNothing);
+      expect(find.text('01'), findsOneWidget);
+      expect(find.text('02'), findsNWidgets(2));
+      expect(find.text('03'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Phone layout displays Quality Check state with QC stage selected and QC identity in header',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        buildPageSubject(
+          size: const Size(400, 800),
+          selectedTicket: KitchenBoardSampleData.t014Checking,
+          initialPanelState: KitchenTicketPanelState.qualityCheck,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Quality Check detail panel is displayed
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('QC · CHECKER AUTHORIZATION PENDING'), findsOneWidget);
+      expect(find.text('Inspect T-014'), findsOneWidget);
+      expect(find.text('Verify the prepared order'), findsOneWidget);
+      expect(find.text('Pass QC'), findsOneWidget);
+      expect(find.text('Fail QC'), findsOneWidget);
+
+      // Phone Header shows QC identity
+      expect(find.text('QC scenario'), findsOneWidget);
+      expect(find.text('Access TBD'), findsOneWidget);
     });
   });
 }

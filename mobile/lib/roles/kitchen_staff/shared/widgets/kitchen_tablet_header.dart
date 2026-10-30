@@ -7,7 +7,14 @@ import 'package:mobile/roles/kitchen_staff/shared/widgets/kitchen_staff_identity
 import 'package:mobile/shared/widgets/logout_button.dart';
 
 class KitchenTabletHeader extends StatelessWidget {
-  const KitchenTabletHeader({super.key});
+  const KitchenTabletHeader({
+    super.key,
+    this.role = 'Kitchen staff',
+    this.status = 'Authorized workspace',
+  });
+
+  final String role;
+  final String status;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +35,10 @@ class KitchenTabletHeader extends StatelessWidget {
               ),
             ),
             SizedBox(width: KitchenSpace.lg),
-            const KitchenStaffIdentity(),
+            KitchenStaffIdentity(
+              role: role,
+              status: status,
+            ),
             SizedBox(width: KitchenSpace.sm),
             LogoutButton(color: context.kitchenOnChrome),
           ],

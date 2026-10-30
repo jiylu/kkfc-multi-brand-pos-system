@@ -98,6 +98,32 @@ abstract final class KitchenBoardSampleData {
     isActionEnabled: true,
   );
 
+  static const t014Checking = KitchenBoardItem(
+    ticket: KitchenTicketData(
+      ticketNumber: 'T-014',
+      elapsed: Duration(minutes: 6, seconds: 20),
+      age: KitchenTicketAge.onTime,
+      status: KkfcStatus.checking,
+      channel: 'Dine-in',
+      reference: 'Table 3',
+      brand: aurelias,
+      items: [
+        KitchenTicketItem(
+          quantity: 2,
+          name: 'Paa Inasal',
+          modifiers: ['extra rice'],
+        ),
+        KitchenTicketItem(
+          quantity: 1,
+          name: 'Pecho Inasal',
+          modifiers: ['no onions'],
+        ),
+      ],
+    ),
+    actionLabel: 'Review QC',
+    isActionEnabled: true,
+  );
+
   static const t018 = KitchenBoardItem(
     ticket: KitchenTicketData(
       ticketNumber: 'T-018',

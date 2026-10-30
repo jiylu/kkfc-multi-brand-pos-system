@@ -8,9 +8,16 @@ import 'package:mobile/shared/widgets/logout_button.dart';
 
 /// Phone header. [bottom] hosts the stage tabs when a screen has them.
 class KitchenPhoneHeader extends StatelessWidget {
-  const KitchenPhoneHeader({super.key, this.bottom});
+  const KitchenPhoneHeader({
+    super.key,
+    this.bottom,
+    this.role = 'Kitchen staff',
+    this.status = 'Authorized',
+  });
 
   final Widget? bottom;
+  final String role;
+  final String status;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +34,12 @@ class KitchenPhoneHeader extends StatelessWidget {
               children: [
                 const Flexible(child: KitchenBrandCard()),
                 SizedBox(width: KitchenSpace.md),
-                const Flexible(child: KitchenStaffIdentity(status: 'Authorized')),
+                Flexible(
+                  child: KitchenStaffIdentity(
+                    role: role,
+                    status: status,
+                  ),
+                ),
                 SizedBox(width: KitchenSpace.sm),
                 LogoutButton(
                   color: context.kitchenOnChrome,
