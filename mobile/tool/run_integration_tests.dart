@@ -9,6 +9,7 @@ Future<void> main(List<String> args) async {
     stdout.writeln(
       'Run from mobile/: dart run tool/run_integration_tests.dart -d <device-id>\n'
       'Use --suite=pos for the separate Login -> Brand/Channel -> Menu -> Cart suite.\n'
+      'Use --suite=orders for current mobile review plus real API lifecycle checks.\n'
       'Additional Flutter test arguments are forwarded. The default config is\n'
       'env/test-emulator.json unless you supply any --dart-define option.\n'
       'Reports: reports/integration/<timestamp>/report.html, results.json, run.log',
@@ -22,7 +23,10 @@ Future<void> main(List<String> args) async {
       : suiteOptions.single.substring('--suite='.length);
   final forwarded = args.where((arg) => !arg.startsWith('--suite=')).toList();
   final isPos = suite == 'pos';
-  final featureFile = isPos
+  final isOrders = suite == 'orders';
+  final featureFile = isOrders
+      ? 'order-lifecycle.integration.feature'
+      : isPos
       ? 'pos-core.integration.feature'
       : 'auth-api.integration.feature';
   final directory = Directory.fromUri(
@@ -35,11 +39,17 @@ Future<void> main(List<String> args) async {
   final report = IntegrationReport();
   final arguments = [
     'test',
-    isPos
+    isOrders
+        ? 'integration_test/order_lifecycle_test.dart'
+        : isPos
         ? 'integration_test/pos_core_test.dart'
         : 'integration_test/auth_api_test.dart',
     if (!forwarded.any((arg) => arg.startsWith('--dart-define')))
-      '--dart-define-from-file=${isPos ? '.fixtures/pos-flow.json' : 'env/test-emulator.json'}',
+      '--dart-define-from-file=${isOrders
+          ? '.fixtures/order-flow.json'
+          : isPos
+          ? '.fixtures/pos-flow.json'
+          : 'env/test-emulator.json'}',
     ...forwarded,
     '--machine',
   ];
@@ -47,8 +57,10 @@ Future<void> main(List<String> args) async {
   String? launchError;
   var scenarios = <Map<String, String>>[];
   try {
-    if (suite != 'auth' && suite != 'pos') {
-      throw ArgumentError('Choose --suite=auth or --suite=pos.');
+    if (!['auth', 'pos', 'orders'].contains(suite)) {
+      throw ArgumentError(
+        'Choose --suite=auth, --suite=pos, or --suite=orders.',
+      );
     }
     scenarios = readAuthScenarios(
       await File.fromUri(
@@ -99,6 +111,14 @@ Future<void> main(List<String> args) async {
   );
   summary['gherkinFile'] = featureFile;
   if (isPos) summary['title'] = 'Mobile POS core flow integration test report';
+  if (isOrders) {
+    summary['title'] = 'Mobile order review and real API lifecycle test report';
+    summary['limitations'] = [
+      'Mobile Send currently creates a DRAFT only. Verification and confirmation in this suite are direct real API checks, not UI-triggered lifecycle calls.',
+      'The mobile confirmation screen still displays a placeholder ticket. Real order codes and kitchen ticket identities are verified from API responses.',
+      'Availability coverage checks catalog and channel rules. Inventory stock reservation and posting are not implemented by order confirmation.',
+    ];
+  }
   await File('${directory.path}/$featureFile')
       .writeAsString(gherkinWithResults(summary));
   await File('${directory.path}/results.json')

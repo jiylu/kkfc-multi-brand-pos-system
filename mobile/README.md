@@ -137,6 +137,52 @@ Cleanup deletes only this fixture's records and removes its generated file. Stop
 the temporary database only after cleanup. Regenerate fixtures before rerunning
 the suite if they were removed.
 
+### Order review and API lifecycle integration tests
+
+The separate `--suite=orders` suite combines current mobile UI coverage with real
+API contract checks. **The mobile Send action currently only creates a draft.**
+It does not call `/verify` or `/confirm`, the duplicate-specific UI is not wired
+to API conflicts, and the confirmation screen's ticket is a placeholder.
+These limitations are also shown in the HTML report; passing this suite does not
+mean the complete verification/confirmation flow is connected in the mobile UI.
+
+The suite covers:
+
+- Login, assigned brand/channel/menu/cart, review, and repeated-send suppression
+  in the UI, followed by direct API verification and confirmation of that draft.
+- Real API create retries, conflicting UUID payloads, brand-prefixed daily order
+  codes, platform duplicate prevention, and idempotent confirmation/ticket creation.
+- Availability changes through an isolated fixture manager: the API rejects a
+  stale draft at verification/confirmation, and the UI preserves a rejected cart.
+  Stock quantity reservation/posting is outside the backend's current scope.
+
+Start the shared test API below, then prepare separate order fixtures from
+`server/` (these do not overwrite the earlier POS fixture):
+
+```powershell
+$env:TEST_DATABASE_URL = 'postgresql://pos:mobile-test-only@localhost:5544/pos_mobile_test'
+npx.cmd ts-node -P prisma/tsconfig.seed.json prisma/mobile-pos-fixtures.ts prepare --orders
+```
+
+Run from `mobile/`:
+
+```powershell
+dart run tool/run_integration_tests.dart --suite=orders -d emulator-5554
+```
+
+The gitignored `.fixtures/order-flow.json` contains the dedicated brand, staff
+and manager accounts and menu IDs. The suite creates real test orders and
+tickets. References/UUIDs are unique per run and tests restore changed availability.
+Run cleanup from `server/` with the same `TEST_DATABASE_URL` when finished:
+
+```powershell
+npx.cmd ts-node -P prisma/tsconfig.seed.json prisma/mobile-pos-fixtures.ts cleanup --orders
+```
+
+Cleanup removes this fixture's orders, tickets, daily counters, catalog, accounts,
+and sessions only. Reports include HTML, Gherkin, JSON, and raw logs under
+`reports/integration/`. This suite is not added to CI.
+
 ### Shared test API setup
 
 Start the isolated, temporary PostgreSQL database from the repository root:

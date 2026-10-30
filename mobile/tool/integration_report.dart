@@ -37,6 +37,10 @@ class IntegrationReport {
         });
         record['status'] = 'Failed';
         record['hidden'] = false;
+      case 'print':
+        if (id is int && event['messageType'] == 'print') {
+          (_record(id)['diagnostics'] as List).add(event['message'].toString());
+        }
       case 'testDone':
         if (id is! int) return;
         final record = _record(id);
@@ -65,6 +69,7 @@ class IntegrationReport {
       'status': 'Not completed',
       'hidden': false,
       'errors': <Map<String, dynamic>>[],
+      'diagnostics': <String>[],
     },
   );
 
@@ -144,9 +149,8 @@ String reportHtml(Map<String, dynamic> report) {
   final title = report['title'] ?? 'Flutter integration test report';
   final gherkinFile = report['gherkinFile'] ?? 'auth-api.integration.feature';
   final categoryCounts = report['categoryCounts'] as Map? ?? {};
-  String errors(dynamic test) => (test['errors'] as List)
-      .map((e) => '${e['message']}\n${e['stackTrace']}')
-      .join('\n\n');
+  String errors(dynamic test) =>
+      '${(test['errors'] as List).map((e) => '${e['message']}\n${e['stackTrace']}').join('\n\n')}\n${(test['diagnostics'] as List? ?? []).join('\n')}';
   return '''<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -164,6 +168,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#eef2f6;padding:12px;
 Duration: ${escape(((report['durationMs'] as num) / 1000).toStringAsFixed(1))} seconds · Exit code: ${escape(report['exitCode'])}</p>
 <p>${(report['counts'] as Map).entries.map((e) => '${escape(e.key)}: ${escape(e.value)}').join(' · ')}</p>
 <p><a href="run.log">Full execution log</a> · <a href="results.json">Structured results</a></p>
+${report['limitations'] == null ? '' : '<section><h2>Known coverage limitations</h2><ul>${(report['limitations'] as List).map((s) => '<li>${escape(s)}</li>').join()}</ul></section>'}
 ${categoryCounts.isEmpty ? '' : '<section><h2>Results by test type</h2><table><tr><th>Type</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Not completed</th></tr>${categoryCounts.entries.map((e) => '<tr><td>${escape(e.key)}</td>${['Passed', 'Failed', 'Skipped', 'Not completed'].map((s) => '<td>${escape(e.value[s])}</td>').join()}</tr>').join()}</table></section>'}
 <section><h2>Test results</h2><table><thead><tr><th>Type</th><th>Test</th><th>Result</th><th>Duration</th></tr></thead><tbody>
 ${tests.map((t) => '<tr><td>${escape(t['category'] ?? 'Integration')}</td><td>${escape(t['name'])}${t['source'] == null ? '' : '<br><small>${escape(t['source'])}</small>'}</td><td class="${escape(t['status'])}">${escape(t['status'])}</td><td>${escape(t['durationMs'] ?? '—')} ms</td></tr>').join('\n')}

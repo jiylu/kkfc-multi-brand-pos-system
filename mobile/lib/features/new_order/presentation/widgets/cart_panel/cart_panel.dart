@@ -52,7 +52,6 @@ class _CartPanelState extends ConsumerState<CartPanel> {
     final count = ref.watch(cartCountProvider);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -69,26 +68,48 @@ class _CartPanelState extends ConsumerState<CartPanel> {
       clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            CartPanelHeader(
-              brand: brand,
-              channel: channel,
-              referenceController: _referenceController,
-              onReferenceChanged: ref.read(orderReferenceProvider.notifier).set,
-              // TODO: set referenceHelperText, referenceErrorText,
-              // referenceEnabled and referenceDisabledText from the channel
-              // rules (e.g. "Not used for GrabFood") once they exist.
-              canClear: lines.isNotEmpty,
-              onClear: () => ref.read(cartProvider.notifier).clear(),
+        child: CustomScrollView(
+          primary: false,
+          slivers: [
+            SliverToBoxAdapter(
+              child: CartPanelHeader(
+                brand: brand,
+                channel: channel,
+                referenceController: _referenceController,
+                onReferenceChanged: ref
+                    .read(orderReferenceProvider.notifier)
+                    .set,
+                // TODO: set referenceHelperText, referenceErrorText,
+                // referenceEnabled and referenceDisabledText from the channel
+                // rules (e.g. "Not used for GrabFood") once they exist.
+                canClear: lines.isNotEmpty,
+                onClear: () => ref.read(cartProvider.notifier).clear(),
+              ),
             ),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: reduceMotion ? Duration.zero : KkfcMotion.base,
-                child: lines.isEmpty
-                    ? Center(
-                        key: const ValueKey('empty'),
+            if (lines.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: KkfcSpace.s16),
+                sliver: SliverList.list(
+                  children: [
+                    for (final line in lines)
+                      FadeSlideIn(
+                        key: ValueKey(line.id),
+                        child: CartLineTile(line: line, channel: channel),
+                      ),
+                  ],
+                ),
+              ),
+            // Fill spare space on tall screens, but let the footer scroll into
+            // view when the keyboard, large text, or cart contents need more room.
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (lines.isEmpty)
+                    Expanded(
+                      child: Center(
                         child: Padding(
                           padding: const EdgeInsets.all(KkfcSpace.s24),
                           child: Text(
@@ -99,61 +120,53 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                             ),
                           ),
                         ),
-                      )
-                    : ListView(
-                        key: const ValueKey('lines'),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: KkfcSpace.s16,
-                        ),
-                        children: [
-                          for (final line in lines)
-                            FadeSlideIn(
-                              key: ValueKey(line.item.id),
-                              child: CartLineTile(line: line, channel: channel),
-                            ),
-                        ],
-                      ),
-              ),
-            ),
-            const Divider(height: 1),
-            CartPanelFooter(
-              count: count,
-              total: total,
-              canSend:
-                  lines.isNotEmpty &&
-                  (channel.isPlatform || reference.trim().isNotEmpty),
-              onSend: () {
-                if (!channel.isPlatform && reference.trim().isEmpty) {
-                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Add a ${channel.referenceLabel.toLowerCase()} before sending the order.',
                       ),
                     ),
-                  );
-                  return;
-                }
-                context.push(
-                  AppRoutes.orderEntry,
-                  extra: OrderEntryViewData.checkBeforeSending.withOrderDetails(
-                    brandName: brand.name,
-                    channel: channel.label,
-                    reference: _referenceController.text,
-                    itemCount: count,
-                    items: [
-                      for (final line in lines)
-                        OrderEntryItem(
-                          name: line.item.name,
-                          quantity: line.quantity,
-                          total: formatPeso(line.totalCentavos(channel)),
-                          modifiers: line.modifierSummary,
-                        ),
-                    ],
-                    total: formatPeso(total),
-                    isPlatform: channel.isPlatform,
+                  const Divider(height: 1),
+                  CartPanelFooter(
+                    count: count,
+                    total: total,
+                    canSend:
+                        lines.isNotEmpty &&
+                        (channel.isPlatform || reference.trim().isNotEmpty),
+                    onSend: () {
+                      if (!channel.isPlatform && reference.trim().isEmpty) {
+                        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Add a ${channel.referenceLabel.toLowerCase()} before sending the order.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      context.push(
+                        AppRoutes.orderEntry,
+                        extra: OrderEntryViewData.checkBeforeSending
+                            .withOrderDetails(
+                              brandName: brand.name,
+                              channel: channel.label,
+                              reference: _referenceController.text,
+                              itemCount: count,
+                              items: [
+                                for (final line in lines)
+                                  OrderEntryItem(
+                                    name: line.item.name,
+                                    quantity: line.quantity,
+                                    total: formatPeso(
+                                      line.totalCentavos(channel),
+                                    ),
+                                    modifiers: line.modifierSummary,
+                                  ),
+                              ],
+                              total: formatPeso(total),
+                              isPlatform: channel.isPlatform,
+                            ),
+                      );
+                    },
                   ),
-                );
-              },
+                ],
+              ),
             ),
           ],
         ),

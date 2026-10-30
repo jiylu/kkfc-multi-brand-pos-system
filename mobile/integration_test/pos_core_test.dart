@@ -273,6 +273,7 @@ Future<void> _tap(
   bool settle = true,
 }) async {
   await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
   await tester.tap(finder);
   if (settle) {
     await tester.pumpAndSettle();

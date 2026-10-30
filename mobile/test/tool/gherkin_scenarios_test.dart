@@ -6,6 +6,35 @@ import '../../tool/gherkin_scenarios.dart';
 import '../../tool/integration_report.dart';
 
 void main() {
+  test(
+    'order lifecycle scenarios have separate IDs and explicit API steps',
+    () {
+      final source = File(
+        '../features/mobile/order-lifecycle.integration.feature',
+      ).readAsStringSync();
+      final scenarios = readAuthScenarios(source);
+      expect(scenarios, hasLength(4));
+      expect(scenarios.map((s) => s['id']), [
+        'IT-MOB-ORD-001',
+        'IT-MOB-ORD-002',
+        'IT-MOB-ORD-003',
+        'IT-MOB-ORD-004',
+      ]);
+      expect(
+        scenarios.first['gherkin'],
+        contains('test calls the real confirmation endpoint'),
+      );
+      final results = scenarioResults(scenarios, [
+        {'name': 'IT-MOB-ORD-001 review and API lifecycle', 'status': 'Passed'},
+      ]);
+      expect(results.map((s) => s['status']), [
+        'Passed',
+        'Not run',
+        'Not run',
+        'Not run',
+      ]);
+    },
+  );
   late List<Map<String, String>> scenarios;
   setUp(() {
     scenarios = readAuthScenarios(

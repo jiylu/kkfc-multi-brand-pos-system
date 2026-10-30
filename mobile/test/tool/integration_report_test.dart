@@ -5,6 +5,48 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../tool/integration_report.dart';
 
 void main() {
+  test('HTML retains framework diagnostics emitted as print events', () {
+    final parser = IntegrationReport();
+    for (final event in [
+      {
+        'type': 'testStart',
+        'test': {'id': 1, 'name': 'cart review'},
+        'time': 0,
+      },
+      {
+        'type': 'print',
+        'testID': 1,
+        'messageType': 'print',
+        'message': 'A RenderFlex overflowed by 62 pixels.',
+      },
+      {
+        'type': 'error',
+        'testID': 1,
+        'error': 'Test failed. See exception logs above.',
+        'stackTrace': '',
+      },
+      {
+        'type': 'testDone',
+        'testID': 1,
+        'result': 'error',
+        'hidden': false,
+        'time': 10,
+      },
+      {'type': 'done', 'success': false},
+    ]) {
+      parser.addLine(jsonEncode(event));
+    }
+    final summary = parser.summarize(
+      exitCode: 1,
+      started: DateTime.utc(2026),
+      finished: DateTime.utc(2026),
+      arguments: [],
+    );
+    expect(
+      reportHtml(summary),
+      contains('A RenderFlex overflowed by 62 pixels.'),
+    );
+  });
   late IntegrationReport report;
   setUp(() => report = IntegrationReport());
 
