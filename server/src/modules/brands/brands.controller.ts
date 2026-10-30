@@ -21,7 +21,6 @@ import { FindBrandsDTO } from './dto/find-brands.dto';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
 import { Authenticated, type AuthenticatedRequest } from '../auth/auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
-import { BrandsGuard } from '../../shared/guards/brands.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import {
   BrandsDocs,
@@ -74,22 +73,19 @@ export class BrandsController {
   }
 
   @Get(':brandId')
-  @UseGuards(BrandsGuard)
   @FindOneBrandDocs()
   async findOne(@Param('brandId', ParseUUIDPipe) brandId: string) {
     return this.brandsService.findOne(brandId);
   }
 
   @Get()
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPERADMIN)
   @FindAllBrandsDocs()
   async findAll(@Query() query: FindBrandsDTO) {
     return this.brandsService.findAll(query);
   }
 
   @Patch(':brandId')
-  @UseGuards(RolesGuard, BrandsGuard, PinGuard)
+  @UseGuards(RolesGuard, PinGuard)
   @Roles(UserRole.SUPERADMIN)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -115,7 +111,7 @@ export class BrandsController {
   }
 
   @Delete(':brandId')
-  @UseGuards(RolesGuard, BrandsGuard, PinGuard)
+  @UseGuards(RolesGuard, PinGuard)
   @Roles(UserRole.SUPERADMIN)
   @DeleteBrandDocs()
   async delete(@Param('brandId', ParseUUIDPipe) brandId: string) {

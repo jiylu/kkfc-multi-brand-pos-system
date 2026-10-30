@@ -19,7 +19,7 @@ export function MenuItemModifiersDocs() {
     }),
     ApiResponse({
       status: 403,
-      description: 'Role or brand access denied.',
+      description: 'Role access denied.',
     }),
   );
 }

@@ -16,7 +16,7 @@ export class CreateMenuItemDTO {
   @ApiProperty({
     format: 'uuid',
     description:
-      'Active brand that owns the item. Managers must use their assigned brand.',
+      'Active brand that owns the item. Managers and superadmins can use any active brand.',
   })
   brand_id!: string;
 

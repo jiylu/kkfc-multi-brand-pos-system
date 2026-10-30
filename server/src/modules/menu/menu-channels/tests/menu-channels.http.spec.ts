@@ -3,7 +3,6 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Authenticated } from '../../../auth/auth.guard';
-import { BrandsGuard } from '../../../../shared/guards/brands.guard';
 import { RolesGuard } from '../../../../shared/guards/roles.guard';
 import { MenuChannelsController } from '../menu-channels.controller';
 import { MenuChannelsService } from '../menu-channels.service';
@@ -36,8 +35,6 @@ describe('Menu channels HTTP endpoints', () => {
       .overrideGuard(Authenticated)
       .useValue({ canActivate: () => true })
       .overrideGuard(RolesGuard)
-      .useValue({ canActivate: () => true })
-      .overrideGuard(BrandsGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(PinGuard)
       .useValue({ canActivate: () => true })

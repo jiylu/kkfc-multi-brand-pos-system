@@ -13,9 +13,7 @@ a JSON boolean. Strings, numbers, null, and extra fields are rejected. The
 response is the updated menu item, with the new value in `is_available`.
 
 Allowed roles are `SUPERADMIN`, `MANAGER`, `RECIPE_MANAGER`, `SUPERVISOR`,
-`KITCHEN_HEAD`, `KITCHEN_STAFF`, and `INVENTORY_STAFF`. Superadmins and recipe
-managers can access any brand; other allowed callers must be assigned to the
-item's brand. Cashiers cannot change availability. The item and its brand must
+`KITCHEN_HEAD`, `KITCHEN_STAFF`, and `INVENTORY_STAFF`. All allowed roles can operate on any brand. Cashiers cannot change availability. The item and its brand must
 both be active.
 
 | Status | Meaning                                                             |
@@ -23,7 +21,7 @@ both be active.
 | 200    | Updated menu item.                                                  |
 | 400    | Invalid UUID, missing or invalid boolean, or unsupported fields.    |
 | 401    | Missing, invalid, or expired bearer session.                        |
-| 403    | Role or brand access denied.                                        |
+| 403    | Role access denied.                                                 |
 | 404    | Item or brand not found or inactive.                                |
 | 409    | Requested value is already set; error code `AVAILABILITY_CONFLICT`. |
 

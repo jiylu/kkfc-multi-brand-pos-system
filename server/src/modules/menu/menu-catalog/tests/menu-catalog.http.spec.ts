@@ -104,10 +104,6 @@ describe('Menu catalog HTTP endpoints', () => {
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual(createdEntry);
     expect(service.create).toHaveBeenCalledWith(dto);
-    expect(brandLookup).toHaveBeenCalledWith({
-      where: { brand_id: brandId },
-      select: { brand_id: true },
-    });
     expect(pin.verifyPin).toHaveBeenCalledWith(user.user_id, '1234');
   });
 
@@ -156,7 +152,7 @@ describe('Menu catalog HTTP endpoints', () => {
     expect(service.create).not.toHaveBeenCalled();
   });
 
-  it('rejects creation for another brand even when the brand is nested', async () => {
+  it('creates entries across brands', async () => {
     brandLookup.mockResolvedValue({ brand_id: otherBrandId });
     const response = await fetch(url, {
       method: 'POST',
@@ -167,15 +163,15 @@ describe('Menu catalog HTTP endpoints', () => {
       }),
     });
 
-    expect(response.status).toBe(403);
-    expect(service.create).not.toHaveBeenCalled();
-    expect(pin.verifyPin).not.toHaveBeenCalled();
+    expect(response.status).toBe(201);
+    expect(service.create).toHaveBeenCalled();
+    expect(pin.verifyPin).toHaveBeenCalled();
   });
 
-  it('rejects listing a brand the caller is not assigned to', async () => {
+  it('lists any brand', async () => {
     const response = await fetch(`${url}/brand/${otherBrandId}`, { headers });
-    expect(response.status).toBe(403);
-    expect(service.findAll).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(service.findAll).toHaveBeenCalled();
   });
 
   it('requires an action PIN for creation', async () => {

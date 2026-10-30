@@ -12,9 +12,6 @@ import { Authenticated } from '../../auth/auth.guard';
 import { UsersController } from '../users.controller';
 import { UsersService } from '../users.service';
 import { UsersRepository } from '../users.repository';
-import { BrandsRepository } from '../../brands/brands.repository';
-import { CreateUserDTO } from '../dto/create-user.dto';
-import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { AllExceptionsFilter } from '../../../shared/filters/all-exceptions.filter';
 import { PrismaExceptionFilter } from '../../../shared/filters/prisma-exception.filter';
@@ -26,13 +23,11 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   let currentRole: UserRole = UserRole.SUPERADMIN;
   const userId = '00000000-0000-4000-8000-000000000010';
   const brandId = '00000000-0000-4000-8000-000000000020';
-  let resourceBrandId = brandId;
 
   const service = {
     createUser: jest.fn(),
     updateUser: jest.fn(),
     findAllUsers: jest.fn(),
-    findAllUsersByBrand: jest.fn(),
     findOneUser: jest.fn(),
     deleteUser: jest.fn(),
   };
@@ -43,18 +38,6 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       providers: [
         { provide: UsersService, useValue: service },
         RolesGuard,
-        {
-          provide: PrismaService,
-          useValue: {
-            user: {
-              findUnique: jest
-                .fn()
-                .mockImplementation(() =>
-                  Promise.resolve({ brand_id: resourceBrandId }),
-                ),
-            },
-          },
-        },
         { provide: APP_FILTER, useClass: AllExceptionsFilter },
         { provide: APP_FILTER, useClass: PrismaExceptionFilter },
       ],
@@ -70,7 +53,6 @@ describe('Users HTTP endpoints (IT-USER)', () => {
               user: {
                 user_id: string;
                 role: UserRole;
-                brand_id: string | null;
               };
             };
           }>();
@@ -78,7 +60,6 @@ describe('Users HTTP endpoints (IT-USER)', () => {
             user: {
               user_id: '00000000-0000-4000-8000-000000000001',
               role: currentRole,
-              brand_id: currentRole === UserRole.SUPERADMIN ? null : brandId,
             },
           };
           return true;
@@ -105,7 +86,6 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   beforeEach(() => {
     authenticated = true;
     currentRole = UserRole.SUPERADMIN;
-    resourceBrandId = brandId;
     for (const method of Object.values(service)) {
       method.mockReset().mockResolvedValue({ ok: true });
     }
@@ -115,165 +95,72 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     await app?.close();
   });
 
-  describe('creation brand policy', () => {
-    const repository = { safeFindByUsername: jest.fn(), create: jest.fn() };
-    const payload = {
-      username: 'new_user',
-      first_name: 'Test',
-      last_name: 'User',
-      password: 'Password123!',
-    };
-
-    beforeEach(() => {
-      repository.safeFindByUsername.mockReset().mockResolvedValue(null);
-      repository.create.mockReset();
-      repository.create.mockImplementation((dto: CreateUserDTO) =>
-        Promise.resolve({
-          user_id: userId,
-          role: dto.role,
-          brand_id: dto.brand_id ?? null,
-        }),
-      );
-      const users = new UsersService(
-        repository as unknown as UsersRepository,
-        {} as BrandsRepository,
-      );
-      service.createUser.mockImplementation(
-        (
-          dto: CreateUserDTO,
-          isSuperAdmin: boolean,
-          callerBrandId: string | null,
-        ) => users.createUser(dto, isSuperAdmin, callerBrandId),
-      );
-    });
-
-    it.each(
-      [
-        UserRole.SUPERADMIN,
-        UserRole.INVENTORY_STAFF,
-        UserRole.RECIPE_MANAGER,
-      ].flatMap((role) =>
-        [undefined, null].map((brand_id) => ({ role, brand_id })),
-      ),
-    )(
-      'allows a superadmin to create unassigned $role accounts ($brand_id)',
-      async ({ role, brand_id }) => {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, role, brand_id }),
-        });
-        expect(response.status).toBe(201);
-        expect(await response.json()).toMatchObject({ role, brand_id: null });
-        expect(repository.create).toHaveBeenCalledTimes(1);
-      },
-    );
-
-    it.each(
-      [
-        UserRole.MANAGER,
-        UserRole.SUPERVISOR,
-        UserRole.KITCHEN_HEAD,
-        UserRole.KITCHEN_STAFF,
-        UserRole.CASHIER_STAFF,
-      ].flatMap((role) =>
-        [undefined, null].map((brand_id) => ({ role, brand_id })),
-      ),
-    )(
-      'requires a brand for $role even for a superadmin ($brand_id)',
-      async ({ role, brand_id }) => {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, role, brand_id }),
-        });
-        expect(response.status).toBe(400);
-        expect(await response.json()).toMatchObject({
-          code: 'MISSING_BRAND_ID',
-        });
-        expect(repository.create).not.toHaveBeenCalled();
-      },
-    );
-
-    it.each(
-      [UserRole.INVENTORY_STAFF, UserRole.RECIPE_MANAGER].flatMap((role) =>
-        [undefined, null].map((brand_id) => ({ role, brand_id })),
-      ),
-    )(
-      'blocks a manager from creating an unassigned $role account ($brand_id)',
-      async ({ role, brand_id }) => {
-        currentRole = UserRole.MANAGER;
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, role, brand_id }),
-        });
-        expect(response.status).toBe(403);
-        expect(repository.create).not.toHaveBeenCalled();
-      },
-    );
-
-    it.each([UserRole.INVENTORY_STAFF, UserRole.RECIPE_MANAGER])(
-      'allows a manager to create %s only in their brand',
-      async (role) => {
-        currentRole = UserRole.MANAGER;
-        const body = { ...payload, role, brand_id: brandId };
-        const ownBrand = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        expect(ownBrand.status).toBe(201);
-        const otherBrand = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...body,
-            brand_id: '00000000-0000-4000-8000-000000000030',
-          }),
-        });
-        expect(otherBrand.status).toBe(403);
-        expect(repository.create).toHaveBeenCalledTimes(1);
-      },
-    );
-
-    it.each(['', 'invalid', 123, {}, []])(
-      'still validates supplied brand IDs for brand-optional roles (%j)',
-      async (brand_id) => {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...payload,
-            role: UserRole.RECIPE_MANAGER,
-            brand_id,
-          }),
-        });
-        expect(response.status).toBe(400);
-        expect(repository.create).not.toHaveBeenCalled();
-      },
-    );
-
-    it.each([
-      UserRole.INVENTORY_STAFF,
-      UserRole.RECIPE_MANAGER,
-      UserRole.SUPERVISOR,
-      UserRole.KITCHEN_HEAD,
-      UserRole.KITCHEN_STAFF,
-      UserRole.CASHIER_STAFF,
-    ])('does not let %s use the creation endpoint', async (role) => {
+  it.each([UserRole.MANAGER, UserRole.SUPERADMIN])(
+    'lists all users for %s',
+    async (role) => {
       currentRole = role;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, role: UserRole.INVENTORY_STAFF }),
+      expect((await fetch(`${url}?page=2&limit=5`)).status).toBe(200);
+      expect(service.findAllUsers).toHaveBeenCalledWith({
+        page: 2,
+        limit: 5,
+        activeOnly: true,
       });
-      expect(response.status).toBe(403);
-      expect(service.createUser).not.toHaveBeenCalled();
-      expect(repository.create).not.toHaveBeenCalled();
-    });
+    },
+  );
+  it('removes the brand-specific user listing', async () => {
+    expect((await fetch(`${url}/brand/${brandId}`)).status).toBe(404);
   });
-
+  it('rejects brand assignments on user creation', async () => {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: 'staff',
+        first_name: 'Test',
+        last_name: 'User',
+        password: 'Password123!',
+        role: UserRole.CASHIER_STAFF,
+        brand_id: brandId,
+      }),
+    });
+    expect(response.status).toBe(400);
+    expect(service.createUser).not.toHaveBeenCalled();
+  });
+  it.each([
+    { role: UserRole.MANAGER, status: 403 },
+    { role: UserRole.SUPERADMIN, status: 200 },
+  ])('protects superadmins over HTTP for $role', async ({ role, status }) => {
+    currentRole = role;
+    const repository = {
+      findOne: jest
+        .fn()
+        .mockResolvedValue({ user_id: userId, role: UserRole.SUPERADMIN }),
+      update: jest.fn().mockResolvedValue({ user_id: userId }),
+      delete: jest
+        .fn()
+        .mockResolvedValue({ user_id: userId, is_active: false }),
+    };
+    const users = new UsersService(repository as unknown as UsersRepository);
+    service.updateUser.mockImplementation(
+      (...args: Parameters<UsersService['updateUser']>) =>
+        users.updateUser(...args),
+    );
+    service.deleteUser.mockImplementation(
+      (...args: Parameters<UsersService['deleteUser']>) =>
+        users.deleteUser(...args),
+    );
+    const update = await fetch(`${url}/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'Password123!' }),
+    });
+    expect(update.status).toBe(status);
+    expect((await fetch(`${url}/${userId}`, { method: 'DELETE' })).status).toBe(
+      status,
+    );
+    expect(repository.update).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
+    expect(repository.delete).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
+  });
   it('reports current role names when a legacy role is supplied', async () => {
     const response = await fetch(url, {
       method: 'POST',
@@ -284,7 +171,6 @@ describe('Users HTTP endpoints (IT-USER)', () => {
         last_name: 'User',
         password: 'Password123!',
         role: 'OWNER',
-        brand_id: brandId,
       }),
     });
     expect(response.status).toBe(400);
@@ -295,51 +181,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     expect(service.createUser).not.toHaveBeenCalled();
   });
 
-  it.each([UserRole.SUPERADMIN, UserRole.MANAGER])(
-    'lists a brand for %s',
-    async (role) => {
-      currentRole = role;
-      const response = await fetch(
-        `${url}/brand/${brandId}?page=2&limit=5&activeOnly=false`,
-      );
-      expect(response.status).toBe(200);
-      expect(service.findAllUsersByBrand).toHaveBeenCalledWith(
-        { page: 2, limit: 5, activeOnly: false },
-        brandId,
-      );
-      expect(service.findAllUsers).not.toHaveBeenCalled();
-    },
-  );
-
-  it('denies managers access to another brand listing', async () => {
-    currentRole = UserRole.MANAGER;
-    const response = await fetch(
-      `${url}/brand/00000000-0000-4000-8000-000000000030`,
-    );
-    expect(response.status).toBe(403);
-    expect(service.findAllUsersByBrand).not.toHaveBeenCalled();
-  });
-
-  it.each(['GET', 'PATCH', 'DELETE'])(
-    'denies manager %s access to users in another brand',
-    async (method) => {
-      currentRole = UserRole.MANAGER;
-      resourceBrandId = '00000000-0000-4000-8000-000000000030';
-      const response = await fetch(`${url}/${userId}`, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        ...(method === 'PATCH'
-          ? { body: JSON.stringify({ first_name: 'Updated' }) }
-          : {}),
-      });
-      expect(response.status).toBe(403);
-      expect(service.findOneUser).not.toHaveBeenCalled();
-      expect(service.updateUser).not.toHaveBeenCalled();
-      expect(service.deleteUser).not.toHaveBeenCalled();
-    },
-  );
-
-  it('allows managers to update and deactivate users in their brand', async () => {
+  it('allows managers to update and deactivate users across brands', async () => {
     currentRole = UserRole.MANAGER;
     const dto = { first_name: 'Updated' };
     expect(
@@ -351,11 +193,11 @@ describe('Users HTTP endpoints (IT-USER)', () => {
         })
       ).status,
     ).toBe(200);
-    expect(service.updateUser).toHaveBeenCalledWith(userId, dto);
+    expect(service.updateUser).toHaveBeenCalledWith(userId, dto, false);
     expect((await fetch(`${url}/${userId}`, { method: 'DELETE' })).status).toBe(
       200,
     );
-    expect(service.deleteUser).toHaveBeenCalledWith(userId);
+    expect(service.deleteUser).toHaveBeenCalledWith(userId, false);
   });
 
   it('IT-USER-001: creates a user when requested by a SUPERADMIN with valid payload', async () => {
@@ -365,7 +207,6 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       last_name: 'Santos',
       password: 'Password123!',
       role: UserRole.CASHIER_STAFF,
-      brand_id: brandId,
     };
 
     const response = await fetch(url, {
@@ -376,7 +217,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
 
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ ok: true });
-    expect(service.createUser).toHaveBeenCalledWith(payload, true, null);
+    expect(service.createUser).toHaveBeenCalledWith(payload, true);
   });
 
   it.each([
@@ -470,7 +311,11 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(service.updateUser).toHaveBeenCalledWith(userId, dto);
+    expect(service.updateUser).toHaveBeenCalledWith(
+      userId,
+      dto,
+      currentRole === UserRole.SUPERADMIN,
+    );
   });
 
   it.each(['renamed_user', 'a'.repeat(16)])(
@@ -483,7 +328,11 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(service.updateUser).toHaveBeenCalledWith(userId, { username });
+      expect(service.updateUser).toHaveBeenCalledWith(
+        userId,
+        { username },
+        true,
+      );
     },
   );
 
@@ -551,7 +400,10 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   it('IT-USER-008: deactivates a user via DELETE /:id', async () => {
     const response = await fetch(`${url}/${userId}`, { method: 'DELETE' });
     expect(response.status).toBe(200);
-    expect(service.deleteUser).toHaveBeenCalledWith(userId);
+    expect(service.deleteUser).toHaveBeenCalledWith(
+      userId,
+      currentRole === UserRole.SUPERADMIN,
+    );
   });
 
   it.each([
@@ -573,7 +425,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       (role) => role !== UserRole.MANAGER && role !== UserRole.SUPERADMIN,
     ),
   )(
-    'IT-USER-010: restricts staff role %s to reading users in their brand',
+    'IT-USER-010: restricts staff role %s to reading users across brands',
     async (role) => {
       currentRole = role;
 
@@ -602,7 +454,6 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       last_name: 'Manager',
       password: 'Password123!',
       role: UserRole.MANAGER,
-      brand_id: brandId,
     };
     expect(
       (
@@ -613,7 +464,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
         })
       ).status,
     ).toBe(201);
-    expect(service.createUser).toHaveBeenCalledWith(payload, true, null);
+    expect(service.createUser).toHaveBeenCalledWith(payload, true);
     expect((await fetch(`${url}?activeOnly=false`)).status).toBe(200);
     expect(service.findAllUsers).toHaveBeenCalledWith({
       page: 1,
@@ -632,10 +483,17 @@ describe('Users HTTP endpoints (IT-USER)', () => {
         })
       ).status,
     ).toBe(200);
-    expect(service.updateUser).toHaveBeenCalledWith(userId, dto);
+    expect(service.updateUser).toHaveBeenCalledWith(
+      userId,
+      dto,
+      currentRole === UserRole.SUPERADMIN,
+    );
     expect((await fetch(`${url}/${userId}`, { method: 'DELETE' })).status).toBe(
       200,
     );
-    expect(service.deleteUser).toHaveBeenCalledWith(userId);
+    expect(service.deleteUser).toHaveBeenCalledWith(
+      userId,
+      currentRole === UserRole.SUPERADMIN,
+    );
   });
 });

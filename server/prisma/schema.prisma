@@ -162,12 +162,10 @@ model User {
   last_name     String   @db.VarChar(100)
   password_hash String   @db.VarChar(255)
   role          UserRole
-  brand_id      String?  @db.Uuid
   is_active     Boolean  @default(true)
   created_at    DateTime @default(now()) @db.Timestamp(6)
   modified_at   DateTime @default(now()) @db.Timestamp(6)
 
-  brand                             Brand?                 @relation("UserBrand", fields: [brand_id], references: [brand_id], onDelete: NoAction, onUpdate: NoAction)
   user_sessions_user                UserSession[]          @relation("UserSessionUser")
   user_pin_credential               UserPinCredential?     @relation("UserPinCredentialUser")
   orders_created_by                 Order[]                @relation("OrderCreatedBy")
@@ -190,7 +188,6 @@ model User {
   kitchen_tickets_created_by        KitchenTicket[]        @relation("KitchenTicketCreatedBy")
   audit_logs_actor                  AuditLog[]             @relation("AuditLogActor")
 
-  @@index([brand_id])
   @@map("users")
 }
 
@@ -236,7 +233,6 @@ model Brand {
   modified_at DateTime @default(now()) @db.Timestamp(6)
   is_active   Boolean  @default(true)
 
-  users_brand                User[]              @relation("UserBrand")
   orders_brand               Order[]             @relation("OrderBrand")
   menu_items_brand           MenuItem[]          @relation("MenuItemBrand")
   recipes_brand              Recipe[]            @relation("RecipeBrand")
@@ -581,7 +577,7 @@ model StockMovement {
 }
 
 /// MENU_ASSEMBLY: components per serving. PRODUCTION: components per standard batch, with an output inventory item and expected yield.
-/// Brand-owned; backend reads and writes must enforce the authenticated user's brand access.
+/// Brand-owned; employees operate across brands subject to recipe access rules.
 model Recipe {
   recipe_id                String     @id @default(uuid()) @db.Uuid
   brand_id                 String     @db.Uuid
@@ -720,7 +716,7 @@ model KitchenTicket {
 model AuditLog {
   audit_log_id String       @id @default(uuid()) @db.Uuid
   actor_id     String?      @db.Uuid
-  /// RECIPE_UPDATED, BRAND_ASSIGNMENT_ADDED, etc.
+  /// RECIPE_UPDATED, USER_CREATED, etc.
   action       String       @db.VarChar(100)
   /// recipes, users, stock_adjustments, etc.
   entity_type  String       @db.VarChar(64)

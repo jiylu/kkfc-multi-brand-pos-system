@@ -119,7 +119,7 @@ export async function seedDatabase(prisma: Prisma.TransactionClient) {
   }
 
   console.log(`Seeded brands: ${brands.map((b) => b.code).join(', ')}`);
-  await seedUsers(prisma, brandIds);
+  await seedUsers(prisma);
 
   const inventoryIds = new Map<string, string>();
   for (const item of inventory_items) {

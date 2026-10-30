@@ -101,6 +101,49 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
             : JSON.stringify(body),
     });
   }
+  it('deactivates a brand without deactivating employees or their sessions', async () => {
+    expect(
+      (
+        await request(
+          `/brands/${fixture.brand.brand_id}`,
+          'DELETE',
+          undefined,
+          2,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      await prisma.user.count({
+        where: {
+          user_id: { in: fixture.users.map((user) => user.user_id) },
+          is_active: true,
+        },
+      }),
+    ).toBe(fixture.users.length);
+    expect((await request('/auth/me', 'GET', undefined, 0)).status).toBe(200);
+  });
+  it.each(['verify', 'confirm', 'cancel'])(
+    'rejects a wrong-brand order URL for %s',
+    async (operation) => {
+      const body = await draft();
+      const response = await request(
+        `/brands/${fixture.otherBrand.brand_id}/orders/${body.order_id}/${operation}`,
+        'POST',
+        operation === 'cancel'
+          ? { cancellation_reason: 'Wrong brand' }
+          : { payment_method: 'CASH', payment_status: 'PAID' },
+        1,
+      );
+      expect(response.status).toBe(404);
+      expect(
+        (
+          await prisma.order.findUniqueOrThrow({
+            where: { order_id: body.order_id },
+          })
+        ).status,
+      ).toBe('DRAFT');
+    },
+  );
   it('persists failed PIN attempts across different protected endpoints and enforces cooldown', async () => {
     const userId = fixture.users[0].user_id;
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -257,7 +300,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
   );
 
   it.each(['GET', 'PATCH', 'DELETE', 'REACTIVATE'])(
-    'IT-MCH-002 Given another brand manager When requesting channel %s Then deny without mutation',
+    'IT-MCH-002 Given another brand manager When requesting channel %s Then allow the operation',
     async (operation) => {
       const record = await channel();
       if (operation === 'REACTIVATE')
@@ -278,12 +321,14 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
             3,
           )
         ).status,
-      ).toBe(403);
+      ).toBe(200);
       const stored = await prisma.menuItemChannel.findUniqueOrThrow({
         where: { menu_item_channel_id: record.menu_item_channel_id },
       });
-      expect(stored.price.toString()).toBe('120');
-      expect(stored.is_available).toBe(operation !== 'REACTIVATE');
+      expect(stored.price.toString()).toBe(
+        operation === 'PATCH' ? '999' : '120',
+      );
+      expect(stored.is_available).toBe(operation !== 'DELETE');
     },
   );
 
@@ -1364,6 +1409,57 @@ describe('Daily order code migration', () => {
       await expect(
         client.query('UPDATE order_daily_counters SET last_number = 0'),
       ).rejects.toMatchObject({ code: '23514' });
+    } finally {
+      await client.query('ROLLBACK');
+      await client.query('SET search_path TO public');
+      await client.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+      await client.end();
+    }
+  });
+});
+
+describe('User brand removal migration', () => {
+  it('drops assignments while preserving users, brands, and sessions', async () => {
+    requireTestDatabase();
+    const client = new Client({
+      connectionString: process.env.TEST_DATABASE_URL,
+    });
+    const schema = `user_brands_${randomUUID().replaceAll('-', '')}`;
+    await client.connect();
+    try {
+      await client.query(`CREATE SCHEMA "${schema}"`);
+      await client.query(`SET search_path TO "${schema}"`);
+      await client.query(`
+        CREATE TABLE brands (brand_id INTEGER PRIMARY KEY);
+        CREATE TABLE users (user_id INTEGER PRIMARY KEY, brand_id INTEGER, is_active BOOLEAN NOT NULL,
+          CONSTRAINT users_brand_id_fkey FOREIGN KEY (brand_id) REFERENCES brands(brand_id));
+        CREATE INDEX users_brand_id_idx ON users(brand_id);
+        CREATE TABLE user_sessions (session_id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(user_id));
+        INSERT INTO brands VALUES (1);
+        INSERT INTO users VALUES (1, 1, true), (2, NULL, false);
+        INSERT INTO user_sessions VALUES (1, 1);
+      `);
+      await client.query(
+        await readFile(
+          join(
+            __dirname,
+            '../../../../prisma/migrations/20261031000100_remove_user_brand/migration.sql',
+          ),
+          'utf8',
+        ),
+      );
+      expect(
+        (await client.query('SELECT * FROM users ORDER BY user_id')).rows,
+      ).toEqual([
+        { user_id: 1, is_active: true },
+        { user_id: 2, is_active: false },
+      ]);
+      expect((await client.query('SELECT * FROM user_sessions')).rows).toEqual([
+        { session_id: 1, user_id: 1 },
+      ]);
+      expect((await client.query('SELECT * FROM brands')).rows).toEqual([
+        { brand_id: 1 },
+      ]);
     } finally {
       await client.query('ROLLBACK');
       await client.query('SET search_path TO public');

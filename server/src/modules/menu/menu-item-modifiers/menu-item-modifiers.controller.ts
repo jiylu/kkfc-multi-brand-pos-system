@@ -32,11 +32,6 @@ import {
 } from './docs/menu-item-modifiers.docs';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
-import { BrandsGuard } from '../../../shared/guards/brands.guard';
-import {
-  BrandResource,
-  BrandResourceType,
-} from '../../../shared/decorators/brand-resource.decorator';
 
 @UseMenuInterceptors(SafeMenuInterceptor)
 @Controller('menu-item-modifiers')
@@ -49,8 +44,7 @@ export class MenuItemModifiersController {
 
   @Post()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(BrandsGuard, PinGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM, 'menu_item_id', 'body')
+  @UseGuards(PinGuard)
   @CreateMenuItemModifierDocs()
   async create(@Body() dto: CreateMenuItemModifierDTO) {
     return this.menuItemModifiersService.create(dto);
@@ -66,8 +60,6 @@ export class MenuItemModifiersController {
   @Get('menu-item/:menuItemId')
   @FindMenuItemModifiersForMenuItemDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(BrandsGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM, 'menuItemId')
   async findManyForMenuItem(
     @Param('menuItemId', ParseUUIDPipe) menuItemId: string,
     @Query() query: FindMenuItemModifierDTO,
@@ -80,8 +72,6 @@ export class MenuItemModifiersController {
 
   @Get(':id')
   @FindOneMenuItemModifierDocs()
-  @UseGuards(BrandsGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM_MODIFIER, 'id')
   async findOne(
     @Param('id', ParseUUIDPipe) menuItemModifierId: string,
     @Query() query: FindMenuItemModifierDTO,
@@ -95,8 +85,7 @@ export class MenuItemModifiersController {
   @Patch(':id')
   @UpdateMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(BrandsGuard, PinGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM_MODIFIER, 'id')
+  @UseGuards(PinGuard)
   async update(
     @Param('id', ParseUUIDPipe) menuItemModifierId: string,
     @Body() dto: UpdateMenuItemModifierDTO,
@@ -107,8 +96,7 @@ export class MenuItemModifiersController {
   @Patch('reactivate/:id')
   @ReactivateMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(BrandsGuard, PinGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM_MODIFIER, 'id')
+  @UseGuards(PinGuard)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
     return this.menuItemModifiersService.reactivate(menuItemModifierId);
   }
@@ -116,8 +104,7 @@ export class MenuItemModifiersController {
   @Delete(':id')
   @DeleteMenuItemModifierDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER, UserRole.RECIPE_MANAGER)
-  @UseGuards(BrandsGuard, PinGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM_MODIFIER, 'id')
+  @UseGuards(PinGuard)
   async delete(@Param('id', ParseUUIDPipe) menuItemModifierId: string) {
     return this.menuItemModifiersService.delete(menuItemModifierId);
   }

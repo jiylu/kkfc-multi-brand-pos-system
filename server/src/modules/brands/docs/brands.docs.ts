@@ -45,7 +45,7 @@ export function CreateBrandDocs() {
 export function FindAllBrandsDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'List all brands (superadmin).',
+      summary: 'List all brands (authenticated).',
       description:
         'Returns all brands. Supports page, limit, and activeOnly. activeOnly defaults to true; false includes both active and inactive brands.',
     }),
@@ -62,7 +62,7 @@ export function FindOneBrandDocs() {
     ApiOperation({
       summary: 'Get an active brand.',
       description:
-        'Any authenticated user can read their assigned brand. Superadmins can read any active brand. This endpoint does not return inactive brands.',
+        'Any authenticated user can read any active brand. This endpoint does not return inactive brands.',
     }),
     ApiParam({
       name: 'brandId',
@@ -133,7 +133,7 @@ export function DeleteBrandDocs() {
     ApiOperation({
       summary: 'Deactivate a brand (superadmin).',
       description:
-        'Superadmins can deactivate any active brand. The brand and its active users are deactivated in one transaction. Records are preserved, and affected users can no longer authenticate.',
+        'Superadmins can deactivate any active brand. The brand is deactivated without changing employee accounts. Records are preserved.',
     }),
     ApiParam({
       name: 'brandId',

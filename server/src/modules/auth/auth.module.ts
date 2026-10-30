@@ -6,19 +6,12 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { Authenticated } from './auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
-import { BrandsGuard } from '../../shared/guards/brands.guard';
 
 @Global()
 @Module({
   imports: [PrismaModule, UsersModule],
-  providers: [
-    AuthRepository,
-    AuthService,
-    Authenticated,
-    RolesGuard,
-    BrandsGuard,
-  ],
+  providers: [AuthRepository, AuthService, Authenticated, RolesGuard],
   controllers: [AuthController],
-  exports: [AuthService, Authenticated, RolesGuard, BrandsGuard],
+  exports: [AuthService, Authenticated, RolesGuard],
 })
 export class AuthModule {}

@@ -123,7 +123,7 @@ Enum payment_statuses {
 // ==========================================
 
 // Stores user accounts, credentials, and operational roles, including Superadmin and Owner.
-// Every user can be assigned to at most one brand; null means unassigned.
+// Employees operate across all brands, subject to role permissions.
 // Used to enforce role-based access control across privileged actions, approvals, and confidential recipes (FR-004, FR-029, AC-08).
 Table users {
   user_id uuid [pk]
@@ -132,13 +132,9 @@ Table users {
   last_name varchar(100) [not null]
   password_hash varchar(255) [not null]
   role user_roles [not null]
-  brand_id uuid [ref: > brands.brand_id]
   is_active boolean [not null, default: true]
   created_at timestamp [not null, default: `now()`]
   modified_at timestamp [not null, default: `now()`]
-  indexes {
-    (brand_id)
-  }
 }
 
 // Optional one-to-one credential; no row means a PIN has not been configured.

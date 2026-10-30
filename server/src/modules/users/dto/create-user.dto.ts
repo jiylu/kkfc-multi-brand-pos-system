@@ -1,11 +1,9 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import {
   IsEnum,
   IsNotEmpty,
-  IsOptional,
   IsString,
-  IsUUID,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -44,17 +42,7 @@ export class CreateUserDTO {
   @ApiProperty({
     enum: UserRole,
     description:
-      'Only managers and superadmins can create users. Only superadmins can create SUPERADMIN accounts. Managers can create non-superadmin accounts in their own brand.',
+      'Only managers and superadmins can create users. Only superadmins can create SUPERADMIN accounts. Managers can create non-superadmin accounts.',
   })
   role!: UserRole;
-
-  @IsOptional()
-  @IsUUID('all', { message: 'Brand ID must be a valid UUID.' })
-  @ApiPropertyOptional({
-    format: 'uuid',
-    nullable: true,
-    description:
-      'Superadmins may omit brand_id or use null for SUPERADMIN, INVENTORY_STAFF, and RECIPE_MANAGER accounts. Other roles require a brand. Managers must supply their own brand ID for every account they create. Any supplied brand must exist and be active.',
-  })
-  brand_id?: string | null;
 }

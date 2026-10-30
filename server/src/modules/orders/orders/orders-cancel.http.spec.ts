@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
@@ -10,7 +11,6 @@ describe('Cancel order HTTP API', () => {
   const brandId = '11111111-1111-4111-8111-111111111111';
   const orderId = '22222222-2222-4222-8222-222222222222';
   const actorId = '33333333-3333-4333-8333-333333333333';
-  const otherBrand = '44444444-4444-4444-8444-444444444444';
   const auth = { validateSession: jest.fn() };
   const prisma = { order: { findUnique: jest.fn() } };
   const service = { cancel: jest.fn() };
@@ -126,30 +126,10 @@ describe('Cancel order HTTP API', () => {
     expect(service.cancel).not.toHaveBeenCalled();
   });
 
-  it('rejects access to another brand', async () => {
-    auth.validateSession.mockResolvedValue({
-      user: {
-        user_id: actorId,
-        brand_id: otherBrand,
-        role: UserRole.CASHIER_STAFF,
-      },
-    });
-    expect((await cancel()).status).toBe(403);
-    expect(service.cancel).not.toHaveBeenCalled();
-  });
-
-  it('rejects a mismatched URL brand even for superadmins', async () => {
-    auth.validateSession.mockResolvedValue({
-      user: { user_id: actorId, role: UserRole.SUPERADMIN },
-    });
-    expect((await cancel(undefined, true, otherBrand)).status).toBe(400);
-    expect(service.cancel).not.toHaveBeenCalled();
-  });
-
   it('returns 404 for a missing order', async () => {
-    prisma.order.findUnique.mockResolvedValue(null);
+    service.cancel.mockRejectedValueOnce(new NotFoundException());
     expect((await cancel()).status).toBe(404);
-    expect(service.cancel).not.toHaveBeenCalled();
+    expect(service.cancel).toHaveBeenCalled();
   });
 
   it('rejects malformed order IDs', async () => {

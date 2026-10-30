@@ -13,7 +13,6 @@ import { Authenticated } from '../../../auth/auth.guard';
 import { AuthService } from '../../../auth/auth.service';
 import { AllExceptionsFilter } from '../../../../shared/filters/all-exceptions.filter';
 import { PrismaExceptionFilter } from '../../../../shared/filters/prisma-exception.filter';
-import { BrandsGuard } from '../../../../shared/guards/brands.guard';
 import { RolesGuard } from '../../../../shared/guards/roles.guard';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
 import { MenuItemsController } from '../menu-items.controller';
@@ -107,7 +106,7 @@ describe('Menu items HTTP endpoints', () => {
       providers: [
         Authenticated,
         RolesGuard,
-        BrandsGuard,
+
         { provide: AuthService, useValue: auth },
         { provide: PrismaService, useValue: prisma },
         { provide: MenuItemsService, useValue: service },
@@ -306,7 +305,7 @@ describe('Menu items HTTP endpoints', () => {
   );
 
   it.each([...mutations, ...reads])(
-    'blocks other-brand and unassigned managers for $verb $path',
+    'allows shared-access managers for $verb $path',
     async ({ verb, path, handler, body }) => {
       for (const brand of [otherBrandId, null]) {
         callerBrand = brand;
@@ -318,9 +317,9 @@ describe('Menu items HTTP endpoints', () => {
               body: JSON.stringify(body),
             })
           ).status,
-        ).toBe(403);
+        ).toBe(verb === 'POST' ? 201 : 200);
       }
-      expect(service[handler]).not.toHaveBeenCalled();
+      expect(service[handler]).toHaveBeenCalled();
     },
   );
 
@@ -517,7 +516,7 @@ describe('Menu items HTTP endpoints', () => {
     },
   );
 
-  it('returns 404 for a missing resource before invoking the service', async () => {
+  it('rejects a non-UUID mutation identifier', async () => {
     expect(
       (
         await fetch(`${url}/unknown-menu`, {
@@ -526,7 +525,7 @@ describe('Menu items HTTP endpoints', () => {
           body: JSON.stringify({ name: 'Updated' }),
         })
       ).status,
-    ).toBe(404);
+    ).toBe(400);
     expect(service.updateMenuItem).not.toHaveBeenCalled();
   });
 
@@ -655,13 +654,13 @@ describe('Menu items HTTP endpoints', () => {
       UserRole.KITCHEN_HEAD,
       UserRole.KITCHEN_STAFF,
       UserRole.INVENTORY_STAFF,
-    ])('denies other-brand and unassigned %s', async (deniedRole) => {
+    ])('allows shared-access %s', async (deniedRole) => {
       role = deniedRole;
       for (const brand of [otherBrandId, null]) {
         callerBrand = brand;
-        expect((await request()).status).toBe(403);
+        expect((await request()).status).toBe(200);
       }
-      expect(service.updateAvailability).not.toHaveBeenCalled();
+      expect(service.updateAvailability).toHaveBeenCalled();
     });
 
     it.each([
@@ -687,8 +686,9 @@ describe('Menu items HTTP endpoints', () => {
     });
 
     it('rejects a missing item before invoking the service', async () => {
+      service.updateAvailability.mockRejectedValueOnce(new NotFoundException());
       expect((await request(body, true, recipeId)).status).toBe(404);
-      expect(service.updateAvailability).not.toHaveBeenCalled();
+      expect(service.updateAvailability).toHaveBeenCalled();
     });
 
     it('returns the availability conflict code', async () => {

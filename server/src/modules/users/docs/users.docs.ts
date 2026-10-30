@@ -25,11 +25,11 @@ export function CreateUserDocs() {
     ApiOperation({
       summary: 'Create a user.',
       description:
-        'Only managers and superadmins can create users. Managers can create non-superadmin accounts only in their assigned brand and must supply its brand_id. Superadmins can create any role across brands and may omit brand_id or use null for SUPERADMIN, INVENTORY_STAFF, and RECIPE_MANAGER accounts. Other roles require a brand. Any supplied brand must exist and be active. Responses omit password_hash.',
+        'Managers can create non-superadmin accounts; superadmins can create any role. Users have no brand assignment. Responses omit password_hash.',
     }),
     ApiResponse({
       status: 201,
-      description: 'Created user with nullable brand_id and no password hash.',
+      description: 'Created user without a brand assignment or password hash.',
     }),
     ApiResponse({
       status: 404,
@@ -49,7 +49,7 @@ export function UpdateUserDocs() {
     ApiOperation({
       summary: 'Update a user (manager or superadmin).',
       description:
-        'Accepts a user UUID, not a username. Managers can edit active users in their assigned brand, including other managers, and reset their passwords. There is no additional restriction on the target user role. Superadmins can edit active users across brands. Supports username, first_name, last_name, and password; role and brand_id cannot be changed here. Omitted fields are unchanged; null is invalid.',
+        'Accepts a user UUID, not a username. Managers can edit active non-superadmin users and reset their passwords. Only superadmins can edit superadmins. Supports username, first_name, last_name, and password. Omitted fields are unchanged; null is invalid.',
     }),
     ApiParam({
       name: 'id',
@@ -68,9 +68,9 @@ export function UpdateUserDocs() {
 export function FindAllUsersDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'List all users (superadmin).',
+      summary: 'List all users (manager or superadmin).',
       description:
-        'Superadmins receive users across all brands, including unassigned users. Managers must use GET /users/brand/:brandId to list users in their assigned brand. That brand listing is also available to superadmins. activeOnly defaults to true; false includes active and inactive users. Responses omit password_hash.',
+        'Managers and superadmins can list all users. activeOnly defaults to true; false includes inactive users. Responses omit password_hash.',
     }),
     ApiResponse({
       status: 200,
@@ -85,7 +85,7 @@ export function FindOneUserDocs() {
     ApiOperation({
       summary: 'Get a user by username or user ID.',
       description:
-        'Any authenticated user can access users in their assigned brand. Superadmins can access users across brands, including unassigned users. UUID-shaped identifiers are treated as user IDs; other identifiers are usernames. activeOnly defaults to true; false also permits inactive users. Responses omit password_hash.',
+        'Any authenticated user can look up a user by UUID or username. activeOnly defaults to true; false includes inactive users. Responses omit password_hash.',
     }),
     ApiParam({
       name: 'id',
@@ -94,7 +94,7 @@ export function FindOneUserDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'User with nullable brand_id and no password hash.',
+      description: 'User without a brand assignment or password hash.',
     }),
     ApiQuery({
       name: 'activeOnly',
@@ -117,7 +117,7 @@ export function DeleteUserDocs() {
     ApiOperation({
       summary: 'Deactivate a user (manager or superadmin).',
       description:
-        'Accepts a user UUID, not a username. Managers can deactivate active users in their assigned brand. Superadmins can deactivate active users across brands. There is no additional restriction on the target user role. The record is preserved, and the user can no longer authenticate.',
+        'Accepts a user UUID. Managers can deactivate active non-superadmin users; only superadmins can deactivate superadmins. The record is preserved and the account can no longer authenticate.',
     }),
     ApiParam({
       name: 'id',

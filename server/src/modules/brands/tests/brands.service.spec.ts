@@ -120,22 +120,13 @@ describe('BrandsService', () => {
       },
     );
 
-    it('deactivates the brand and its active users together', async () => {
+    it('deactivates only the brand, leaving users active', async () => {
       tx.brand.update.mockResolvedValue({ ...brand, is_active: false });
-      await repository.deleteBrand(brand.brand_id);
-      expect(tx.user.updateMany).toHaveBeenCalledWith({
-        where: { brand_id: brand.brand_id, is_active: true },
-        data: { is_active: false, modified_at: expect.any(Date) as Date },
-      });
+      await expect(
+        repository.deleteBrand(brand.brand_id),
+      ).resolves.toMatchObject({ is_active: false });
+      expect(tx.user.updateMany).not.toHaveBeenCalled();
     });
-
-    it('propagates user deactivation failures so the transaction rolls back', async () => {
-      tx.brand.update.mockResolvedValue({ ...brand, is_active: false });
-      const error = new Error('User update failed');
-      tx.user.updateMany.mockRejectedValue(error);
-      await expect(repository.deleteBrand(brand.brand_id)).rejects.toBe(error);
-    });
-
     it('queries only active brands by default', async () => {
       tx.brand.findUnique.mockResolvedValue(null);
       await expect(

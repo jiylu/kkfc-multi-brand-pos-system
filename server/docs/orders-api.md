@@ -1,12 +1,9 @@
 # Order API
 
-All routes use `/api/brands/:brandId/orders`, a bearer session, and brand access.
-Allowed roles: CASHIER_STAFF, MANAGER, SUPERADMIN (the latter may access any brand).
-
-`BrandsGuard` resolves `BrandResource(BRAND, 'brandId')` for creation and
-`BrandResource(ORDER, 'orderId')` for verify/confirm/cancel. Missing resources return 404;
-a URL brand that differs from the order's brand returns 400, including for
-superadmins. A caller without access to the resolved brand receives 403.
+All routes use `/api/brands/:brandId/orders` and a bearer session.
+Allowed roles: CASHIER_STAFF, MANAGER, SUPERADMIN, across all brands.
+Orders remain scoped to the URL brand. Missing orders or wrong-brand order URLs return 404.
+Creation rejects unavailable brands with 400.
 
 ## Requests and responses
 
@@ -15,27 +12,27 @@ Interactive schemas are available under **Orders** at `/api/docs` (OpenAPI JSON:
 `Content-Type: application/json`. No PIN is required. Path parameters `brandId`
 and `orderId` must be UUIDs. Unknown body properties are rejected.
 
-| Endpoint (relative to `/api/brands/:brandId/orders`) | Required input | Success |
-| --- | --- | --- |
-| `POST /` | `order_id`, `order_channel`, `lines`; channel-specific references below | `201`, saved order, including identical replays |
-| `POST /:orderId/verify` | Payment body below; existing draft order | `200`, validation result with current lines |
-| `POST /:orderId/confirm` | Payment body below; existing order | `200`, saved order with kitchen ticket |
-| `POST /:orderId/cancel` | `cancellation_reason`; unfinished order | `200`, saved cancelled order |
+| Endpoint (relative to `/api/brands/:brandId/orders`) | Required input                                                          | Success                                         |
+| ---------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------- |
+| `POST /`                                             | `order_id`, `order_channel`, `lines`; channel-specific references below | `201`, saved order, including identical replays |
+| `POST /:orderId/verify`                              | Payment body below; existing draft order                                | `200`, validation result with current lines     |
+| `POST /:orderId/confirm`                             | Payment body below; existing order                                      | `200`, saved order with kitchen ticket          |
+| `POST /:orderId/cancel`                              | `cancellation_reason`; unfinished order                                 | `200`, saved cancelled order                    |
 
 ### Create body
 
-| Field | Required | Type and constraints |
-| --- | --- | --- |
-| `order_id` | Yes | Client-generated UUID; reuse unchanged on retries |
-| `order_channel` | Yes | `DINE_IN`, `TAKEAWAY`, `GRABFOOD`, `FOODPANDA` |
-| `lines` | Yes | Array of 1-100 lines |
-| `lines[].menu_item_id` | Yes | UUID of an available menu item in this brand/channel, with an active menu assembly recipe |
-| `lines[].quantity` | Yes | Integer, 1-9999 |
-| `lines[].modifier_ids` | No | Up to 100 unique UUIDs; modifiers must be active and available for the item |
-| `lines[].notes`, `notes` | No | String, maximum 2000 characters |
-| `table_reference` | For `DINE_IN` | Nonblank trimmed string, maximum 50 characters |
-| `merchant_store_reference` | For platform channels | Nonblank trimmed string, maximum 255 characters; not allowed for internal orders |
-| `external_order_reference` | For platform channels | Nonblank trimmed string, maximum 255 characters; not allowed for internal orders |
+| Field                      | Required              | Type and constraints                                                                      |
+| -------------------------- | --------------------- | ----------------------------------------------------------------------------------------- |
+| `order_id`                 | Yes                   | Client-generated UUID; reuse unchanged on retries                                         |
+| `order_channel`            | Yes                   | `DINE_IN`, `TAKEAWAY`, `GRABFOOD`, `FOODPANDA`                                            |
+| `lines`                    | Yes                   | Array of 1-100 lines                                                                      |
+| `lines[].menu_item_id`     | Yes                   | UUID of an available menu item in this brand/channel, with an active menu assembly recipe |
+| `lines[].quantity`         | Yes                   | Integer, 1-9999                                                                           |
+| `lines[].modifier_ids`     | No                    | Up to 100 unique UUIDs; modifiers must be active and available for the item               |
+| `lines[].notes`, `notes`   | No                    | String, maximum 2000 characters                                                           |
+| `table_reference`          | For `DINE_IN`         | Nonblank trimmed string, maximum 50 characters                                            |
+| `merchant_store_reference` | For platform channels | Nonblank trimmed string, maximum 255 characters; not allowed for internal orders          |
+| `external_order_reference` | For platform channels | Nonblank trimmed string, maximum 255 characters; not allowed for internal orders          |
 
 Example `POST /api/brands/:brandId/orders` body (replace UUIDs with your records):
 
@@ -43,10 +40,12 @@ Example `POST /api/brands/:brandId/orders` body (replace UUIDs with your records
 {
   "order_id": "11111111-1111-4111-8111-111111111111",
   "order_channel": "TAKEAWAY",
-  "lines": [{
-    "menu_item_id": "22222222-2222-4222-8222-222222222222",
-    "quantity": 2
-  }]
+  "lines": [
+    {
+      "menu_item_id": "22222222-2222-4222-8222-222222222222",
+      "quantity": 2
+    }
+  ]
 }
 ```
 
@@ -57,11 +56,11 @@ has `status: "DRAFT"`, `payment_method: null`, `payment_status: "UNPAID"`,
 
 ### Verify and confirm bodies
 
-| Field | Required | Type and constraints |
-| --- | --- | --- |
-| `payment_method` | For `DINE_IN`/`TAKEAWAY` | `CASH`, `E_WALLET`, or `CARD`; platform channels default to and only accept `PLATFORM_SETTLED` |
-| `payment_status` | For `DINE_IN`/`TAKEAWAY` | `UNPAID` or `PAID`; platform channels default to and only accept `PAID` |
-| `payment_reference` | No | String, maximum 255 characters; defaults to null |
+| Field               | Required                 | Type and constraints                                                                           |
+| ------------------- | ------------------------ | ---------------------------------------------------------------------------------------------- |
+| `payment_method`    | For `DINE_IN`/`TAKEAWAY` | `CASH`, `E_WALLET`, or `CARD`; platform channels default to and only accept `PLATFORM_SETTLED` |
+| `payment_status`    | For `DINE_IN`/`TAKEAWAY` | `UNPAID` or `PAID`; platform channels default to and only accept `PAID`                        |
+| `payment_reference` | No                       | String, maximum 255 characters; defaults to null                                               |
 
 Example body for both internal-order endpoints:
 
@@ -81,15 +80,17 @@ Example `200` verification response:
   "payment_method": "CASH",
   "payment_status": "PAID",
   "payment_reference": null,
-  "lines": [{
-    "menu_item_id": "22222222-2222-4222-8222-222222222222",
-    "item_name": "Chicken meal",
-    "quantity": 2,
-    "unit_price": "125.5",
-    "notes": null,
-    "applied_recipe_id": "33333333-3333-4333-8333-333333333333",
-    "modifiers": []
-  }]
+  "lines": [
+    {
+      "menu_item_id": "22222222-2222-4222-8222-222222222222",
+      "item_name": "Chicken meal",
+      "quantity": 2,
+      "unit_price": "125.5",
+      "notes": null,
+      "applied_recipe_id": "33333333-3333-4333-8333-333333333333",
+      "modifiers": []
+    }
+  ]
 }
 ```
 
@@ -99,11 +100,11 @@ Each verification modifier contains `modifier_id`, `modifier_name`, and
 ### Cancel body and response
 
 `POST /api/brands/:brandId/orders/:orderId/cancel` uses the same bearer session,
-brand access and allowed roles as the other order endpoints. No PIN is required.
+allowed roles as the other order endpoints. No PIN is required.
 
-| Body field | Required | Constraints |
-| --- | --- | --- |
-| `cancellation_reason` | Yes | String containing a non-whitespace character; maximum 1000 characters |
+| Body field            | Required | Constraints                                                           |
+| --------------------- | -------- | --------------------------------------------------------------------- |
+| `cancellation_reason` | Yes      | String containing a non-whitespace character; maximum 1000 characters |
 
 Example request (replace the path UUIDs and session token):
 
@@ -183,13 +184,13 @@ This endpoint performs no refund, platform synchronization or inventory movement
 
 Cancellation error responses:
 
-| Status | Cause |
-| --- | --- |
-| `400` | Missing, blank, non-string or overlong reason; unknown body fields; invalid path UUIDs or URL/order brand mismatch |
-| `401` | Missing, invalid or expired bearer session |
-| `403` | Caller lacks an allowed role or access to the order's brand |
-| `404` | Order not found |
-| `409` | Completed order, handed-over ticket, inconsistent order/ticket state, or exhausted concurrency retries |
+| Status | Cause                                                                                                              |
+| ------ | ------------------------------------------------------------------------------------------------------------------ |
+| `400`  | Missing, blank, non-string or overlong reason; unknown body fields; invalid path UUIDs or URL/order brand mismatch |
+| `401`  | Missing, invalid or expired bearer session                                                                         |
+| `403`  | Caller lacks an allowed role or access to the order's brand                                                        |
+| `404`  | Order not found                                                                                                    |
+| `409`  | Completed order, handed-over ticket, inconsistent order/ticket state, or exhausted concurrency retries             |
 
 Example `409 Conflict` body:
 
@@ -207,18 +208,18 @@ Responses are direct objects, without a `data` wrapper. Decimal prices are JSON
 strings; timestamps are ISO 8601 strings. Nullable fields are present as null.
 The complete nested schemas are shown in Swagger.
 
-| Fields | JSON type / meaning |
-| --- | --- |
-| `order_id`, `brand_id`, `created_by_id` | UUID strings |
-| `order_code`, `order_date`, `order_number` | Display code, Manila date as midnight UTC ISO string, integer daily sequence |
-| `order_channel`, `status` | Channel and order status enums |
-| `merchant_store_reference`, `external_order_reference`, `table_reference`, `notes` | String or null |
-| `payment_method`, `payment_status`, `payment_reference` | Method enum or null, status enum, string or null |
-| `cancelled_by_id`, `cancellation_reason` | UUID or null, string or null |
-| `cancelled_at`, `confirmed_at`, `completed_at` | ISO timestamp or null |
-| `created_at`, `modified_at` | ISO timestamp |
-| `order_items_order` | Array of saved items (below) |
-| `kitchen_tickets_order` | Null before confirmation; saved ticket object after confirmation |
+| Fields                                                                             | JSON type / meaning                                                          |
+| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `order_id`, `brand_id`, `created_by_id`                                            | UUID strings                                                                 |
+| `order_code`, `order_date`, `order_number`                                         | Display code, Manila date as midnight UTC ISO string, integer daily sequence |
+| `order_channel`, `status`                                                          | Channel and order status enums                                               |
+| `merchant_store_reference`, `external_order_reference`, `table_reference`, `notes` | String or null                                                               |
+| `payment_method`, `payment_status`, `payment_reference`                            | Method enum or null, status enum, string or null                             |
+| `cancelled_by_id`, `cancellation_reason`                                           | UUID or null, string or null                                                 |
+| `cancelled_at`, `confirmed_at`, `completed_at`                                     | ISO timestamp or null                                                        |
+| `created_at`, `modified_at`                                                        | ISO timestamp                                                                |
+| `order_items_order`                                                                | Array of saved items (below)                                                 |
+| `kitchen_tickets_order`                                                            | Null before confirmation; saved ticket object after confirmation             |
 
 Each saved item contains `order_item_id`, `order_id`, `menu_item_id`,
 `applied_recipe_id` (nullable UUID), `item_name`, `quantity` (integer),
@@ -236,14 +237,14 @@ Neither `create_request_hash` nor `recipe_snapshot` is returned.
 
 ### Errors
 
-| Status | Cause |
-| --- | --- |
-| `400` | Invalid UUID/body, unknown fields, URL/order brand mismatch, missing channel references or payment inputs, unavailable menu/recipe/modifier, invalid catalog data |
-| `401` | Missing, invalid or expired session |
-| `403` | Role or brand access denied |
-| `404` | Brand or order not found |
-| `409` | Conflicting create replay, duplicate platform reference, invalid lifecycle/ticket state, or exhausted concurrency retries |
-| `503` | Confirmation ticket sequence unavailable or invalid |
+| Status | Cause                                                                                                                                                             |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | Invalid UUID/body, unknown fields, URL/order brand mismatch, missing channel references or payment inputs, unavailable menu/recipe/modifier, invalid catalog data |
+| `401`  | Missing, invalid or expired session                                                                                                                               |
+| `403`  | Role access denied                                                                                                                                                |
+| `404`  | Brand or order not found                                                                                                                                          |
+| `409`  | Conflicting create replay, duplicate platform reference, invalid lifecycle/ticket state, or exhausted concurrency retries                                         |
+| `503`  | Confirmation ticket sequence unavailable or invalid                                                                                                               |
 
 Validation and business errors use Nest's error object, for example
 `{ "statusCode": 400, "message": "Dine-in requires a table reference.", "error": "Bad Request" }`.
@@ -325,12 +326,12 @@ lines or notes differ, or the original order has been confirmed or cancelled.
 
 Create conflicts have these stable codes:
 
-| HTTP/code | Meaning and client behavior |
-| --- | --- |
-| `201` (saved order) | This UUID and payload committed, or were already committed. Use the returned current order and ticket; do not create another UUID after a timeout. |
+| HTTP/code                      | Meaning and client behavior                                                                                                                                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `201` (saved order)            | This UUID and payload committed, or were already committed. Use the returned current order and ticket; do not create another UUID after a timeout.                                                                                                     |
 | `409 DUPLICATE_PLATFORM_ORDER` | A different UUID already owns the platform identity. `existing_order` contains the current saved order only if it belongs to the requested brand; otherwise it is null. Show the duplicate screen; never automatically confirm or replace its content. |
-| `409 ORDER_ID_CONFLICT` | The UUID belongs to a different brand or was reused with changed content (or has no legacy fingerprint). No existing-order data is returned. Reconcile the original submission; this is not a successful replay. |
-| `409 ORDER_RETRY_REQUIRED` | Five database-conflict attempts were exhausted. Retry with backoff using the same UUID and unchanged body; the next request will return the winner if it committed. |
+| `409 ORDER_ID_CONFLICT`        | The UUID belongs to a different brand or was reused with changed content (or has no legacy fingerprint). No existing-order data is returned. Reconcile the original submission; this is not a successful replay.                                       |
+| `409 ORDER_RETRY_REQUIRED`     | Five database-conflict attempts were exhausted. Retry with backoff using the same UUID and unchanged body; the next request will return the winner if it committed.                                                                                    |
 
 Example duplicate response, with the full redacted OrderResponse object abbreviated
 here for readability:

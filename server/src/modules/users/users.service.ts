@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -14,23 +13,14 @@ import { FindUsersDTO } from './dto/find-users.dto';
 import { assertExists } from '../../shared/assertions/assert-exists';
 import { assertValidPagination } from '../../shared/assertions/assert-valid-pagination';
 import { isUUID } from 'class-validator';
-import { BrandsRepository } from '../brands/brands.repository';
 
-// TODO: REFACTOR YUNG ISSUPERADMIN, GAWING ASSERTION NALANG.
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(
-    private readonly usersRepository: UsersRepository,
-    private readonly brandsRepository: BrandsRepository,
-  ) {}
+  constructor(private readonly usersRepository: UsersRepository) {}
 
-  async createUser(
-    dto: CreateUserDTO,
-    isSuperAdmin = false,
-    callerBrandId: string | null = null,
-  ) {
+  async createUser(dto: CreateUserDTO, isSuperAdmin = false) {
     this.logger.log(`Creating ${dto.role} user ${dto.first_name}`);
 
     if (!isSuperAdmin && dto.role === UserRole.SUPERADMIN) {
@@ -51,30 +41,6 @@ export class UsersService {
       throw new ConflictException({
         code: 'USERNAME_ALREADY_EXISTS',
         message: 'Username already exists.',
-      });
-    }
-
-    if (
-      dto.brand_id == null &&
-      dto.role !== UserRole.SUPERADMIN &&
-      dto.role !== UserRole.INVENTORY_STAFF &&
-      dto.role !== UserRole.RECIPE_MANAGER
-    ) {
-      this.logger.warn(`Brand ID missing for role.`);
-
-      throw new BadRequestException({
-        code: 'MISSING_BRAND_ID',
-        message: 'Brand ID is required for this role.',
-      });
-    }
-
-    if (
-      !isSuperAdmin &&
-      (callerBrandId === null || callerBrandId !== dto.brand_id)
-    ) {
-      throw new ForbiddenException({
-        code: 'ACCESS_DENIED',
-        message: 'You can only create users in your brand.',
       });
     }
 
@@ -116,41 +82,6 @@ export class UsersService {
     };
   }
 
-  async findAllUsersByBrand(
-    { page, limit, activeOnly }: FindUsersDTO,
-    brandId: string,
-  ) {
-    this.logger.log(
-      `Listing users: brand=${brandId} page=${page}, limit=${limit}, activeOnly=${activeOnly}`,
-    );
-    const brand = await this.brandsRepository.findOneBrand(brandId);
-    assertExists(brand, 'Brand', brandId, this.logger);
-
-    const skip = (page - 1) * limit;
-    assertValidPagination(skip, this.logger);
-
-    const { users, total } = await this.usersRepository.findAllByBrand(
-      skip,
-      limit,
-      activeOnly,
-      brandId,
-    );
-
-    this.logger.log(
-      `Listed users: page=${page}, returned=${users.length}, total=${total}`,
-    );
-
-    return {
-      data: users,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-
   async findOneUser(
     usernameOrUserId: string | { user_id: string },
     activeOnly = true,
@@ -172,11 +103,18 @@ export class UsersService {
     return user;
   }
 
-  async updateUser(userId: string, dto: UpdateUserDTO) {
+  async updateUser(userId: string, dto: UpdateUserDTO, isSuperAdmin = false) {
     this.logger.log(`Updating user ${userId}`);
 
     const user = await this.usersRepository.findOne(userId);
     assertExists(user, 'User', userId, this.logger);
+
+    if (user.role === UserRole.SUPERADMIN && !isSuperAdmin) {
+      throw new ForbiddenException({
+        code: 'CANNOT_MODIFY_PRIVILEGED_ACCOUNT',
+        message: 'Only superadmins can modify superadmin accounts.',
+      });
+    }
 
     if (dto.username !== undefined && dto.username !== user.username) {
       const existingUsername = await this.usersRepository.safeFindByUsername(
@@ -211,11 +149,18 @@ export class UsersService {
     }
   }
 
-  async deleteUser(userId: string) {
+  async deleteUser(userId: string, isSuperAdmin = false) {
     this.logger.log(`Deactivating user ${userId}`);
 
     const user = await this.usersRepository.findOne(userId);
     assertExists(user, 'User', userId, this.logger);
+
+    if (user.role === UserRole.SUPERADMIN && !isSuperAdmin) {
+      throw new ForbiddenException({
+        code: 'CANNOT_MODIFY_PRIVILEGED_ACCOUNT',
+        message: 'Only superadmins can modify superadmin accounts.',
+      });
+    }
 
     const deleted = await this.usersRepository.delete(user.user_id);
     this.logger.log(`Deactivated user ${userId}`);

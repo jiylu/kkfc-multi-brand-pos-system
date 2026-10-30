@@ -22,7 +22,6 @@ export const TEST_USERS = [
     last_name: 'Admin',
     password: 'Password123!',
     role: UserRole.SUPERADMIN,
-    brand_code: null,
   },
   {
     username: 'test_recipe_mgr',
@@ -30,7 +29,6 @@ export const TEST_USERS = [
     last_name: 'Manager',
     password: 'Password123!',
     role: UserRole.RECIPE_MANAGER,
-    brand_code: 'GC',
   },
   {
     username: 'test_supervisor',
@@ -38,7 +36,6 @@ export const TEST_USERS = [
     last_name: 'Supervisor',
     password: 'Password123!',
     role: UserRole.SUPERVISOR,
-    brand_code: 'GC',
   },
   {
     username: 'test_owner',
@@ -46,7 +43,6 @@ export const TEST_USERS = [
     last_name: 'Owner',
     password: 'Password123!',
     role: UserRole.MANAGER,
-    brand_code: 'GC',
   },
   {
     username: 'test_manager_ai',
@@ -54,7 +50,6 @@ export const TEST_USERS = [
     last_name: 'Manager',
     password: 'Password123!',
     role: UserRole.MANAGER,
-    brand_code: 'AI',
   },
   {
     username: 'test_manager_kk',
@@ -62,7 +57,6 @@ export const TEST_USERS = [
     last_name: 'Manager',
     password: 'Password123!',
     role: UserRole.MANAGER,
-    brand_code: 'KK',
   },
   {
     username: 'test_chef',
@@ -70,7 +64,6 @@ export const TEST_USERS = [
     last_name: 'Head',
     password: 'Password123!',
     role: UserRole.KITCHEN_HEAD,
-    brand_code: 'GC',
   },
   {
     username: 'test_kitchen',
@@ -78,7 +71,6 @@ export const TEST_USERS = [
     last_name: 'Cook',
     password: 'Password123!',
     role: UserRole.KITCHEN_STAFF,
-    brand_code: 'GC',
   },
   {
     username: 'test_order_staff',
@@ -86,7 +78,6 @@ export const TEST_USERS = [
     last_name: 'Staff',
     password: 'Password123!',
     role: UserRole.CASHIER_STAFF,
-    brand_code: 'GC',
   },
   {
     username: 'test_inventory',
@@ -94,7 +85,6 @@ export const TEST_USERS = [
     last_name: 'Keeper',
     password: 'Password123!',
     role: UserRole.INVENTORY_STAFF,
-    brand_code: 'GC',
   },
   {
     username: 'test_ai_stock',
@@ -102,7 +92,6 @@ export const TEST_USERS = [
     last_name: 'Reyes',
     password: 'Password123!',
     role: UserRole.INVENTORY_STAFF,
-    brand_code: 'AI',
   },
   {
     username: 'test_ai_kitchen',
@@ -110,7 +99,6 @@ export const TEST_USERS = [
     last_name: 'Cruz',
     password: 'Password123!',
     role: UserRole.KITCHEN_STAFF,
-    brand_code: 'AI',
   },
   {
     username: 'test_ai_cashier',
@@ -118,7 +106,6 @@ export const TEST_USERS = [
     last_name: 'Santos',
     password: 'Password123!',
     role: UserRole.CASHIER_STAFF,
-    brand_code: 'AI',
   },
   {
     username: 'test_kk_stock',
@@ -126,7 +113,6 @@ export const TEST_USERS = [
     last_name: 'Garcia',
     password: 'Password123!',
     role: UserRole.INVENTORY_STAFF,
-    brand_code: 'KK',
   },
   {
     username: 'test_kk_kitchen',
@@ -134,7 +120,6 @@ export const TEST_USERS = [
     last_name: 'Lim',
     password: 'Password123!',
     role: UserRole.KITCHEN_STAFF,
-    brand_code: 'KK',
   },
   {
     username: 'test_kk_cashier',
@@ -142,18 +127,16 @@ export const TEST_USERS = [
     last_name: 'Tan',
     password: 'Password123!',
     role: UserRole.CASHIER_STAFF,
-    brand_code: 'KK',
   },
 ];
 
-// Manager intentionally left without a brand so E2E tests can create one.
+// Keep the legacy fixture account for existing consumers.
 export const TEST_UNASSIGNED_OWNER = {
   username: 'test_unassigned',
   first_name: 'Unassigned',
   last_name: 'Owner',
   password: 'Password123!',
   role: UserRole.MANAGER,
-  brand_code: null,
 };
 
 export const TEST_BRANDS = [
@@ -174,23 +157,15 @@ export const TEST_BRANDS = [
   },
 ];
 
-export async function seedUsers(
-  prisma: Prisma.TransactionClient,
-  brandIds: ReadonlyMap<string, string>,
-) {
+export async function seedUsers(prisma: Prisma.TransactionClient) {
   if (!/^[0-9]{4}$/.test(TEST_PIN)) {
     throw new Error('Seed PIN must contain exactly four digits.');
   }
   for (const user of [...TEST_USERS, TEST_UNASSIGNED_OWNER]) {
-    const { password, brand_code, ...data } = user;
-    const brand_id = brand_code === null ? null : brandIds.get(brand_code);
-    if (brand_id === undefined) {
-      throw new Error(`Unknown brand code in user seed data: ${brand_code}`);
-    }
+    const { password, ...data } = user;
     const values = {
       ...data,
       password_hash: await argon2.hash(password),
-      brand_id,
       is_active: true,
     };
     const savedUser = await prisma.user.upsert({
@@ -210,7 +185,7 @@ export async function seedUsers(
     }
   }
   console.log(
-    `Seeded ${TEST_USERS.length + 1} users covering all 8 roles, with manager, inventory, kitchen, and cashier staff per brand.`,
+    `Seeded ${TEST_USERS.length + 1} users covering all 8 roles, with shared access to all brands.`,
   );
 }
 
@@ -222,9 +197,8 @@ async function seedTestDatabase() {
 
   try {
     console.log('Seeding test brands...');
-    const brandIds = new Map<string, string>();
     for (const brand of TEST_BRANDS) {
-      const b = await prisma.brand.upsert({
+      await prisma.brand.upsert({
         where: { code: brand.code },
         update: {},
         create: {
@@ -234,10 +208,9 @@ async function seedTestDatabase() {
           is_active: true,
         },
       });
-      brandIds.set(brand.code, b.brand_id);
     }
 
-    await seedUsers(prisma, brandIds);
+    await seedUsers(prisma);
 
     console.log('Test database seeded successfully.');
   } finally {

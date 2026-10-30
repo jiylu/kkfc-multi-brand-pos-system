@@ -53,9 +53,8 @@ npm run prisma:studio
 ```
 
 The database schema is defined in [prisma/schema.prisma](prisma/schema.prisma),
-with an ERD in [docs/erd.dbml](docs/erd.dbml). Each user belongs to at most
-one brand through nullable `users.brand_id`; a brand can contain many users.
-There is no assignment model in the current Prisma schema. Regenerate the
+with an ERD in [docs/erd.dbml](docs/erd.dbml). Employees operate across all brands,
+subject to role permissions, PIN checks, and recipe grants. Regenerate the
 client after schema changes; build and development start scripts do this
 automatically. No database changes are made by generation or building.
 
@@ -103,26 +102,25 @@ saved cancelled order with HTTP `200`. See [cancel request, response and errors]
 
 Log in through `POST /api/auth/login`, then paste the returned token into **Authorize**.
 Sessions expire after 24 hours. Protected routes require `Authorization: Bearer <token>`.
-Login returns `token`, `expires_at`, and a user profile with nullable `brand_id`.
+Login returns `token`, `expires_at`, and a user profile without brand assignments.
 Password hashes are excluded from API responses.
 
-| Endpoint | Access and behavior |
-| --- | --- |
-| `POST /api/auth/login` | Active users of any role; creates a session. |
-| `GET /api/auth/me` | Any authenticated user; returns their current profile. |
-| `POST /api/auth/logout` | Revokes the current session; returns 204. |
-| `POST /api/auth/logout-all` | Revokes all sessions for the current user; returns 204. |
-| `POST /api/users` | Managers can create non-superadmin accounts only in their assigned brand and must supply its `brand_id`. Superadmins can create any role across brands; SUPERADMIN, INVENTORY_STAFF, and RECIPE_MANAGER accounts may have no brand. Other roles require an active `brand_id`. |
-| `GET /api/users` | Superadmins only; lists users across all brands, including unassigned users. |
-| `GET /api/users/brand/:brandId` | Managers list users in their own active brand; superadmins list users in any active brand. |
-| `GET /api/users/:id` | Accepts username or user UUID. Any authenticated user can read users in their assigned brand; superadmins can read across brands. |
-| `PATCH /api/users/:id` | Requires a user UUID. Managers update active users in their brand, including password resets and other managers; superadmins update across brands. Supports username, first_name, last_name, and password. Role and brand_id are not accepted. |
-| `DELETE /api/users/:id` | Requires a user UUID. Managers deactivate active users in their brand; superadmins deactivate active users across brands. |
-| `POST /api/brands` | Superadmins only. Creates a brand without assigning users. A unique client-supplied code of one to four characters is required; owner_id is not accepted. |
-| `GET /api/brands` | Superadmins only; lists all brands. |
-| `GET /api/brands/:brandId` | Any authenticated user can read their assigned brand; superadmins can read any active brand. |
-| `PATCH /api/brands/:brandId` | Superadmins only; updates any active brand using JSON or multipart form data. Optional `file` replaces the logo. Code is optional and is not generated on rename. |
-| `DELETE /api/brands/:brandId` | Superadmins only; deactivates the brand and its active users together. |
+| Endpoint                      | Access and behavior                                                                                                                                               |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/auth/login`        | Active users of any role; creates a session.                                                                                                                      |
+| `GET /api/auth/me`            | Any authenticated user; returns their current profile.                                                                                                            |
+| `POST /api/auth/logout`       | Revokes the current session; returns 204.                                                                                                                         |
+| `POST /api/auth/logout-all`   | Revokes all sessions for the current user; returns 204.                                                                                                           |
+| `POST /api/users`             | Managers create non-superadmin accounts; superadmins create any role. No brand assignment is accepted.                                                            |
+| `GET /api/users`              | Managers and superadmins; lists all users.                                                                                                                        |
+| `GET /api/users/:id`          | Any authenticated user; accepts username or UUID.                                                                                                                 |
+| `PATCH /api/users/:id`        | Managers edit active non-superadmin users; superadmins edit any active user. Supports username, first_name, last_name, and password.                              |
+| `DELETE /api/users/:id`       | Managers deactivate active non-superadmin users; superadmins deactivate any active user.                                                                          |
+| `POST /api/brands`            | Superadmins only. Creates a brand without assigning users. A unique client-supplied code of one to four characters is required; owner_id is not accepted.         |
+| `GET /api/brands`             | Any authenticated user; lists all brands.                                                                                                                         |
+| `GET /api/brands/:brandId`    | Any authenticated user can read any active brand.                                                                                                                 |
+| `PATCH /api/brands/:brandId`  | Superadmins only; updates any active brand using JSON or multipart form data. Optional `file` replaces the logo. Code is optional and is not generated on rename. |
+| `DELETE /api/brands/:brandId` | Superadmins only; deactivates the brand without changing employee accounts.                                                                                       |
 
 Restricted create, update, reactivate, and deactivate operations for users,
 brands, menu items, menu channels, modifiers, and modifier assignments require
@@ -130,21 +128,21 @@ the signed-in user's four-digit `X-Action-Pin` header on every request. Configur
 a PIN with `POST /api/pin`; use `PATCH /api/pin` with the current account password
 to reset it. Missing, incorrect, or unconfigured PINs return 403; cooldowns
 return 429 with `Retry-After`. Reads, orders, asset uploads, menu availability,
-and PIN setup/reset do not require an action PIN. Existing role and brand
+and PIN setup/reset do not require an action PIN. Existing role
 permissions still apply. See [PIN protection](docs/pin-guard/README.md).
 
 Menu endpoints are documented in Swagger under **Menu items**:
 
-| Endpoint | Access and behavior |
-| --- | --- |
-| `POST /api/menu-items` | Managers create items in their assigned active brand; superadmins create across brands. |
-| `GET /api/menu-items` | Superadmins only; paginated items across brands. |
-| `GET /api/menu-items/brand/:brandId` | Any authenticated user in the requested active brand; superadmins across brands. |
-| `GET /api/menu-items/:id` | Accepts a code or UUID; same-brand users and superadmins. The item's brand must be active. |
-| `PATCH /api/menu-items/:id` | Managers in the item's brand and superadmins; active items only, UUID required. Accepts partial create fields except brand_id. |
-| `PATCH /api/menu-items/availability/:id` | Sets availability for an active item by UUID using `{ "availability": false }`. All roles except cashiers; brand access required except for superadmins and recipe managers. See [availability API](docs/menu-item-availability-api.md). |
-| `PATCH /api/menu-items/reactivate/:id` | Managers in the item's brand and superadmins; UUID required. Returns 409 if already active. |
-| `DELETE /api/menu-items/:id` | Managers in the item's brand and superadmins; deactivates an active item by UUID. |
+| Endpoint                                 | Access and behavior                                                                                                                                                                                 |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/menu-items`                   | Managers and superadmins create items in any active brand.                                                                                                                                          |
+| `GET /api/menu-items`                    | Superadmins only; paginated items across brands.                                                                                                                                                    |
+| `GET /api/menu-items/brand/:brandId`     | Any authenticated user in the requested active brand; superadmins across brands.                                                                                                                    |
+| `GET /api/menu-items/:id`                | Accepts a code or UUID; same-brand users and superadmins. The item's brand must be active.                                                                                                          |
+| `PATCH /api/menu-items/:id`              | Managers and superadmins; active items only, UUID required. Accepts partial create fields except brand_id.                                                                                          |
+| `PATCH /api/menu-items/availability/:id` | Sets availability for an active item by UUID using `{ "availability": false }`. All roles except cashiers; shared brand access applies. See [availability API](docs/menu-item-availability-api.md). |
+| `PATCH /api/menu-items/reactivate/:id`   | Managers and superadmins; UUID required. Returns 409 if already active.                                                                                                                             |
+| `DELETE /api/menu-items/:id`             | Managers and superadmins; deactivates an active item by UUID.                                                                                                                                       |
 
 Menu creation requires brand_id, recipe_id, img_url, code, name, and base_price.
 Optional description and serving_description accept null. Updates preserve omitted
@@ -160,8 +158,7 @@ take priority over usernames for profile searches. Session validation and user u
 
 Brand codes are unique and manually supplied. Setting `logo_url` to null clears
 the logo on update; omitted update fields keep their existing values. The old
-brand-assignment endpoints have been removed. A user is linked directly to a
-brand through `brand_id` during user creation. Brand creation does not link users.
+brand-assignment endpoints have been removed. Users have no brand assignment. Brand creation does not link users.
 
 To replace a brand logo, send `PATCH /api/brands/:brandId` as multipart/form-data
 with one `file` (JPG/PNG, at most 5 MiB and 20 megapixels). Name and code are optional.

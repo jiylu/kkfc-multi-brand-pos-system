@@ -25,7 +25,7 @@ export function PinRequiredDocs() {
     ApiResponse({
       status: 403,
       description:
-        'Role or brand access denied, or PIN missing, incorrect, or not configured.',
+        'Role access denied, or PIN missing, incorrect, or not configured.',
     }),
     ApiResponse({
       status: 429,

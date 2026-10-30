@@ -20,16 +20,11 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import {
-  BrandResource,
-  BrandResourceType,
-} from '../../../shared/decorators/brand-resource.decorator';
 import { UserRole } from '@prisma/client';
 import {
   Authenticated,
   type AuthenticatedRequest,
 } from '../../auth/auth.guard';
-import { BrandsGuard } from '../../../shared/guards/brands.guard';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import {
@@ -44,27 +39,29 @@ import { OrdersService } from './orders.service';
 @ApiParam({
   name: 'brandId',
   format: 'uuid',
-  description:
-    'Brand UUID. Cashiers and managers need access to this brand; superadmins may access any brand.',
+  description: 'Brand UUID. Allowed roles may operate on any brand.',
 })
 @ApiResponse({
   status: 400,
   description:
-    'Invalid UUID/body, brand/order mismatch, unavailable catalog data, or invalid channel/payment requirements.',
+    'Invalid UUID/body, unavailable catalog data, or invalid channel/payment requirements.',
 })
 @ApiResponse({
   status: 401,
   description: 'Missing, invalid or expired bearer session.',
 })
-@ApiResponse({ status: 403, description: 'Role or brand access denied.' })
-@ApiResponse({ status: 404, description: 'Brand or order not found.' })
+@ApiResponse({ status: 403, description: 'Role access denied.' })
+@ApiResponse({
+  status: 404,
+  description: 'Order not found in the requested brand.',
+})
 @ApiResponse({
   status: 409,
   description:
     'Duplicate identity, conflicting replay, invalid lifecycle state or concurrent request; retry concurrency conflicts with the same order ID.',
 })
 @Controller('brands/:brandId/orders')
-@UseGuards(Authenticated, RolesGuard, BrandsGuard)
+@UseGuards(Authenticated, RolesGuard)
 @Roles(UserRole.CASHIER_STAFF, UserRole.MANAGER, UserRole.SUPERADMIN)
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
@@ -87,7 +84,6 @@ export class OrdersController {
       'DUPLICATE_PLATFORM_ORDER blocks a second draft and includes existing_order only within the requested brand (otherwise null). ORDER_ID_CONFLICT rejects a changed payload or brand. ORDER_RETRY_REQUIRED means retry the same UUID and payload.',
   })
   @Post()
-  @BrandResource(BrandResourceType.BRAND, 'brandId')
   create(
     @Param('brandId', ParseUUIDPipe) brandId: string,
     @Body() dto: CreateOrderDTO,
@@ -113,7 +109,6 @@ export class OrdersController {
       'Returns current catalog prices and recipe IDs; does not reserve prices or stock. Only drafts can be verified.',
   })
   @Post(':orderId/verify')
-  @BrandResource(BrandResourceType.ORDER, 'orderId')
   @HttpCode(200)
   verify(
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -144,7 +139,6 @@ export class OrdersController {
     description: 'Kitchen ticket sequence unavailable or invalid.',
   })
   @Post(':orderId/confirm')
-  @BrandResource(BrandResourceType.ORDER, 'orderId')
   @HttpCode(200)
   confirm(
     @Param('brandId', ParseUUIDPipe) brandId: string,
@@ -171,7 +165,6 @@ export class OrdersController {
       'Cancelled order with cancellation actor, reason and timestamp; its ticket is CANCELLED if present.',
   })
   @Post(':orderId/cancel')
-  @BrandResource(BrandResourceType.ORDER, 'orderId')
   @HttpCode(200)
   cancel(
     @Param('brandId', ParseUUIDPipe) brandId: string,

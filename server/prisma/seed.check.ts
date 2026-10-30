@@ -209,31 +209,7 @@ async function check() {
     assert(await argon2.verify(saved.password_hash, user.password));
     assert.equal(saved.password, undefined);
     assert.equal(saved.brand_code, undefined);
-    assert.equal(
-      saved.brand_id,
-      user.brand_code === null ? null : brands.get(user.brand_code).brand_id,
-    );
-  }
-  for (const brand of brands.values()) {
-    assert.equal(
-      [...users.values()].filter(
-        (user) =>
-          user.role === UserRole.MANAGER && user.brand_id === brand.brand_id,
-      ).length,
-      1,
-    );
-    for (const role of [
-      UserRole.INVENTORY_STAFF,
-      UserRole.KITCHEN_STAFF,
-      UserRole.CASHIER_STAFF,
-    ]) {
-      assert.equal(
-        [...users.values()].filter(
-          (user) => user.role === role && user.brand_id === brand.brand_id,
-        ).length,
-        1,
-      );
-    }
+    assert.equal(saved.brand_id, undefined);
   }
   assert.equal(inventory.size, 51);
   assert.equal(recipes.size, 22);
@@ -311,7 +287,6 @@ async function check() {
   brands.get('GC').name = 'Existing brand';
   const staff = users.get('test_inventory');
   staff.password_hash = await argon2.hash('ChangedPassword123!');
-  staff.brand_id = brands.get('KK').brand_id;
   staff.is_active = false;
   const existingPin = pinCredentials.get(users.get('test_superadmin').user_id);
   existingPin.pin_hash = await argon2.hash('0432');
@@ -379,10 +354,7 @@ async function check() {
     existingPin.locked_until.toISOString(),
     '2030-01-01T00:00:00.000Z',
   );
-  assert.equal(
-    users.get('test_ai_kitchen').brand_id,
-    brands.get('AI').brand_id,
-  );
+  assert.equal(users.get('test_ai_kitchen').brand_id, undefined);
   assert.equal(inventory.size, 51);
   assert(inventory.has(packaging.code));
   assert.equal(recipes.size, 22);
@@ -402,7 +374,7 @@ async function check() {
     17,
   );
   console.log(
-    `Seed checks passed: ${users.size} users across brands, ${components.size} component links, ${menuItemChannels.size} delivery channels, ${modifiers.size} modifiers, ${menuItemModifiers.size} unique menu assignments, preserved existing records, and missing records restored.`,
+    `Seed checks passed: ${users.size} users with shared brand access, ${components.size} component links, ${menuItemChannels.size} delivery channels, ${modifiers.size} modifiers, ${menuItemModifiers.size} unique menu assignments, preserved existing records, and missing records restored.`,
   );
 }
 

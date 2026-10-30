@@ -78,7 +78,7 @@ export function MenuCatalogDocs() {
     }),
     ApiResponse({
       status: 403,
-      description: 'Role or brand access denied.',
+      description: 'Role access denied.',
     }),
   );
 }
@@ -90,7 +90,7 @@ export function CreateMenuCatalogDocs() {
       summary:
         'Create a menu item with channels and modifiers (manager or superadmin).',
       description:
-        "Managers can create entries in their assigned brand; superadmins can create entries across brands. Brand access is resolved from menu_item.brand_id. Supply menu_item with brand_id, recipe_id, img_url, a unique code, name, and base_price. menu_channel and menu_item_modifier are required arrays; use empty arrays when none are needed. Channel entries contain order_channel, price, and optional is_available; each channel must be unique. Modifier assignments contain an existing active modifier_id, optional additional_price (default 0), and optional is_available (default true); each modifier_id must be unique. Child entries omit menu_item_id because it is assigned from the new item. The item, channel overrides, and assignments are created in one transaction; any failed write rolls back the creation. Returns the created menu item with menuChannels and menuItemModifiers, including each assignment's modifier record and name. All created children are returned, including those with is_available set to false; omitted children are represented by empty arrays.",
+        "Managers and superadmins can create entries across brands. Supply menu_item with brand_id, recipe_id, img_url, a unique code, name, and base_price. menu_channel and menu_item_modifier are required arrays; use empty arrays when none are needed. Channel entries contain order_channel, price, and optional is_available; each channel must be unique. Modifier assignments contain an existing active modifier_id, optional additional_price (default 0), and optional is_available (default true); each modifier_id must be unique. Child entries omit menu_item_id because it is assigned from the new item. The item, channel overrides, and assignments are created in one transaction; any failed write rolls back the creation. Returns the created menu item with menuChannels and menuItemModifiers, including each assignment's modifier record and name. All created children are returned, including those with is_available set to false; omitted children are represented by empty arrays.",
     }),
     ApiBody({ type: MenuCatalogSetupDTO }),
     ApiResponse({
@@ -119,7 +119,7 @@ export function FindAllMenuCatalogDocs() {
     ApiOperation({
       summary: 'List a brand menu catalog with channels and modifier details.',
       description:
-        'Available to authenticated users in the requested brand; superadmins and recipe managers can access any brand. The brand must be active. Supports page (default 1) and limit (default 10, maximum 100). Returns active menu items, including items that are currently unavailable. Each item includes menuChannels containing available channel overrides and menuItemModifiers containing available assignments. Each assignment includes its modifier record, including modifier.name, alongside assignment fields such as additional_price. Missing channels or assignments are returned as empty arrays. Returns data and meta containing page, limit, total, and totalPages; total counts matching menu items. An empty catalog returns data: [].',
+        'Available to all authenticated users across brands. The brand must be active. Supports page (default 1) and limit (default 10, maximum 100). Returns active menu items, including items that are currently unavailable. Each item includes menuChannels containing available channel overrides and menuItemModifiers containing available assignments. Each assignment includes its modifier record, including modifier.name, alongside assignment fields such as additional_price. Missing channels or assignments are returned as empty arrays. Returns data and meta containing page, limit, total, and totalPages; total counts matching menu items. An empty catalog returns data: [].',
     }),
     ApiParam({
       name: 'brandId',

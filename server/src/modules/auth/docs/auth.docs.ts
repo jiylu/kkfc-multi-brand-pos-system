@@ -18,7 +18,7 @@ export function LoginDocs() {
     ApiOperation({
       summary: 'Log in and create a 24-hour session.',
       description:
-        'Available to active users of any role. Returns token, expires_at, and user. Use the token as Authorization: Bearer <token>. The user profile includes a nullable brand_id and excludes password_hash. The response uses Cache-Control: no-store.',
+        'Available to active users of any role. Returns token, expires_at, and user. Use the token as Authorization: Bearer <token>. The user profile excludes password_hash and has no brand assignment. The response uses Cache-Control: no-store.',
     }),
     ApiResponse({
       status: 200,
@@ -37,11 +37,11 @@ export function MeDocs() {
     ApiOperation({
       summary: 'Get the current user profile.',
       description:
-        'Available to any authenticated role. Returns the active user, including nullable brand_id, without password_hash. The response uses Cache-Control: no-store.',
+        'Available to any authenticated role. Returns the active user, without password_hash. The response uses Cache-Control: no-store.',
     }),
     ApiResponse({
       status: 200,
-      description: 'Current user profile with a single nullable brand_id.',
+      description: 'Current user profile without brand assignments.',
     }),
     ApiResponse({
       status: 401,

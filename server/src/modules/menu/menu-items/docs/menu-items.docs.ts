@@ -59,8 +59,7 @@ export function MenuItemsDocs() {
     }),
     ApiResponse({
       status: 403,
-      description:
-        'Role or brand access denied. Superadmins may access any brand; other callers must belong to the requested brand.',
+      description: 'Role access denied. Employees operate across all brands.',
     }),
   );
 }
@@ -71,7 +70,7 @@ export function CreateMenuItemDocs() {
     ApiOperation({
       summary: 'Create a menu item (manager or superadmin).',
       description:
-        'Managers can create menu items in their assigned brand; superadmins can create them in any active brand. Supply brand_id, recipe_id, img_url, a unique code, name, and base_price. Description and serving_description are optional and nullable. The item starts active and available.',
+        'Managers and superadmins can create menu items in any active brand. Supply brand_id, recipe_id, img_url, a unique code, name, and base_price. Description and serving_description are optional and nullable. The item starts active and available.',
     }),
     ApiResponse({ status: 201, description: 'Created menu item.' }),
     ApiResponse({ status: 404, description: 'Brand not found or inactive.' }),
@@ -163,7 +162,7 @@ export function UpdateMenuItemDocs() {
     ApiOperation({
       summary: 'Update an active menu item (manager or superadmin).',
       description:
-        'Managers can update items in their assigned brand; superadmins can update items across brands. Accepts a menu item UUID, not a code. Supports recipe_id, img_url, code, name, description, serving_description, and base_price. Optionally send file as multipart/form-data to replace the image with an uploaded JPG/PNG (maximum 5 MiB, 20 megapixels); the uploaded asset key overrides img_url. Omitted fields are unchanged. Null clears description or serving_description; other fields reject null. brand_id and is_active are not accepted.',
+        'Managers and superadmins can update items across brands. Accepts a menu item UUID, not a code. Supports recipe_id, img_url, code, name, description, serving_description, and base_price. Optionally send file as multipart/form-data to replace the image with an uploaded JPG/PNG (maximum 5 MiB, 20 megapixels); the uploaded asset key overrides img_url. Omitted fields are unchanged. Null clears description or serving_description; other fields reject null. brand_id and is_active are not accepted.',
     }),
     ApiParam({ name: 'id', format: 'uuid', description: 'Menu item UUID.' }),
     ApiResponse({ status: 200, description: 'Updated menu item.' }),
@@ -184,7 +183,7 @@ export function ReactivateMenuItemDocs() {
     ApiOperation({
       summary: 'Reactivate a menu item (manager or superadmin).',
       description:
-        'Managers can reactivate items in their assigned brand; superadmins can reactivate items across brands. Accepts a menu item UUID and requires no request body. Reactivation sets is_active to true.',
+        'Managers and superadmins can reactivate items across brands. Accepts a menu item UUID and requires no request body. Reactivation sets is_active to true.',
     }),
     ApiParam({
       name: 'id',
@@ -206,7 +205,7 @@ export function DeleteMenuItemDocs() {
     ApiOperation({
       summary: 'Deactivate a menu item (manager or superadmin).',
       description:
-        'Managers can deactivate items in their assigned brand; superadmins can deactivate items across brands. Accepts a menu item UUID, not a code. Sets is_active to false and preserves the record and its historical references.',
+        'Managers and superadmins can deactivate items across brands. Accepts a menu item UUID, not a code. Sets is_active to false and preserves the record and its historical references.',
     }),
     ApiParam({
       name: 'id',
