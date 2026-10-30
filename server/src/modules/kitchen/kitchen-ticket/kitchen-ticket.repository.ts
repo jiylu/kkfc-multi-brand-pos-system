@@ -67,6 +67,115 @@ export class KitchenTicketRepository {
     });
   }
 
+  async findManyByPreparer(
+    preparerId: string,
+    excludeHandedOver = true,
+    onlyToday = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const today = new Date().toLocaleDateString('en-CA', {
+      timeZone: 'Asia/Manila',
+    });
+    const startOfDay = new Date(`${today}T00:00:00+08:00`);
+    const startOfTomorrow = new Date(startOfDay);
+    startOfTomorrow.setUTCDate(startOfTomorrow.getUTCDate() + 1);
+
+    return tx.kitchenTicket.findMany({
+      where: {
+        preparer_id: preparerId,
+        ...(onlyToday
+          ? { created_at: { gte: startOfDay, lt: startOfTomorrow } }
+          : {}),
+        ...(excludeHandedOver
+          ? { status: { not: KitchenTicketStatus.HANDED_OVER } }
+          : {}),
+      },
+    });
+  }
+
+  async findManyByChecker(
+    checkerId: string,
+    excludeHandedOver = true,
+    onlyToday = true,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const today = new Date().toLocaleDateString('en-CA', {
+      timeZone: 'Asia/Manila',
+    });
+    const startOfDay = new Date(`${today}T00:00:00+08:00`);
+    const startOfTomorrow = new Date(startOfDay);
+    startOfTomorrow.setUTCDate(startOfTomorrow.getUTCDate() + 1);
+
+    return tx.kitchenTicket.findMany({
+      where: {
+        checker_id: checkerId,
+        ...(onlyToday
+          ? { created_at: { gte: startOfDay, lt: startOfTomorrow } }
+          : {}),
+        ...(excludeHandedOver
+          ? { status: { not: KitchenTicketStatus.HANDED_OVER } }
+          : {}),
+      },
+    });
+  }
+
+  async updateStatus(
+    kitchenTicketId: string,
+    newStatus: KitchenTicketStatus,
+    expectedStatus: KitchenTicketStatus,
+    extraData: Prisma.KitchenTicketUpdateInput = {},
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.kitchenTicket.update({
+      where: {
+        kitchen_ticket_id: kitchenTicketId,
+        status: expectedStatus,
+      },
+      data: {
+        ...extraData,
+        status: newStatus,
+        modified_at: new Date(),
+      },
+    });
+  }
+
+  async prepare(
+    kitchenTicketId: string,
+    preparerId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const prepareTicket = async (client: Prisma.TransactionClient) => {
+      await this.updateStatus(
+        kitchenTicketId,
+        KitchenTicketStatus.PREPARING,
+        KitchenTicketStatus.ACKNOWLEDGED,
+        { preparation_started_at: new Date() },
+        client,
+      );
+
+      return this.assignPreparer(kitchenTicketId, preparerId, client);
+    };
+
+    return '$transaction' in tx
+      ? tx.$transaction(prepareTicket)
+      : prepareTicket(tx);
+  }
+
+  async assignPreparer(
+    kitchenTicketId: string,
+    preparerId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    return tx.kitchenTicket.update({
+      where: {
+        kitchen_ticket_id: kitchenTicketId,
+      },
+      data: {
+        preparer_id: preparerId,
+      },
+    });
+  }
+
   async assignChecker(
     kitchenTicketId: string,
     checkerId: string,
@@ -78,142 +187,6 @@ export class KitchenTicketRepository {
       },
       data: {
         checker_id: checkerId,
-        status: KitchenTicketStatus.CHECKING,
-        modified_at: new Date(),
-      },
-    });
-  }
-
-  async acknowledgeAndAssignPreparer(
-    kitchenTicketId: string,
-    preparerId: string,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.kitchenTicket.update({
-      where: {
-        kitchen_ticket_id: kitchenTicketId,
-        status: KitchenTicketStatus.QUEUED,
-        preparer_id: null,
-      },
-      data: {
-        preparer_id: preparerId,
-        status: KitchenTicketStatus.ACKNOWLEDGED,
-        acknowledged_at: new Date(),
-        modified_at: new Date(),
-      },
-    });
-  }
-
-  async check(
-    kitchenTicketId: string,
-    checkerId: string,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.kitchenTicket.update({
-      where: {
-        kitchen_ticket_id: kitchenTicketId,
-        status: KitchenTicketStatus.READY,
-        checker_id: checkerId,
-        preparer_id: { not: null },
-      },
-      data: {
-        status: KitchenTicketStatus.CHECKING,
-        modified_at: new Date(),
-      },
-    });
-  }
-
-  async prepare(
-    kitchenTicketId: string,
-    preparerId: string,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.kitchenTicket.update({
-      where: {
-        kitchen_ticket_id: kitchenTicketId,
-        status: KitchenTicketStatus.ACKNOWLEDGED,
-        preparer_id: preparerId,
-      },
-      data: {
-        status: KitchenTicketStatus.PREPARING,
-        preparation_started_at: new Date(),
-        modified_at: new Date(),
-      },
-    });
-  }
-
-  async rework(
-    kitchenTicketId: string,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    return tx.kitchenTicket.update({
-      where: {
-        kitchen_ticket_id: kitchenTicketId,
-        status: KitchenTicketStatus.CHECKING,
-        preparer_id: { not: null },
-        checker_id: { not: null },
-      },
-      data: {
-        status: KitchenTicketStatus.REWORKING,
-        modified_at: new Date(),
-      },
-    });
-  }
-
-  async ready(
-    kitchenTicketId: string,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    const now = new Date();
-
-    return tx.kitchenTicket.update({
-      where: {
-        kitchen_ticket_id: kitchenTicketId,
-      },
-      data: {
-        status: KitchenTicketStatus.READY,
-        ready_at: now,
-        modified_at: now,
-      },
-    });
-  }
-
-  async handover(
-    kitchenTicketId: string,
-    checkerId: string,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    const now = new Date();
-
-    return tx.kitchenTicket.update({
-      where: {
-        kitchen_ticket_id: kitchenTicketId,
-        status: KitchenTicketStatus.CHECKING,
-        checker_id: checkerId,
-        preparer_id: { not: null },
-      },
-      data: {
-        status: KitchenTicketStatus.HANDED_OVER,
-        handed_over_at: now,
-        modified_at: now,
-      },
-    });
-  }
-
-  async cancel(
-    kitchenTicketId: string,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    const now = new Date();
-
-    return tx.kitchenTicket.update({
-      where: {
-        kitchen_ticket_id: kitchenTicketId,
-      },
-      data: {
-        status: KitchenTicketStatus.CANCELLED,
-        cancelled_at: now,
-        modified_at: now,
       },
     });
   }
