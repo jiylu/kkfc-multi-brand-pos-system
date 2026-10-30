@@ -36,6 +36,7 @@ class KitchenTicketsPage extends StatefulWidget {
     this.onSubmitReason,
     this.onTestBlankReason,
     this.onConfirmQCFail,
+    this.onReturnToQC,
     this.onContinueToHandover,
     this.onAddPhoto,
     this.onRetakePhoto,
@@ -61,6 +62,7 @@ class KitchenTicketsPage extends StatefulWidget {
   final VoidCallback? onSubmitReason;
   final VoidCallback? onTestBlankReason;
   final VoidCallback? onConfirmQCFail;
+  final VoidCallback? onReturnToQC;
   final VoidCallback? onContinueToHandover;
   final VoidCallback? onAddPhoto;
   final VoidCallback? onRetakePhoto;
@@ -85,6 +87,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
   KitchenBoardItem? _localSelectedTicket;
   KitchenBoardItem? _displayedTicket;
   bool _manuallyDismissed = false;
+  bool _t014IsReworking = false;
 
   @override
   void initState() {
@@ -100,6 +103,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
       _panelState = KitchenTicketPanelState.photoPreview;
     } else if (widget.initialPanelState == KitchenTicketPanelState.photoRequired) {
       _panelState = KitchenTicketPanelState.photoRequired;
+    } else if (widget.initialPanelState == KitchenTicketPanelState.reworkRequired) {
+      _panelState = KitchenTicketPanelState.reworkRequired;
+      _t014IsReworking = true;
     } else if (widget.initialPanelState == KitchenTicketPanelState.qcFailureReason) {
       _panelState = KitchenTicketPanelState.qcFailureReason;
       if (_qcReasonController.text.isEmpty) {
@@ -109,6 +115,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
       _panelState = KitchenTicketPanelState.missingQCReason;
     } else if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
       _panelState = KitchenTicketPanelState.readyForDispatch;
+    } else if (widget.selectedTicket?.ticket.status == KkfcStatus.reworking) {
+      _panelState = KitchenTicketPanelState.reworkRequired;
+      _t014IsReworking = true;
     } else if (widget.selectedTicket?.ticket.status == KkfcStatus.checking) {
       _panelState = KitchenTicketPanelState.qualityCheck;
     } else if (widget.selectedTicket?.ticket.status == KkfcStatus.preparing) {
@@ -153,6 +162,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
         _panelState = KitchenTicketPanelState.photoPreview;
       } else if (widget.initialPanelState == KitchenTicketPanelState.photoRequired) {
         _panelState = KitchenTicketPanelState.photoRequired;
+      } else if (widget.initialPanelState == KitchenTicketPanelState.reworkRequired) {
+        _panelState = KitchenTicketPanelState.reworkRequired;
+        _t014IsReworking = true;
       } else if (widget.initialPanelState == KitchenTicketPanelState.qcFailureReason) {
         _panelState = KitchenTicketPanelState.qcFailureReason;
         if (_qcReasonController.text.isEmpty) {
@@ -162,6 +174,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
         _panelState = KitchenTicketPanelState.missingQCReason;
       } else if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
         _panelState = KitchenTicketPanelState.readyForDispatch;
+      } else if (widget.selectedTicket?.ticket.status == KkfcStatus.reworking) {
+        _panelState = KitchenTicketPanelState.reworkRequired;
+        _t014IsReworking = true;
       } else if (widget.selectedTicket?.ticket.status == KkfcStatus.checking) {
         _panelState = KitchenTicketPanelState.qualityCheck;
       } else if (widget.selectedTicket?.ticket.status == KkfcStatus.preparing) {
@@ -211,6 +226,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
       _displayedTicket = item;
       if (item.ticket.status == KkfcStatus.ready) {
         _panelState = KitchenTicketPanelState.readyForDispatch;
+      } else if (item.ticket.status == KkfcStatus.reworking) {
+        _panelState = KitchenTicketPanelState.reworkRequired;
+        _t014IsReworking = true;
       } else if (item.ticket.status == KkfcStatus.checking) {
         _panelState = KitchenTicketPanelState.qualityCheck;
       } else if (item.ticket.status == KkfcStatus.preparing) {
@@ -342,6 +360,30 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
 
   void _handleConfirmQCFail() {
     widget.onConfirmQCFail?.call();
+    setState(() {
+      _panelState = KitchenTicketPanelState.reworkRequired;
+      _t014IsReworking = true;
+      if (_localSelectedTicket?.ticket.ticketNumber == 'T-014' ||
+          _displayedTicket?.ticket.ticketNumber == 'T-014' ||
+          widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
+        _localSelectedTicket = KitchenBoardSampleData.t014Reworking;
+        _displayedTicket = KitchenBoardSampleData.t014Reworking;
+      }
+    });
+  }
+
+  void _handleReturnToQC() {
+    widget.onReturnToQC?.call();
+    setState(() {
+      _t014IsReworking = true;
+      if (_localSelectedTicket?.ticket.ticketNumber == 'T-014' ||
+          _displayedTicket?.ticket.ticketNumber == 'T-014' ||
+          widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
+        _localSelectedTicket = KitchenBoardSampleData.t014Reworking;
+        _displayedTicket = KitchenBoardSampleData.t014Reworking;
+      }
+    });
+    _handleClosePanel();
   }
 
   void _handleContinueToHandover() {
@@ -499,6 +541,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onSubmitReason: _handleSubmitReason,
                 onTestBlankReason: _handleTestBlankReason,
                 onConfirmQCFail: _handleConfirmQCFail,
+                onReturnToQC: _handleReturnToQC,
                 onContinueToHandover: _handleContinueToHandover,
                 onAddPhoto: _handleAddPhoto,
                 onRetakePhoto: _handleRetakePhoto,
@@ -535,6 +578,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onSubmitReason: _handleSubmitReason,
                 onTestBlankReason: _handleTestBlankReason,
                 onConfirmQCFail: _handleConfirmQCFail,
+                onReturnToQC: _handleReturnToQC,
                 onContinueToHandover: _handleContinueToHandover,
                 onAddPhoto: _handleAddPhoto,
                 onRetakePhoto: _handleRetakePhoto,
@@ -558,6 +602,11 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
         _panelState == KitchenTicketPanelState.photoPreview ||
         _panelState == KitchenTicketPanelState.dispatcherCheck ||
         _panelState == KitchenTicketPanelState.handoverComplete;
+    final isReworkRequired = _panelState == KitchenTicketPanelState.reworkRequired;
+    final isReworking = isReworkRequired ||
+        _t014IsReworking ||
+        _displayedTicket?.ticket.status == KkfcStatus.reworking ||
+        _localSelectedTicket?.ticket.status == KkfcStatus.reworking;
     final isQC = _panelState == KitchenTicketPanelState.qualityCheck ||
         _panelState == KitchenTicketPanelState.missingQCReason ||
         _panelState == KitchenTicketPanelState.qcFailureReason;
@@ -566,18 +615,22 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     return KitchenShell(
       selectedDestination: KitchenDestination.orders,
       phoneHeaderBottom: KitchenStageTabs(
-        selectedIndex: isReady ? 3 : (isQC ? 2 : (isPreparing ? 1 : 0)),
+        selectedIndex: isReady ? 3 : ((isQC || isReworking) ? 2 : (isPreparing ? 1 : 0)),
       ),
       staffRole: isReady
           ? (tablet ? 'Dispatcher · demo' : 'Dispatcher')
-          : (isQC
-              ? (tablet ? 'QC checker · demo' : 'QC scenario')
-              : 'Kitchen staff'),
+          : (isReworkRequired
+              ? (tablet ? 'Kitchen staff' : 'QC scenario')
+              : (isQC
+                  ? (tablet ? 'QC checker · demo' : 'QC scenario')
+                  : 'Kitchen staff')),
       staffStatus: isReady
           ? (tablet ? 'Access policy pending' : 'Access TBD')
-          : (isQC
-              ? (tablet ? 'Access policy pending' : 'Access TBD')
-              : (tablet ? 'Authorized workspace' : 'Authorized')),
+          : (isReworkRequired
+              ? (tablet ? 'Authorized workspace' : 'Access TBD')
+              : (isQC
+                  ? (tablet ? 'Access policy pending' : 'Access TBD')
+                  : (tablet ? 'Authorized workspace' : 'Authorized'))),
       body: body,
     );
   }
@@ -588,13 +641,18 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
         _panelState == KitchenTicketPanelState.photoPreview ||
         _panelState == KitchenTicketPanelState.dispatcherCheck ||
         _panelState == KitchenTicketPanelState.handoverComplete;
+    final isReworkRequired = _panelState == KitchenTicketPanelState.reworkRequired;
+    final isReworking = isReworkRequired ||
+        _t014IsReworking ||
+        _displayedTicket?.ticket.status == KkfcStatus.reworking ||
+        _localSelectedTicket?.ticket.status == KkfcStatus.reworking;
     final isQC = _panelState == KitchenTicketPanelState.qualityCheck ||
         _panelState == KitchenTicketPanelState.missingQCReason ||
         _panelState == KitchenTicketPanelState.qcFailureReason;
     final isPreparing = _panelState == KitchenTicketPanelState.preparing;
     final isAcknowledged = _panelState == KitchenTicketPanelState.acknowledged;
 
-    final effectiveNewOrders = (isReady || isQC || isPreparing)
+    final effectiveNewOrders = (isReady || isQC || isPreparing || isReworking)
         ? const [KitchenBoardSampleData.t018]
         : (isAcknowledged
             ? const [
@@ -603,7 +661,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
               ]
             : KitchenBoardSampleData.newOrders);
 
-    final effectiveCooking = (isReady || isQC)
+    final effectiveCooking = (isReady || isQC || isReworking)
         ? const [
             KitchenBoardSampleData.t015,
             KitchenBoardSampleData.t019,
@@ -621,13 +679,19 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
             KitchenBoardSampleData.t016,
             KitchenBoardSampleData.t020,
           ]
-        : (isQC
+        : (isReworking
             ? const [
-                KitchenBoardSampleData.t014Checking,
+                KitchenBoardSampleData.t014Reworking,
                 KitchenBoardSampleData.t016,
                 KitchenBoardSampleData.t020,
               ]
-            : KitchenBoardSampleData.qualityCheck);
+            : (isQC
+                ? const [
+                    KitchenBoardSampleData.t014Checking,
+                    KitchenBoardSampleData.t016,
+                    KitchenBoardSampleData.t020,
+                  ]
+                : KitchenBoardSampleData.qualityCheck));
 
     final effectiveReady = isReady
         ? const [
@@ -641,17 +705,19 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
         ? KitchenBoardSampleData.t014HandedOver
         : (isReady
             ? KitchenBoardSampleData.t014Ready
-            : (isQC
-                ? KitchenBoardSampleData.t014Checking
-                : (isPreparing
-                    ? KitchenBoardSampleData.t014Preparing
-                    : (isAcknowledged
-                        ? KitchenBoardSampleData.t014Acknowledged
-                        : KitchenBoardSampleData.t014))));
+            : (isReworking
+                ? KitchenBoardSampleData.t014Reworking
+                : (isQC
+                    ? KitchenBoardSampleData.t014Checking
+                    : (isPreparing
+                        ? KitchenBoardSampleData.t014Preparing
+                        : (isAcknowledged
+                            ? KitchenBoardSampleData.t014Acknowledged
+                            : KitchenBoardSampleData.t014)))));
 
     final effectiveUpNextPhoneTicket = isReady
         ? KitchenBoardSampleData.t017
-        : (isQC
+        : ((isQC || isReworking)
             ? KitchenBoardSampleData.t016
             : (isPreparing
                 ? KitchenBoardSampleData.t015
@@ -659,11 +725,11 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
 
     final effectivePhoneStageTitle = isReady
         ? 'READY'
-        : (isQC
+        : ((isQC || isReworking)
             ? 'QUALITY CHECK'
             : (isPreparing ? 'COOKING' : 'NEW ORDERS'));
 
-    final effectivePhoneStageCount = (isReady || isQC || isPreparing) ? '03' : '02';
+    final effectivePhoneStageCount = (isReady || isQC || isPreparing || isReworking) ? '03' : '02';
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(tablet ? 24 : KitchenSpace.md),
