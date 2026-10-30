@@ -8,6 +8,26 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+const assignmentExample = {
+  menu_item_modifier_id: '00000000-0000-4000-8000-000000000001',
+  menu_item_id: '00000000-0000-4000-8000-000000000002',
+  modifier_id: '00000000-0000-4000-8000-000000000003',
+  additional_price: '20',
+  is_available: true,
+  created_at: '2026-10-31T08:00:00.000Z',
+  modified_at: '2026-10-31T08:00:00.000Z',
+};
+
+const modifierExample = {
+  modifier_id: assignmentExample.modifier_id,
+  code: 'EXTRA-CHEESE',
+  name: 'Extra Cheese',
+  description: 'An extra serving of cheese.',
+  is_active: true,
+  created_at: assignmentExample.created_at,
+  modified_at: assignmentExample.modified_at,
+};
+
 export function MenuItemModifiersDocs() {
   return applyDecorators(
     ApiTags('Menu item modifiers'),
@@ -30,11 +50,13 @@ export function CreateMenuItemModifierDocs() {
     ApiOperation({
       summary: 'Assign a modifier to a menu item.',
       description:
-        'Requires authentication. The menu item and modifier must be active. Additional price defaults to zero and availability defaults to true. Each menu item and modifier pair must be unique.',
+        'Available to managers, recipe managers, and superadmins across brands. The menu item and modifier must be active. Additional price defaults to zero and availability defaults to true. Each menu item and modifier pair must be unique.',
     }),
     ApiResponse({
       status: 201,
-      description: 'Created menu item modifier assignment.',
+      description:
+        'Created assignment. Decimal prices are serialized as strings.',
+      content: { 'application/json': { example: assignmentExample } },
     }),
     ApiResponse({
       status: 404,
@@ -52,11 +74,32 @@ export function FindAllMenuItemModifiersDocs() {
     ApiOperation({
       summary: 'List menu item modifier assignments.',
       description:
-        'Requires authentication. Supports page, limit, and activeOnly. Returns data and pagination meta. activeOnly defaults to true; false includes unavailable assignments.',
+        'Available to recipe managers and superadmins. Supports page, limit, and activeOnly. Returns data and pagination meta. activeOnly defaults to true; false includes unavailable assignments.',
     }),
     ApiResponse({
       status: 200,
-      description: 'Paginated menu item modifier assignments.',
+      description:
+        'Paginated assignment records without nested modifier details.',
+      content: {
+        'application/json': {
+          examples: {
+            populated: {
+              summary: 'One matching assignment',
+              value: {
+                data: [assignmentExample],
+                meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+              },
+            },
+            empty: {
+              summary: 'No matching assignments',
+              value: {
+                data: [],
+                meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+              },
+            },
+          },
+        },
+      },
     }),
   );
 }
@@ -66,7 +109,7 @@ export function FindMenuItemModifiersForMenuItemDocs() {
     ApiOperation({
       summary: 'List modifier assignments for a menu item.',
       description:
-        'Requires authentication and an active menu item. activeOnly defaults to true; false includes unavailable assignments. Returns an empty array when no assignments match.',
+        'Available to managers, recipe managers, and superadmins. Requires an active menu item. activeOnly defaults to true; false includes unavailable assignments. Returns an empty array when no assignments match.',
     }),
     ApiParam({
       name: 'menuItemId',
@@ -74,7 +117,19 @@ export function FindMenuItemModifiersForMenuItemDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'Modifier assignments for the menu item.',
+      description:
+        'Array of assignments with nested modifier details. Inventory links and quantities are excluded.',
+      content: {
+        'application/json': {
+          examples: {
+            populated: {
+              summary: 'Assignment with modifier details',
+              value: [{ ...assignmentExample, modifier: modifierExample }],
+            },
+            empty: { summary: 'No matching assignments', value: [] },
+          },
+        },
+      },
     }),
     ApiResponse({
       status: 404,
@@ -88,10 +143,22 @@ export function FindOneMenuItemModifierDocs() {
     ApiOperation({
       summary: 'Get a menu item modifier assignment.',
       description:
-        'Requires authentication and access to the assignment menu item brand. Superadmins can access any brand. Looks up an assignment by its UUID. activeOnly defaults to true; false permits unavailable assignments.',
+        'Available to any authenticated user across brands. Looks up an assignment by its UUID. activeOnly defaults to true; false permits unavailable assignments.',
     }),
     ApiParam({ name: 'id', schema: { type: 'string', format: 'uuid' } }),
-    ApiResponse({ status: 200, description: 'Menu item modifier assignment.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Assignment and modifier details in separate fields. Inventory links and quantities are excluded.',
+      content: {
+        'application/json': {
+          example: {
+            menuItemModifier: assignmentExample,
+            modifierDetails: modifierExample,
+          },
+        },
+      },
+    }),
     ApiResponse({
       status: 404,
       description: 'Assignment not found under the activeOnly filter.',
@@ -105,12 +172,21 @@ export function UpdateMenuItemModifierDocs() {
     ApiOperation({
       summary: 'Update a menu item modifier assignment.',
       description:
-        'Available to managers in the assignment menu item brand and superadmins across brands. Only additional_price and modifier_id can change. The assignment must be available, and its menu item and resulting modifier must be active.',
+        'Available to managers, recipe managers, and superadmins across brands. Only additional_price and modifier_id can change. The assignment must be available, and its menu item and resulting modifier must be active.',
     }),
     ApiParam({ name: 'id', schema: { type: 'string', format: 'uuid' } }),
     ApiResponse({
       status: 200,
-      description: 'Updated menu item modifier assignment.',
+      description: 'Updated assignment record.',
+      content: {
+        'application/json': {
+          example: {
+            ...assignmentExample,
+            additional_price: '25',
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
     }),
     ApiResponse({
       status: 404,
@@ -131,12 +207,21 @@ export function ReactivateMenuItemModifierDocs() {
     ApiOperation({
       summary: 'Reactivate a menu item modifier assignment.',
       description:
-        'Available to managers in the assignment menu item brand and superadmins across brands. Sets an unavailable assignment back to available after validating its active menu item and modifier.',
+        'Available to managers, recipe managers, and superadmins across brands. Sets an unavailable assignment back to available after validating its active menu item and modifier.',
     }),
     ApiParam({ name: 'id', schema: { type: 'string', format: 'uuid' } }),
     ApiResponse({
       status: 200,
-      description: 'Reactivated menu item modifier assignment.',
+      description: 'Reactivated assignment with is_available set to true.',
+      content: {
+        'application/json': {
+          example: {
+            ...assignmentExample,
+            is_available: true,
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
     }),
     ApiResponse({
       status: 404,
@@ -155,12 +240,21 @@ export function DeleteMenuItemModifierDocs() {
     ApiOperation({
       summary: 'Deactivate a menu item modifier assignment.',
       description:
-        'Available to managers in the assignment menu item brand and superadmins across brands. Soft deletes an available assignment by setting is_available to false. Existing references are preserved, and inactive parent records do not prevent cleanup.',
+        'Available to managers, recipe managers, and superadmins across brands. Soft deletes an available assignment by setting is_available to false. Existing references are preserved, and inactive parent records do not prevent cleanup.',
     }),
     ApiParam({ name: 'id', schema: { type: 'string', format: 'uuid' } }),
     ApiResponse({
       status: 200,
-      description: 'Deactivated menu item modifier assignment.',
+      description: 'Preserved assignment with is_available set to false.',
+      content: {
+        'application/json': {
+          example: {
+            ...assignmentExample,
+            is_available: false,
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
     }),
     ApiResponse({
       status: 404,

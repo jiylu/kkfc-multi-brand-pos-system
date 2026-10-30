@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { Authenticated } from '../../../auth/auth.guard';
 import { AuthService } from '../../../auth/auth.service';
@@ -179,7 +179,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
       document.paths['/api/menu-item-modifiers/menu-item/{menuItemId}']?.get,
       document.paths['/api/menu-item-modifiers/reactivate/{id}']?.patch,
     ];
-    for (const operation of operations) {
+    for (const [index, operation] of operations.entries()) {
       expect(typeof operation?.summary).toBe('string');
       expect(typeof operation?.description).toBe('string');
       expect(operation?.tags).toEqual(['Menu item modifiers']);
@@ -187,7 +187,37 @@ describe('Menu item modifiers HTTP endpoints', () => {
       expect(operation?.responses).toHaveProperty('400.description');
       expect(operation?.responses).toHaveProperty('401.description');
       expect(operation?.responses).toHaveProperty('403.description');
+      expect(operation?.responses[index === 0 ? '201' : '200']).toHaveProperty(
+        'content.application/json',
+      );
     }
+    expect(operations[2]?.responses['200']).toHaveProperty(
+      'content.application/json.example.menuItemModifier.additional_price',
+      '20',
+    );
+    expect(operations[2]?.responses['200']).toHaveProperty(
+      'content.application/json.example.modifierDetails.name',
+      'Extra Cheese',
+    );
+    expect(operations[1]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.empty.value',
+      {
+        data: [],
+        meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+      },
+    );
+    expect(operations[5]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.empty.value',
+      [],
+    );
+    expect(operations[4]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_available',
+      false,
+    );
+    expect(operations[6]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_available',
+      true,
+    );
     expect(
       document.components?.schemas?.CreateMenuItemModifierDTO,
     ).toMatchObject({
@@ -203,6 +233,49 @@ describe('Menu item modifiers HTTP endpoints', () => {
     expect(update).not.toHaveProperty('properties.menu_item_id');
     expect(update).not.toHaveProperty('properties.is_available');
     expect(update).not.toHaveProperty('required');
+  });
+
+  it('returns assignment and modifier details while excluding confidential nested fields', async () => {
+    const timestamp = '2026-10-31T08:00:00.000Z';
+    const payload = {
+      menuItemModifier: {
+        menu_item_modifier_id: assignmentId,
+        ...create,
+        additional_price: '20',
+        is_available: true,
+        created_at: timestamp,
+        modified_at: timestamp,
+      },
+      modifierDetails: {
+        modifier_id: modifierId,
+        code: 'EXTRA-CHEESE',
+        name: 'Extra Cheese',
+        description: null,
+        is_active: true,
+        created_at: timestamp,
+        modified_at: timestamp,
+      },
+    };
+    service.findOne.mockResolvedValue({
+      menuItemModifier: {
+        ...payload.menuItemModifier,
+        additional_price: new Prisma.Decimal('20'),
+        created_at: new Date(timestamp),
+        modified_at: new Date(timestamp),
+        recipe: { instructions: 'Restricted recipe' },
+        instructions: 'Restricted instructions',
+      },
+      modifierDetails: {
+        ...payload.modifierDetails,
+        inventory_item_id: 'private-ingredient',
+        quantity: new Prisma.Decimal('10'),
+        recipe_snapshot: { instructions: 'Restricted recipe' },
+        future_secret: 'Private data',
+      },
+    });
+    const response = await fetch(`${url}/${assignmentId}`, { headers });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(payload);
   });
 
   it.each(assignmentRoutes)(
