@@ -8,6 +8,16 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+const channelExample = {
+  menu_item_channel_id: '00000000-0000-4000-8000-000000000001',
+  menu_item_id: '00000000-0000-4000-8000-000000000002',
+  order_channel: 'GRABFOOD',
+  price: '120',
+  is_available: true,
+  created_at: '2026-10-31T08:00:00.000Z',
+  modified_at: '2026-10-31T08:00:00.000Z',
+};
+
 export function MenuChannelsDocs() {
   return applyDecorators(
     ApiTags('Menu channels'),
@@ -37,7 +47,12 @@ export function CreateMenuChannelDocs() {
       description:
         'Managers and superadmins can create channels across brands. Do not supply brand_id; channels belong to their menu item. Supply an active menu_item_id, order_channel (GRABFOOD or FOODPANDA), and price in PHP from 0 to 9999999999.99 with at most two decimal places. is_available is optional and defaults to true. Each menu item can have only one override per channel, including unavailable overrides.',
     }),
-    ApiResponse({ status: 201, description: 'Created menu item channel.' }),
+    ApiResponse({
+      status: 201,
+      description:
+        'Created channel override. Decimal prices are serialized as strings.',
+      content: { 'application/json': { example: channelExample } },
+    }),
     ApiResponse({
       status: 400,
       description:
@@ -63,7 +78,28 @@ export function FindAllMenuChannelsDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'Paginated menu item channels across brands.',
+      description:
+        'Paginated channel override records without nested menu item details.',
+      content: {
+        'application/json': {
+          examples: {
+            populated: {
+              summary: 'One matching channel override',
+              value: {
+                data: [channelExample],
+                meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+              },
+            },
+            empty: {
+              summary: 'No matching channel overrides',
+              value: {
+                data: [],
+                meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+              },
+            },
+          },
+        },
+      },
     }),
   );
 }
@@ -73,14 +109,29 @@ export function FindMenuChannelsByMenuItemDocs() {
     ApiOperation({
       summary: 'List channels for an active menu item.',
       description:
-        'Available to authenticated users in the menu item brand, and to superadmins across brands. Supports activeOnly (default true) and an optional orderChannel filter. False includes unavailable channels. Returns an array without pagination; no matching channels returns an empty array.',
+        'Available to all authenticated users across brands. Supports activeOnly (default true) and an optional orderChannel filter. False includes unavailable channels. Returns an array without pagination; no matching channels returns an empty array.',
     }),
     ApiParam({
       name: 'menuItemId',
       format: 'uuid',
       description: 'Active menu item UUID.',
     }),
-    ApiResponse({ status: 200, description: 'Menu item channels.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Array of channel overrides for the menu item, without pagination.',
+      content: {
+        'application/json': {
+          examples: {
+            populated: {
+              summary: 'One matching channel override',
+              value: [channelExample],
+            },
+            empty: { summary: 'No matching channel overrides', value: [] },
+          },
+        },
+      },
+    }),
     ApiResponse({
       status: 404,
       description: 'Menu item not found or inactive.',
@@ -93,14 +144,19 @@ export function FindOneMenuChannelDocs() {
     ApiOperation({
       summary: 'Get a menu item channel by UUID.',
       description:
-        'Available to authenticated users in the related menu item brand, and to superadmins across brands. activeOnly defaults to true; false also permits unavailable channels. This filter applies to channel availability, independently of menu item activation.',
+        'Available to all authenticated users across brands. activeOnly defaults to true; false also permits unavailable channels. This filter applies to channel availability, independently of menu item activation.',
     }),
     ApiParam({
       name: 'id',
       format: 'uuid',
       description: 'Menu item channel UUID.',
     }),
-    ApiResponse({ status: 200, description: 'Menu item channel.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Channel override record. Decimal prices are serialized as strings.',
+      content: { 'application/json': { example: channelExample } },
+    }),
     ApiResponse({
       status: 404,
       description: 'Menu item channel not found under the activeOnly filter.',
@@ -121,7 +177,20 @@ export function UpdateMenuChannelDocs() {
       format: 'uuid',
       description: 'Available menu item channel UUID.',
     }),
-    ApiResponse({ status: 200, description: 'Updated menu item channel.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Updated channel override with its original creation timestamp.',
+      content: {
+        'application/json': {
+          example: {
+            ...channelExample,
+            price: '150',
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
+    }),
     ApiResponse({
       status: 404,
       description: 'Menu item channel not found or unavailable.',
@@ -142,7 +211,20 @@ export function ReactivateMenuChannelDocs() {
       format: 'uuid',
       description: 'Unavailable menu item channel UUID.',
     }),
-    ApiResponse({ status: 200, description: 'Reactivated menu item channel.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Reactivated channel override with is_available set to true.',
+      content: {
+        'application/json': {
+          example: {
+            ...channelExample,
+            is_available: true,
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
+    }),
     ApiResponse({ status: 404, description: 'Menu item channel not found.' }),
     ApiResponse({
       status: 409,
@@ -165,7 +247,19 @@ export function DeleteMenuChannelDocs() {
       format: 'uuid',
       description: 'Available menu item channel UUID.',
     }),
-    ApiResponse({ status: 200, description: 'Deactivated menu item channel.' }),
+    ApiResponse({
+      status: 200,
+      description: 'Preserved channel override with is_available set to false.',
+      content: {
+        'application/json': {
+          example: {
+            ...channelExample,
+            is_available: false,
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
+    }),
     ApiResponse({
       status: 404,
       description: 'Menu item channel not found or already unavailable.',
