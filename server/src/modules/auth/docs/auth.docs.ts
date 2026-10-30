@@ -6,6 +6,17 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+const userProfileExample = {
+  user_id: '00000000-0000-4000-8000-000000000001',
+  username: 'manager',
+  first_name: 'Maria',
+  last_name: 'Santos',
+  role: 'MANAGER',
+  is_active: true,
+  created_at: '2026-10-31T08:00:00.000Z',
+  modified_at: '2026-10-31T08:00:00.000Z',
+};
+
 export function AuthDocs() {
   return applyDecorators(
     ApiTags('Auth'),
@@ -23,7 +34,16 @@ export function LoginDocs() {
     ApiResponse({
       status: 200,
       description:
-        'Bearer token, expiration timestamp, and current user profile.',
+        'Bearer token, expiration timestamp, and current user profile. The token is an opaque string, not a JWT.',
+      content: {
+        'application/json': {
+          example: {
+            token: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            expires_at: '2026-11-01T08:00:00.000Z',
+            user: userProfileExample,
+          },
+        },
+      },
     }),
     ApiResponse({
       status: 401,
@@ -41,7 +61,9 @@ export function MeDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'Current user profile without brand assignments.',
+      description:
+        'Current user profile without brand assignments or password hashes.',
+      content: { 'application/json': { example: userProfileExample } },
     }),
     ApiResponse({
       status: 401,
@@ -59,7 +81,10 @@ export function LogoutDocs() {
       description:
         'Requires a valid bearer token. Revokes only the current session; other sessions remain valid. Returns no response body.',
     }),
-    ApiResponse({ status: 204, description: 'Session ended.' }),
+    ApiResponse({
+      status: 204,
+      description: 'Session ended; no response body.',
+    }),
     ApiResponse({
       status: 401,
       description:

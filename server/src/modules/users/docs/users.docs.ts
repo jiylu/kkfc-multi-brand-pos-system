@@ -9,6 +9,17 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+const userExample = {
+  user_id: '00000000-0000-4000-8000-000000000001',
+  username: 'manager',
+  first_name: 'Maria',
+  last_name: 'Santos',
+  role: 'MANAGER',
+  is_active: true,
+  created_at: '2026-10-31T08:00:00.000Z',
+  modified_at: '2026-10-31T08:00:00.000Z',
+};
+
 export function UsersDocs() {
   return applyDecorators(
     ApiTags('Users'),
@@ -30,10 +41,7 @@ export function CreateUserDocs() {
     ApiResponse({
       status: 201,
       description: 'Created user without a brand assignment or password hash.',
-    }),
-    ApiResponse({
-      status: 404,
-      description: 'The supplied brand does not exist or is inactive.',
+      content: { 'application/json': { example: userExample } },
     }),
     ApiResponse({
       status: 409,
@@ -58,7 +66,17 @@ export function UpdateUserDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'Updated user without password_hash.',
+      description:
+        'Updated user without password_hash. Password resets return the same profile fields without exposing the new password.',
+      content: {
+        'application/json': {
+          example: {
+            ...userExample,
+            first_name: 'Ana',
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
     }),
     ApiResponse({ status: 409, description: 'Username is already taken.' }),
     ApiResponse({ status: 404, description: 'User not found or inactive.' }),
@@ -75,7 +93,27 @@ export function FindAllUsersDocs() {
     ApiResponse({
       status: 200,
       description:
-        'Paginated users in data, with page, limit, total, and totalPages in meta.',
+        'Paginated users in data, with page, limit, total, and totalPages in meta. Password hashes and brand assignments are excluded.',
+      content: {
+        'application/json': {
+          examples: {
+            populated: {
+              summary: 'One matching user',
+              value: {
+                data: [userExample],
+                meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+              },
+            },
+            empty: {
+              summary: 'No matching users',
+              value: {
+                data: [],
+                meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+              },
+            },
+          },
+        },
+      },
     }),
   );
 }
@@ -95,6 +133,7 @@ export function FindOneUserDocs() {
     ApiResponse({
       status: 200,
       description: 'User without a brand assignment or password hash.',
+      content: { 'application/json': { example: userExample } },
     }),
     ApiQuery({
       name: 'activeOnly',
@@ -126,7 +165,11 @@ export function DeleteUserDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'Deactivated user without password_hash.',
+      description:
+        'Preserved user with is_active set to false, without password_hash.',
+      content: {
+        'application/json': { example: { ...userExample, is_active: false } },
+      },
     }),
     ApiResponse({
       status: 404,
