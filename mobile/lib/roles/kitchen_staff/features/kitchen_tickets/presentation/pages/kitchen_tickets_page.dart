@@ -28,6 +28,7 @@ class KitchenTicketsPage extends StatefulWidget {
     this.onTicketAction,
     this.onAcknowledgeTicket,
     this.onBeginPreparation,
+    this.onSendToQC,
   });
 
   final KitchenTicketsViewState viewState;
@@ -37,6 +38,7 @@ class KitchenTicketsPage extends StatefulWidget {
   final void Function(KitchenBoardItem item)? onTicketAction;
   final VoidCallback? onAcknowledgeTicket;
   final VoidCallback? onBeginPreparation;
+  final VoidCallback? onSendToQC;
 
   @override
   State<KitchenTicketsPage> createState() => _KitchenTicketsPageState();
@@ -58,7 +60,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     super.initState();
     _displayedTicket = widget.selectedTicket;
     _panelState = widget.initialPanelState;
-    if (widget.selectedTicket?.ticket.status == KkfcStatus.acknowledged) {
+    if (widget.selectedTicket?.ticket.status == KkfcStatus.preparing) {
+      _panelState = KitchenTicketPanelState.preparing;
+    } else if (widget.selectedTicket?.ticket.status == KkfcStatus.acknowledged) {
       _panelState = KitchenTicketPanelState.acknowledged;
     }
 
@@ -90,9 +94,13 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     super.didUpdateWidget(oldWidget);
     if (widget.selectedTicket != null && oldWidget.selectedTicket == null) {
       _displayedTicket = widget.selectedTicket;
-      _panelState = widget.selectedTicket?.ticket.status == KkfcStatus.acknowledged
-          ? KitchenTicketPanelState.acknowledged
-          : widget.initialPanelState;
+      if (widget.selectedTicket?.ticket.status == KkfcStatus.preparing) {
+        _panelState = KitchenTicketPanelState.preparing;
+      } else if (widget.selectedTicket?.ticket.status == KkfcStatus.acknowledged) {
+        _panelState = KitchenTicketPanelState.acknowledged;
+      } else {
+        _panelState = widget.initialPanelState;
+      }
       _manuallyDismissed = false;
       _openPanel();
     } else if (widget.selectedTicket == null && oldWidget.selectedTicket != null) {
@@ -130,9 +138,13 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     setState(() {
       _localSelectedTicket = item;
       _displayedTicket = item;
-      _panelState = item.ticket.status == KkfcStatus.acknowledged
-          ? KitchenTicketPanelState.acknowledged
-          : KitchenTicketPanelState.queued;
+      if (item.ticket.status == KkfcStatus.preparing) {
+        _panelState = KitchenTicketPanelState.preparing;
+      } else if (item.ticket.status == KkfcStatus.acknowledged) {
+        _panelState = KitchenTicketPanelState.acknowledged;
+      } else {
+        _panelState = KitchenTicketPanelState.queued;
+      }
       _manuallyDismissed = false;
     });
     _openPanel();
@@ -147,6 +159,19 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
           widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
         _localSelectedTicket = KitchenBoardSampleData.t014Acknowledged;
         _displayedTicket = KitchenBoardSampleData.t014Acknowledged;
+      }
+    });
+  }
+
+  void _handleBeginPreparation() {
+    widget.onBeginPreparation?.call();
+    setState(() {
+      _panelState = KitchenTicketPanelState.preparing;
+      if (_localSelectedTicket?.ticket.ticketNumber == 'T-014' ||
+          _displayedTicket?.ticket.ticketNumber == 'T-014' ||
+          widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
+        _localSelectedTicket = KitchenBoardSampleData.t014Preparing;
+        _displayedTicket = KitchenBoardSampleData.t014Preparing;
       }
     });
   }
@@ -218,7 +243,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 panelState: _panelState,
                 onClose: _handleClosePanel,
                 onAcknowledge: _handleAcknowledgeTicket,
-                onBeginPreparation: widget.onBeginPreparation,
+                onBeginPreparation: _handleBeginPreparation,
+                onSendToQC: widget.onSendToQC,
               ),
             ),
           ),
@@ -237,7 +263,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 panelState: _panelState,
                 onClose: _handleClosePanel,
                 onAcknowledge: _handleAcknowledgeTicket,
-                onBeginPreparation: widget.onBeginPreparation,
+                onBeginPreparation: _handleBeginPreparation,
+                onSendToQC: widget.onSendToQC,
               ),
             ),
           ),
@@ -249,22 +276,43 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
 
     return KitchenShell(
       selectedDestination: KitchenDestination.orders,
-      phoneHeaderBottom: const KitchenStageTabs(),
+      phoneHeaderBottom: KitchenStageTabs(
+        selectedIndex: _panelState == KitchenTicketPanelState.preparing ? 1 : 0,
+      ),
       body: body,
     );
   }
 
   Widget _buildBoard(BuildContext context, bool tablet) {
+    final isPreparing = _panelState == KitchenTicketPanelState.preparing;
     final isAcknowledged = _panelState == KitchenTicketPanelState.acknowledged;
-    final effectiveNewOrders = isAcknowledged
-        ? [
-            KitchenBoardSampleData.t014Acknowledged,
-            KitchenBoardSampleData.t018,
+
+    final effectiveNewOrders = isPreparing
+        ? const [KitchenBoardSampleData.t018]
+        : (isAcknowledged
+            ? const [
+                KitchenBoardSampleData.t014Acknowledged,
+                KitchenBoardSampleData.t018,
+              ]
+            : KitchenBoardSampleData.newOrders);
+
+    final effectiveCooking = isPreparing
+        ? const [
+            KitchenBoardSampleData.t014Preparing,
+            KitchenBoardSampleData.t015,
+            KitchenBoardSampleData.t019,
           ]
-        : KitchenBoardSampleData.newOrders;
-    final effectiveActivePhoneTicket = isAcknowledged
-        ? KitchenBoardSampleData.t014Acknowledged
-        : KitchenBoardSampleData.t014;
+        : KitchenBoardSampleData.cooking;
+
+    final effectiveActivePhoneTicket = isPreparing
+        ? KitchenBoardSampleData.t014Preparing
+        : (isAcknowledged
+            ? KitchenBoardSampleData.t014Acknowledged
+            : KitchenBoardSampleData.t014);
+
+    final effectiveUpNextPhoneTicket = isPreparing
+        ? KitchenBoardSampleData.t015
+        : KitchenBoardSampleData.t018;
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(tablet ? 24 : KitchenSpace.md),
@@ -305,10 +353,14 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 KitchenTicketsViewState.active => tablet
                     ? KitchenBoardTabletView(
                         newOrders: effectiveNewOrders,
+                        cooking: effectiveCooking,
                         onTicketAction: _handleTicketAction,
                       )
                     : KitchenBoardPhoneView(
+                        stageTitle: isPreparing ? 'COOKING' : 'NEW ORDERS',
+                        stageCount: isPreparing ? '03' : '02',
                         activeTicket: effectiveActivePhoneTicket,
+                        upNextTicket: effectiveUpNextPhoneTicket,
                         onTicketAction: _handleTicketAction,
                       ),
                 KitchenTicketsViewState.loading =>

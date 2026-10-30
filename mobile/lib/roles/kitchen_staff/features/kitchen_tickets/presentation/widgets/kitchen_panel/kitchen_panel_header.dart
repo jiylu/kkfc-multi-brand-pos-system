@@ -11,6 +11,8 @@ class KitchenPanelHeader extends StatelessWidget {
     this.ticketNumber,
     this.title,
     this.subtitle = 'Ready to acknowledge',
+    this.backgroundColor = Colors.white,
+    this.badgeColor = const Color(0xFF0284C7),
     this.onClose,
   });
 
@@ -18,6 +20,8 @@ class KitchenPanelHeader extends StatelessWidget {
   final String? ticketNumber;
   final String? title;
   final String subtitle;
+  final Color backgroundColor;
+  final Color badgeColor;
   final VoidCallback? onClose;
 
   @override
@@ -30,7 +34,7 @@ class KitchenPanelHeader extends StatelessWidget {
             : 'Ticket T-014');
 
     return Container(
-      color: Colors.white,
+      color: backgroundColor,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -42,11 +46,11 @@ class KitchenPanelHeader extends StatelessWidget {
             children: [
               Text(
                 badgeText,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
-                  color: Color(0xFF0284C7),
+                  color: badgeColor,
                 ),
               ),
               InkWell(

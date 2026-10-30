@@ -15,6 +15,9 @@ enum KitchenTicketPanelState {
 
   /// Acknowledged state (03 · Acknowledge Ticket).
   acknowledged,
+
+  /// In-progress preparation state (04 · Preparation).
+  preparing,
 }
 
 /// The ticket detail panel (right panel on tablet, full queue detail on phone).
@@ -30,6 +33,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
     this.onBack,
     this.onAcknowledge,
     this.onBeginPreparation,
+    this.onSendToQC,
     this.width,
     this.borderRadius,
     this.badgeText,
@@ -46,7 +50,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
   /// Ticket data to display (defaults to T-014 sample data).
   final KitchenBoardItem ticket;
 
-  /// Whether the panel is in queued or acknowledged state.
+  /// Whether the panel is in queued, acknowledged, or preparing state.
   final KitchenTicketPanelState panelState;
 
   /// Callback when user taps close button "×" or back button.
@@ -60,6 +64,9 @@ class KitchenTicketDetailPanel extends StatelessWidget {
 
   /// Callback when user taps "Begin preparation".
   final VoidCallback? onBeginPreparation;
+
+  /// Callback when user taps "Send to QC".
+  final VoidCallback? onSendToQC;
 
   /// Optional fixed width for the panel (e.g. 400 or 440 on tablet).
   final double? width;
@@ -88,53 +95,88 @@ class KitchenTicketDetailPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ticketData = ticket.ticket;
+    final isPreparing = panelState == KitchenTicketPanelState.preparing;
     final isAcknowledged = panelState == KitchenTicketPanelState.acknowledged;
 
     final resolvedBadgeText = badgeText ??
-        (isAcknowledged ? 'ACKNOWLEDGED' : 'NEW ORDER · QUEUED');
+        (isPreparing
+            ? 'COOKING · PREPARING'
+            : (isAcknowledged ? 'ACKNOWLEDGED' : 'NEW ORDER · QUEUED'));
 
+    final resolvedBadgeColor = isPreparing
+        ? const Color(0xFFD97706)
+        : const Color(0xFF0284C7);
+
+    final resolvedHeaderBg = isPreparing
+        ? const Color(0xFFFDF6EE)
+        : Colors.white;
+
+    final rawNumber = ticketData.ticketNumber.replaceFirst('Ticket ', '');
     final resolvedTitle = title ??
-        (isAcknowledged
-            ? 'Begin preparation'
-            : (ticketData.ticketNumber.startsWith('Ticket')
-                ? ticketData.ticketNumber
-                : 'Ticket ${ticketData.ticketNumber}'));
+        (isPreparing
+            ? 'Prepare $rawNumber'
+            : (isAcknowledged
+                ? 'Begin preparation'
+                : (ticketData.ticketNumber.startsWith('Ticket')
+                    ? ticketData.ticketNumber
+                    : 'Ticket ${ticketData.ticketNumber}')));
 
     final resolvedSubtitle = subtitle ??
-        (isAcknowledged
-            ? 'Ticket claimed by kitchen staff'
-            : 'Ready to acknowledge');
+        (isPreparing
+            ? 'Cooking in progress'
+            : (isAcknowledged
+                ? 'Ticket claimed by kitchen staff'
+                : 'Ready to acknowledge'));
 
     final resolvedConfirmTitle = confirmationTitle ??
-        (isAcknowledged ? 'START COOKING' : 'CONFIRM THE ORDER');
+        (isPreparing
+            ? 'PREPARATION CHECK'
+            : (isAcknowledged ? 'START COOKING' : 'CONFIRM THE ORDER'));
+
+    final resolvedConfirmColor = isPreparing
+        ? const Color(0xFFD97706)
+        : const Color(0xFF0284C7);
 
     final resolvedConfirmItems = confirmationItems ??
-        (isAcknowledged
+        (isPreparing
             ? const [
-                'Review quantities and modifiers',
-                'Begin preparation when ready',
+                '2 × Paa Inasal · extra rice',
+                '1 × Pecho Inasal · no onions',
               ]
-            : const [
-                'Check all items and modifiers',
-                'Verify brand and destination',
-              ]);
+            : (isAcknowledged
+                ? const [
+                    'Review quantities and modifiers',
+                    'Begin preparation when ready',
+                  ]
+                : const [
+                    'Check all items and modifiers',
+                    'Verify brand and destination',
+                  ]));
 
     final resolvedPermissionNotice = permissionNotice ??
-        (isAcknowledged
-            ? 'Server must confirm the next status.'
-            : 'Preparer permission requires Backend approval.');
+        (isPreparing
+            ? 'Next approved transition is CHECKING.'
+            : (isAcknowledged
+                ? 'Server must confirm the next status.'
+                : 'Preparer permission requires Backend approval.'));
 
-    final defaultBack = isAcknowledged
-        ? (context.isKitchenTablet ? 'Stay acknowledged' : 'Stay here')
-        : 'Back to board';
+    final defaultBack = isPreparing
+        ? 'Keep preparing'
+        : (isAcknowledged
+            ? (context.isKitchenTablet ? 'Stay acknowledged' : 'Stay here')
+            : 'Back to board');
     final resolvedBackLabel = backButtonLabel ?? defaultBack;
 
     final resolvedActionLabel = acknowledgeButtonLabel ??
-        (isAcknowledged ? 'Begin preparation' : 'Acknowledge ticket');
+        (isPreparing
+            ? 'Send to QC'
+            : (isAcknowledged ? 'Begin preparation' : 'Acknowledge ticket'));
 
-    final resolvedOnAction = isAcknowledged
-        ? (onBeginPreparation ?? onAcknowledge)
-        : onAcknowledge;
+    final resolvedOnAction = isPreparing
+        ? onSendToQC
+        : (isAcknowledged
+            ? (onBeginPreparation ?? onAcknowledge)
+            : onAcknowledge);
 
     final panelWidget = Container(
       width: width,
@@ -162,6 +204,8 @@ class KitchenTicketDetailPanel extends StatelessWidget {
           // Header
           KitchenPanelHeader(
             badgeText: resolvedBadgeText,
+            badgeColor: resolvedBadgeColor,
+            backgroundColor: resolvedHeaderBg,
             title: resolvedTitle,
             subtitle: resolvedSubtitle,
             onClose: _handleDismiss,
@@ -180,13 +224,15 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                 children: [
                   KitchenPanelTicketInfo(
                     ticket: ticketData,
-                    statusOverride:
-                        isAcknowledged ? KkfcStatus.acknowledged : null,
+                    statusOverride: isPreparing
+                        ? KkfcStatus.preparing
+                        : (isAcknowledged ? KkfcStatus.acknowledged : null),
                     paymentStatus: paymentStatus,
                   ),
                   const SizedBox(height: 12),
                   KitchenPanelConfirmChecklist(
                     title: resolvedConfirmTitle,
+                    titleColor: resolvedConfirmColor,
                     items: resolvedConfirmItems,
                   ),
                   const SizedBox(height: 12),

@@ -14,6 +14,7 @@ void main() {
     VoidCallback? onBack,
     VoidCallback? onAcknowledge,
     VoidCallback? onBeginPreparation,
+    VoidCallback? onSendToQC,
     String? backButtonLabel,
   }) {
     return MaterialApp(
@@ -26,6 +27,7 @@ void main() {
           onBack: onBack,
           onAcknowledge: onAcknowledge,
           onBeginPreparation: onBeginPreparation,
+          onSendToQC: onSendToQC,
           backButtonLabel: backButtonLabel,
         ),
       ),
@@ -35,7 +37,10 @@ void main() {
   Widget buildPageSubject({
     required Size size,
     KitchenBoardItem? selectedTicket,
+    KitchenTicketPanelState initialPanelState = KitchenTicketPanelState.queued,
     VoidCallback? onClosePanel,
+    VoidCallback? onBeginPreparation,
+    VoidCallback? onSendToQC,
   }) {
     return MaterialApp(
       theme: counterTheme,
@@ -43,7 +48,10 @@ void main() {
         data: MediaQueryData(size: size),
         child: KitchenTicketsPage(
           selectedTicket: selectedTicket,
+          initialPanelState: initialPanelState,
           onClosePanel: onClosePanel,
+          onBeginPreparation: onBeginPreparation,
+          onSendToQC: onSendToQC,
         ),
       ),
     );
@@ -181,6 +189,80 @@ void main() {
       // Bottom Actions
       expect(find.text('Stay acknowledged'), findsOneWidget);
       expect(find.text('Stay here'), findsOneWidget);
+    });
+
+    testWidgets(
+        'renders all required elements for preparation state (04 · Preparation)',
+        (tester) async {
+      await tester.pumpWidget(buildPanelSubject(
+        panelState: KitchenTicketPanelState.preparing,
+      ));
+      await tester.pumpAndSettle();
+
+      // Header
+      expect(find.text('COOKING · PREPARING'), findsOneWidget);
+      expect(find.text('Prepare T-014'), findsOneWidget);
+      expect(find.text('Cooking in progress'), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      // Ticket Summary Info
+      expect(find.text("T-014 · AURELIA'S INASAL"), findsOneWidget);
+      expect(find.text('Dine-in · Table 3 · sample'), findsOneWidget);
+      expect(find.text('PREPARING'), findsOneWidget);
+      expect(find.text('PAYMENT · UNPAID'), findsOneWidget);
+
+      // Items & Modifiers
+      expect(find.textContaining('Paa Inasal'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Pecho Inasal'), findsAtLeastNWidgets(1));
+
+      // Preparation Checklist
+      expect(find.text('PREPARATION CHECK'), findsOneWidget);
+      expect(find.text('2 × Paa Inasal · extra rice'), findsOneWidget);
+      expect(find.text('1 × Pecho Inasal · no onions'), findsOneWidget);
+
+      // Permission Note Banner
+      expect(
+        find.text('Next approved transition is CHECKING.'),
+        findsOneWidget,
+      );
+
+      // Bottom Actions
+      expect(find.text('Keep preparing'), findsOneWidget);
+      expect(find.text('Send to QC'), findsOneWidget);
+    });
+
+    testWidgets('Keep preparing button triggers onClose callback',
+        (tester) async {
+      var closed = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.preparing,
+          onClose: () => closed = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Keep preparing'));
+      await tester.pumpAndSettle();
+
+      expect(closed, isTrue);
+    });
+
+    testWidgets('Send to QC button triggers onSendToQC callback',
+        (tester) async {
+      var sentToQC = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.preparing,
+          onSendToQC: () => sentToQC = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Send to QC'));
+      await tester.pumpAndSettle();
+
+      expect(sentToQC, isTrue);
     });
   });
 
@@ -420,6 +502,89 @@ void main() {
 
       // Board in background also updated to show ACKNOWLEDGED for T-014
       expect(find.text('ACKNOWLEDGED'), findsNWidgets(3)); // Panel header, Panel badge, Board card badge
+    });
+
+    testWidgets(
+        'Pressing Begin preparation transitions panel to Preparing state and moves ticket to Cooking lane',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        buildPageSubject(size: const Size(1280, 1000)),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap "Acknowledge" on T-014
+      final boardAcknowledgeButtons =
+          find.widgetWithText(FilledButton, 'Acknowledge');
+      await tester.tap(boardAcknowledgeButtons.first);
+      await tester.pumpAndSettle();
+
+      // Tap "Acknowledge ticket" on panel -> leads to Acknowledged state
+      await tester.tap(find.text('Acknowledge ticket'));
+      await tester.pumpAndSettle();
+
+      // Tap "Begin preparation" on panel -> leads to Preparing state
+      final beginPrepButtons = find.text('Begin preparation');
+      expect(beginPrepButtons, findsNWidgets(3)); // title, panel button, board button
+      // Tap the action button on the panel
+      await tester.tap(find.byKey(const ValueKey('kitchen_panel_acknowledge_button')));
+      await tester.pumpAndSettle();
+
+      // Panel is now in Preparing state (04 · Preparation)
+      expect(find.text('COOKING · PREPARING'), findsOneWidget);
+      expect(find.text('Prepare T-014'), findsOneWidget);
+      expect(find.text('Cooking in progress'), findsOneWidget);
+      expect(find.text('PREPARATION CHECK'), findsOneWidget);
+      expect(find.text('2 × Paa Inasal · extra rice'), findsAtLeastNWidgets(1));
+      expect(find.text('1 × Pecho Inasal · no onions'), findsAtLeastNWidgets(1));
+      expect(
+        find.text('Next approved transition is CHECKING.'),
+        findsOneWidget,
+      );
+      expect(find.text('Keep preparing'), findsOneWidget);
+      expect(find.text('Send to QC'), findsAtLeastNWidgets(1));
+
+      // Board lane counts updated:
+      // NEW ORDERS: 01
+      expect(find.text('01'), findsOneWidget);
+      // COOKING: 03
+      expect(find.text('03'), findsOneWidget);
+
+      // Close panel via "Keep preparing"
+      await tester.tap(find.text('Keep preparing'));
+      await tester.pumpAndSettle();
+
+      // Panel is closed, board remains in updated state
+      expect(find.byType(KitchenTicketDetailPanel), findsNothing);
+      expect(find.text('01'), findsOneWidget);
+      expect(find.text('03'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Phone layout displays preparing state with COOK stage selected',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        buildPageSubject(
+          size: const Size(400, 800),
+          selectedTicket: KitchenBoardSampleData.t014Preparing,
+          initialPanelState: KitchenTicketPanelState.preparing,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Preparing detail panel is displayed
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('COOKING · PREPARING'), findsOneWidget);
+      expect(find.text('Prepare T-014'), findsOneWidget);
+      expect(find.text('Keep preparing'), findsOneWidget);
+      expect(find.text('Send to QC'), findsAtLeastNWidgets(1));
     });
   });
 }

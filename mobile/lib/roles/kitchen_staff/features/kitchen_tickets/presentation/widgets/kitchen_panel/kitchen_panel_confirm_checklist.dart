@@ -5,6 +5,7 @@ class KitchenPanelConfirmChecklist extends StatelessWidget {
   const KitchenPanelConfirmChecklist({
     super.key,
     this.title = 'CONFIRM THE ORDER',
+    this.titleColor = const Color(0xFF0284C7),
     this.items = const [
       'Check all items and modifiers',
       'Verify brand and destination',
@@ -12,6 +13,7 @@ class KitchenPanelConfirmChecklist extends StatelessWidget {
   });
 
   final String title;
+  final Color titleColor;
   final List<String> items;
 
   @override
@@ -39,11 +41,11 @@ class KitchenPanelConfirmChecklist extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
-              color: Color(0xFF0284C7),
+              color: titleColor,
             ),
           ),
           const SizedBox(height: 14),
