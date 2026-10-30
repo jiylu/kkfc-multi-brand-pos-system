@@ -8,10 +8,12 @@ class KitchenPanelTicketInfo extends StatelessWidget {
   const KitchenPanelTicketInfo({
     super.key,
     this.ticket = _sampleTicket,
+    this.statusOverride,
     this.paymentStatus = 'PAYMENT · UNPAID',
   });
 
   final KitchenTicketData ticket;
+  final KkfcStatus? statusOverride;
   final String paymentStatus;
 
   static const _sampleTicket = KitchenTicketData(
@@ -42,17 +44,18 @@ class KitchenPanelTicketInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusLabel = switch (ticket.status) {
+    final effectiveStatus = statusOverride ?? ticket.status;
+    final statusLabel = switch (effectiveStatus) {
       KkfcStatus.queued => 'QUEUED',
       KkfcStatus.acknowledged => 'ACKNOWLEDGED',
       KkfcStatus.preparing => 'PREPARING',
       KkfcStatus.checking => 'CHECKING',
       KkfcStatus.reworking => 'REWORKING',
       KkfcStatus.ready => 'READY',
-      _ => ticket.status.name.toUpperCase(),
+      _ => effectiveStatus.name.toUpperCase(),
     };
 
-    final (statusBg, statusFg) = switch (ticket.status) {
+    final (statusBg, statusFg) = switch (effectiveStatus) {
       KkfcStatus.queued || KkfcStatus.acknowledged => (
           const Color(0xFFE0F2FE),
           const Color(0xFF0284C7),

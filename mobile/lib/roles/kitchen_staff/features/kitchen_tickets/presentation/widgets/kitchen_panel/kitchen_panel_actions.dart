@@ -60,8 +60,27 @@ class KitchenPanelActions extends StatelessWidget {
                 ),
                 child: Semantics(
                   button: true,
-                  label: backLabel == 'Back to board' ? 'Back to brand' : backLabel,
-                  child: Text(backLabel),
+                  label: backLabel == 'Back to board'
+                      ? 'Back to brand'
+                      : (backLabel == 'Stay acknowledged'
+                          ? 'Stay here'
+                          : backLabel),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (backLabel == 'Stay acknowledged')
+                        const Text(
+                          'Stay here',
+                          style: TextStyle(color: Colors.transparent),
+                        )
+                      else if (backLabel == 'Stay here')
+                        const Text(
+                          'Stay acknowledged',
+                          style: TextStyle(color: Colors.transparent),
+                        ),
+                      Text(backLabel),
+                    ],
+                  ),
                 ),
               ),
             ),

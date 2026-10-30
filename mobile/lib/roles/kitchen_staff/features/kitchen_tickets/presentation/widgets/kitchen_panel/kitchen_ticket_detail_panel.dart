@@ -5,6 +5,17 @@ import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_panel/kitchen_panel_header.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_panel/kitchen_panel_permission_banner.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_panel/kitchen_panel_ticket_info.dart';
+import 'package:mobile/roles/kitchen_staff/shared/kitchen_breakpoints.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
+
+/// Available presentation states for the ticket detail panel.
+enum KitchenTicketPanelState {
+  /// Initial queued state (02 · Queued Ticket).
+  queued,
+
+  /// Acknowledged state (03 · Acknowledge Ticket).
+  acknowledged,
+}
 
 /// The ticket detail panel (right panel on tablet, full queue detail on phone).
 ///
@@ -14,23 +25,29 @@ class KitchenTicketDetailPanel extends StatelessWidget {
   const KitchenTicketDetailPanel({
     super.key,
     this.ticket = KitchenBoardSampleData.t014,
+    this.panelState = KitchenTicketPanelState.queued,
     this.onClose,
     this.onBack,
     this.onAcknowledge,
+    this.onBeginPreparation,
     this.width,
     this.borderRadius,
-    this.backButtonLabel = 'Back to board',
-    this.acknowledgeButtonLabel = 'Acknowledge ticket',
+    this.badgeText,
+    this.title,
+    this.subtitle,
+    this.backButtonLabel,
+    this.acknowledgeButtonLabel,
     this.paymentStatus = 'PAYMENT · UNPAID',
-    this.confirmationItems = const [
-      'Check all items and modifiers',
-      'Verify brand and destination',
-    ],
-    this.permissionNotice = 'Preparer permission requires Backend approval.',
+    this.confirmationTitle,
+    this.confirmationItems,
+    this.permissionNotice,
   });
 
   /// Ticket data to display (defaults to T-014 sample data).
   final KitchenBoardItem ticket;
+
+  /// Whether the panel is in queued or acknowledged state.
+  final KitchenTicketPanelState panelState;
 
   /// Callback when user taps close button "×" or back button.
   final VoidCallback? onClose;
@@ -41,17 +58,24 @@ class KitchenTicketDetailPanel extends StatelessWidget {
   /// Callback when user taps "Acknowledge ticket".
   final VoidCallback? onAcknowledge;
 
+  /// Callback when user taps "Begin preparation".
+  final VoidCallback? onBeginPreparation;
+
   /// Optional fixed width for the panel (e.g. 400 or 440 on tablet).
   final double? width;
 
   /// Optional border radius (defaults to zero for flush docked right panel).
   final BorderRadiusGeometry? borderRadius;
 
-  final String backButtonLabel;
-  final String acknowledgeButtonLabel;
+  final String? badgeText;
+  final String? title;
+  final String? subtitle;
+  final String? backButtonLabel;
+  final String? acknowledgeButtonLabel;
   final String paymentStatus;
-  final List<String> confirmationItems;
-  final String permissionNotice;
+  final String? confirmationTitle;
+  final List<String>? confirmationItems;
+  final String? permissionNotice;
 
   void _handleDismiss() {
     if (onClose != null) {
@@ -64,6 +88,53 @@ class KitchenTicketDetailPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ticketData = ticket.ticket;
+    final isAcknowledged = panelState == KitchenTicketPanelState.acknowledged;
+
+    final resolvedBadgeText = badgeText ??
+        (isAcknowledged ? 'ACKNOWLEDGED' : 'NEW ORDER · QUEUED');
+
+    final resolvedTitle = title ??
+        (isAcknowledged
+            ? 'Begin preparation'
+            : (ticketData.ticketNumber.startsWith('Ticket')
+                ? ticketData.ticketNumber
+                : 'Ticket ${ticketData.ticketNumber}'));
+
+    final resolvedSubtitle = subtitle ??
+        (isAcknowledged
+            ? 'Ticket claimed by kitchen staff'
+            : 'Ready to acknowledge');
+
+    final resolvedConfirmTitle = confirmationTitle ??
+        (isAcknowledged ? 'START COOKING' : 'CONFIRM THE ORDER');
+
+    final resolvedConfirmItems = confirmationItems ??
+        (isAcknowledged
+            ? const [
+                'Review quantities and modifiers',
+                'Begin preparation when ready',
+              ]
+            : const [
+                'Check all items and modifiers',
+                'Verify brand and destination',
+              ]);
+
+    final resolvedPermissionNotice = permissionNotice ??
+        (isAcknowledged
+            ? 'Server must confirm the next status.'
+            : 'Preparer permission requires Backend approval.');
+
+    final defaultBack = isAcknowledged
+        ? (context.isKitchenTablet ? 'Stay acknowledged' : 'Stay here')
+        : 'Back to board';
+    final resolvedBackLabel = backButtonLabel ?? defaultBack;
+
+    final resolvedActionLabel = acknowledgeButtonLabel ??
+        (isAcknowledged ? 'Begin preparation' : 'Acknowledge ticket');
+
+    final resolvedOnAction = isAcknowledged
+        ? (onBeginPreparation ?? onAcknowledge)
+        : onAcknowledge;
 
     final panelWidget = Container(
       width: width,
@@ -90,9 +161,9 @@ class KitchenTicketDetailPanel extends StatelessWidget {
         children: [
           // Header
           KitchenPanelHeader(
-            badgeText: 'NEW ORDER · QUEUED',
-            ticketNumber: ticketData.ticketNumber,
-            subtitle: 'Ready to acknowledge',
+            badgeText: resolvedBadgeText,
+            title: resolvedTitle,
+            subtitle: resolvedSubtitle,
             onClose: _handleDismiss,
           ),
           const Divider(
@@ -109,15 +180,18 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                 children: [
                   KitchenPanelTicketInfo(
                     ticket: ticketData,
+                    statusOverride:
+                        isAcknowledged ? KkfcStatus.acknowledged : null,
                     paymentStatus: paymentStatus,
                   ),
                   const SizedBox(height: 12),
                   KitchenPanelConfirmChecklist(
-                    items: confirmationItems,
+                    title: resolvedConfirmTitle,
+                    items: resolvedConfirmItems,
                   ),
                   const SizedBox(height: 12),
                   KitchenPanelPermissionBanner(
-                    message: permissionNotice,
+                    message: resolvedPermissionNotice,
                   ),
                 ],
               ),
@@ -130,11 +204,11 @@ class KitchenTicketDetailPanel extends StatelessWidget {
           ),
           // Action Buttons
           KitchenPanelActions(
-            backLabel: backButtonLabel,
-            acknowledgeLabel: acknowledgeButtonLabel,
+            backLabel: resolvedBackLabel,
+            acknowledgeLabel: resolvedActionLabel,
             onClose: _handleDismiss,
             onBack: _handleDismiss,
-            onAcknowledge: onAcknowledge,
+            onAcknowledge: resolvedOnAction,
             isAcknowledgeEnabled: ticket.isActionEnabled,
           ),
         ],

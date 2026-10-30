@@ -8,18 +8,27 @@ class KitchenPanelHeader extends StatelessWidget {
   const KitchenPanelHeader({
     super.key,
     this.badgeText = 'NEW ORDER · QUEUED',
-    this.ticketNumber = 'T-014',
+    this.ticketNumber,
+    this.title,
     this.subtitle = 'Ready to acknowledge',
     this.onClose,
   });
 
   final String badgeText;
-  final String ticketNumber;
+  final String? ticketNumber;
+  final String? title;
   final String subtitle;
   final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedTitle = title ??
+        (ticketNumber != null
+            ? (ticketNumber!.startsWith('Ticket')
+                ? ticketNumber!
+                : 'Ticket $ticketNumber')
+            : 'Ticket T-014');
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -66,7 +75,7 @@ class KitchenPanelHeader extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            ticketNumber.startsWith('Ticket') ? ticketNumber : 'Ticket $ticketNumber',
+            resolvedTitle,
             style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w800,

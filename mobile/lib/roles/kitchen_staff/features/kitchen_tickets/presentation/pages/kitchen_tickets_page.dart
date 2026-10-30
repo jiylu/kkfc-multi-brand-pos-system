@@ -15,6 +15,7 @@ import 'package:mobile/roles/kitchen_staff/shared/kitchen_destination.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_metrics.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_palette.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_shell.dart';
+import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 /// Kitchen Board (tablet) / Ticket queue (phone). Static states only.
 class KitchenTicketsPage extends StatefulWidget {
@@ -22,16 +23,20 @@ class KitchenTicketsPage extends StatefulWidget {
     super.key,
     this.viewState = KitchenTicketsViewState.active,
     this.selectedTicket,
+    this.initialPanelState = KitchenTicketPanelState.queued,
     this.onClosePanel,
     this.onTicketAction,
     this.onAcknowledgeTicket,
+    this.onBeginPreparation,
   });
 
   final KitchenTicketsViewState viewState;
   final KitchenBoardItem? selectedTicket;
+  final KitchenTicketPanelState initialPanelState;
   final VoidCallback? onClosePanel;
   final void Function(KitchenBoardItem item)? onTicketAction;
   final VoidCallback? onAcknowledgeTicket;
+  final VoidCallback? onBeginPreparation;
 
   @override
   State<KitchenTicketsPage> createState() => _KitchenTicketsPageState();
@@ -42,6 +47,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
   late final AnimationController _panelController;
   late final Animation<Offset> _slideAnimation;
   late final Animation<double> _scrimAnimation;
+  late KitchenTicketPanelState _panelState;
 
   KitchenBoardItem? _localSelectedTicket;
   KitchenBoardItem? _displayedTicket;
@@ -51,6 +57,11 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
   void initState() {
     super.initState();
     _displayedTicket = widget.selectedTicket;
+    _panelState = widget.initialPanelState;
+    if (widget.selectedTicket?.ticket.status == KkfcStatus.acknowledged) {
+      _panelState = KitchenTicketPanelState.acknowledged;
+    }
+
     _panelController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
@@ -79,6 +90,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     super.didUpdateWidget(oldWidget);
     if (widget.selectedTicket != null && oldWidget.selectedTicket == null) {
       _displayedTicket = widget.selectedTicket;
+      _panelState = widget.selectedTicket?.ticket.status == KkfcStatus.acknowledged
+          ? KitchenTicketPanelState.acknowledged
+          : widget.initialPanelState;
       _manuallyDismissed = false;
       _openPanel();
     } else if (widget.selectedTicket == null && oldWidget.selectedTicket != null) {
@@ -116,9 +130,25 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     setState(() {
       _localSelectedTicket = item;
       _displayedTicket = item;
+      _panelState = item.ticket.status == KkfcStatus.acknowledged
+          ? KitchenTicketPanelState.acknowledged
+          : KitchenTicketPanelState.queued;
       _manuallyDismissed = false;
     });
     _openPanel();
+  }
+
+  void _handleAcknowledgeTicket() {
+    widget.onAcknowledgeTicket?.call();
+    setState(() {
+      _panelState = KitchenTicketPanelState.acknowledged;
+      if (_localSelectedTicket?.ticket.ticketNumber == 'T-014' ||
+          _displayedTicket?.ticket.ticketNumber == 'T-014' ||
+          widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
+        _localSelectedTicket = KitchenBoardSampleData.t014Acknowledged;
+        _displayedTicket = KitchenBoardSampleData.t014Acknowledged;
+      }
+    });
   }
 
   void _handleClosePanel() {
@@ -185,8 +215,10 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
               position: _slideAnimation,
               child: KitchenTicketDetailPanel(
                 ticket: activeTicket,
+                panelState: _panelState,
                 onClose: _handleClosePanel,
-                onAcknowledge: widget.onAcknowledgeTicket,
+                onAcknowledge: _handleAcknowledgeTicket,
+                onBeginPreparation: widget.onBeginPreparation,
               ),
             ),
           ),
@@ -202,8 +234,10 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
               position: _slideAnimation,
               child: KitchenTicketDetailPanel(
                 ticket: activeTicket,
+                panelState: _panelState,
                 onClose: _handleClosePanel,
-                onAcknowledge: widget.onAcknowledgeTicket,
+                onAcknowledge: _handleAcknowledgeTicket,
+                onBeginPreparation: widget.onBeginPreparation,
               ),
             ),
           ),
@@ -221,6 +255,17 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
   }
 
   Widget _buildBoard(BuildContext context, bool tablet) {
+    final isAcknowledged = _panelState == KitchenTicketPanelState.acknowledged;
+    final effectiveNewOrders = isAcknowledged
+        ? [
+            KitchenBoardSampleData.t014Acknowledged,
+            KitchenBoardSampleData.t018,
+          ]
+        : KitchenBoardSampleData.newOrders;
+    final effectiveActivePhoneTicket = isAcknowledged
+        ? KitchenBoardSampleData.t014Acknowledged
+        : KitchenBoardSampleData.t014;
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(tablet ? 24 : KitchenSpace.md),
       child: Align(
@@ -258,8 +303,14 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
               ],
               switch (widget.viewState) {
                 KitchenTicketsViewState.active => tablet
-                    ? KitchenBoardTabletView(onTicketAction: _handleTicketAction)
-                    : KitchenBoardPhoneView(onTicketAction: _handleTicketAction),
+                    ? KitchenBoardTabletView(
+                        newOrders: effectiveNewOrders,
+                        onTicketAction: _handleTicketAction,
+                      )
+                    : KitchenBoardPhoneView(
+                        activeTicket: effectiveActivePhoneTicket,
+                        onTicketAction: _handleTicketAction,
+                      ),
                 KitchenTicketsViewState.loading =>
                   LoadingQueueView(wide: tablet),
                 KitchenTicketsViewState.empty =>

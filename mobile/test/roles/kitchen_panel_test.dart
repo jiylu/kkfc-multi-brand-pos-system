@@ -9,19 +9,23 @@ import 'package:mobile/roles/kitchen_staff/shared/widgets/kitchen_tablet_header.
 void main() {
   Widget buildPanelSubject({
     KitchenBoardItem ticket = KitchenBoardSampleData.t014,
+    KitchenTicketPanelState panelState = KitchenTicketPanelState.queued,
     VoidCallback? onClose,
     VoidCallback? onBack,
     VoidCallback? onAcknowledge,
-    String backButtonLabel = 'Back to board',
+    VoidCallback? onBeginPreparation,
+    String? backButtonLabel,
   }) {
     return MaterialApp(
       theme: counterTheme,
       home: Scaffold(
         body: KitchenTicketDetailPanel(
           ticket: ticket,
+          panelState: panelState,
           onClose: onClose,
           onBack: onBack,
           onAcknowledge: onAcknowledge,
+          onBeginPreparation: onBeginPreparation,
           backButtonLabel: backButtonLabel,
         ),
       ),
@@ -142,6 +146,41 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(acknowledged, isTrue);
+    });
+
+    testWidgets(
+        'renders all required elements for acknowledged state (03 · Acknowledge Ticket)',
+        (tester) async {
+      await tester.pumpWidget(buildPanelSubject(
+        panelState: KitchenTicketPanelState.acknowledged,
+      ));
+      await tester.pumpAndSettle();
+
+      // Header
+      expect(find.text('ACKNOWLEDGED'), findsNWidgets(2)); // Header & Badge
+      expect(find.text('Begin preparation'), findsNWidgets(2)); // Title & Button
+      expect(find.text('Ticket claimed by kitchen staff'), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      // Ticket Summary Info
+      expect(find.text("T-014 · AURELIA'S INASAL"), findsOneWidget);
+      expect(find.text('Dine-in · Table 3 · sample'), findsOneWidget);
+      expect(find.text('PAYMENT · UNPAID'), findsOneWidget);
+
+      // Confirmation Checklist
+      expect(find.text('START COOKING'), findsOneWidget);
+      expect(find.text('Review quantities and modifiers'), findsOneWidget);
+      expect(find.text('Begin preparation when ready'), findsOneWidget);
+
+      // Permission Note Banner
+      expect(
+        find.text('Server must confirm the next status.'),
+        findsOneWidget,
+      );
+
+      // Bottom Actions
+      expect(find.text('Stay acknowledged'), findsOneWidget);
+      expect(find.text('Stay here'), findsOneWidget);
     });
   });
 
@@ -342,6 +381,45 @@ void main() {
 
       // Panel is closed
       expect(find.byType(KitchenTicketDetailPanel), findsNothing);
+    });
+
+    testWidgets(
+        'Pressing Acknowledge ticket on panel transitions panel to Acknowledged state and updates board',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        buildPageSubject(size: const Size(1280, 1000)),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap "Acknowledge" on T-014 to open queued panel
+      final boardAcknowledgeButtons =
+          find.widgetWithText(FilledButton, 'Acknowledge');
+      await tester.tap(boardAcknowledgeButtons.first);
+      await tester.pumpAndSettle();
+
+      // Panel is in queued state
+      expect(find.text('NEW ORDER · QUEUED'), findsOneWidget);
+      expect(find.text('Ticket T-014'), findsOneWidget);
+      expect(find.text('CONFIRM THE ORDER'), findsOneWidget);
+
+      // Tap "Acknowledge ticket" on panel
+      await tester.tap(find.text('Acknowledge ticket'));
+      await tester.pumpAndSettle();
+
+      // Panel transitions to Acknowledged state
+      expect(find.text('Begin preparation'), findsNWidgets(3)); // Panel Title, Panel Button, Board Card Button
+      expect(find.text('Ticket claimed by kitchen staff'), findsOneWidget);
+      expect(find.text('START COOKING'), findsOneWidget);
+      expect(find.text('Review quantities and modifiers'), findsOneWidget);
+      expect(find.text('Server must confirm the next status.'), findsOneWidget);
+      expect(find.text('Stay acknowledged'), findsOneWidget);
+
+      // Board in background also updated to show ACKNOWLEDGED for T-014
+      expect(find.text('ACKNOWLEDGED'), findsNWidgets(3)); // Panel header, Panel badge, Board card badge
     });
   });
 }
