@@ -17,6 +17,7 @@ void main() {
     VoidCallback? onSendToQC,
     VoidCallback? onPassQC,
     VoidCallback? onFailQC,
+    VoidCallback? onContinueToHandover,
     String? backButtonLabel,
     String? acknowledgeButtonLabel,
   }) {
@@ -33,6 +34,7 @@ void main() {
           onSendToQC: onSendToQC,
           onPassQC: onPassQC,
           onFailQC: onFailQC,
+          onContinueToHandover: onContinueToHandover,
           backButtonLabel: backButtonLabel,
           acknowledgeButtonLabel: acknowledgeButtonLabel,
         ),
@@ -49,6 +51,7 @@ void main() {
     VoidCallback? onSendToQC,
     VoidCallback? onPassQC,
     VoidCallback? onFailQC,
+    VoidCallback? onContinueToHandover,
   }) {
     return MaterialApp(
       theme: counterTheme,
@@ -62,6 +65,7 @@ void main() {
           onSendToQC: onSendToQC,
           onPassQC: onPassQC,
           onFailQC: onFailQC,
+          onContinueToHandover: onContinueToHandover,
         ),
       ),
     );
@@ -345,6 +349,79 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(failedQC, isTrue);
+    });
+
+    testWidgets(
+        'renders all required elements for ready for dispatch state (09 · Ready for Dispatch)',
+        (tester) async {
+      await tester.pumpWidget(buildPanelSubject(
+        panelState: KitchenTicketPanelState.readyForDispatch,
+      ));
+      await tester.pumpAndSettle();
+
+      // Header
+      expect(find.text('READY · OUTGOING CHECK'), findsOneWidget);
+      expect(find.text('Outgoing check'), findsOneWidget);
+      expect(find.text('Dispatcher final review'), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      // Ticket Summary Info
+      expect(find.text("T-014 · AURELIA'S INASAL"), findsOneWidget);
+      expect(find.text('Dine-in · Table 3 · sample'), findsOneWidget);
+      expect(find.text('READY'), findsOneWidget);
+      expect(find.text('PAYMENT · UNPAID'), findsOneWidget);
+
+      // Items & Modifiers
+      expect(find.textContaining('Paa Inasal'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Pecho Inasal'), findsAtLeastNWidgets(1));
+
+      // Dispatcher Checklist
+      expect(find.text('DISPATCHER CHECK'), findsOneWidget);
+      expect(find.text('Confirm packing and destination'), findsOneWidget);
+      expect(find.text('Review photo evidence rule'), findsOneWidget);
+
+      // Permission Note Banner
+      expect(
+        find.text('Dispatcher authorization and photo policy pending.'),
+        findsOneWidget,
+      );
+
+      // Bottom Actions (Keep READY outlined, Continue to handover navy filled)
+      expect(find.text('Keep READY'), findsOneWidget);
+      expect(find.text('Continue to handover'), findsOneWidget);
+    });
+
+    testWidgets('Keep READY button triggers onClose callback', (tester) async {
+      var closed = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.readyForDispatch,
+          onClose: () => closed = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Keep READY'));
+      await tester.pumpAndSettle();
+
+      expect(closed, isTrue);
+    });
+
+    testWidgets('Continue to handover button triggers onContinueToHandover callback',
+        (tester) async {
+      var continued = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.readyForDispatch,
+          onContinueToHandover: () => continued = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Continue to handover'));
+      await tester.pumpAndSettle();
+
+      expect(continued, isTrue);
     });
   });
 
@@ -729,12 +806,39 @@ void main() {
       // QUALITY CHECK: 03
       expect(find.text('03'), findsOneWidget);
 
-      // Tap "Pass QC" on panel
+      // Tap "Pass QC" on panel -> transitions to Ready for Dispatch state (09 · Ready for Dispatch)
       await tester.tap(find.text('Pass QC'));
       await tester.pumpAndSettle();
 
       expect(passQCCalled, isTrue);
-      // Panel is closed, board remains in QC state
+
+      // Panel is now in Ready for Dispatch state
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('READY · OUTGOING CHECK'), findsOneWidget);
+      expect(find.text('Outgoing check'), findsOneWidget);
+      expect(find.text('Dispatcher final review'), findsOneWidget);
+      expect(find.text('DISPATCHER CHECK'), findsOneWidget);
+      expect(find.text('Confirm packing and destination'), findsOneWidget);
+      expect(find.text('Review photo evidence rule'), findsOneWidget);
+      expect(find.text('Keep READY'), findsOneWidget);
+      expect(find.text('Continue to handover'), findsOneWidget);
+
+      // Header shows Dispatcher identity
+      expect(find.text('Dispatcher · demo'), findsOneWidget);
+      expect(find.text('Access policy pending'), findsOneWidget);
+
+      // Board lane counts updated:
+      // NEW ORDERS: 01
+      expect(find.text('01'), findsOneWidget);
+      // COOKING: 02, QUALITY CHECK: 02
+      expect(find.text('02'), findsNWidgets(2));
+      // READY: 03
+      expect(find.text('03'), findsOneWidget);
+
+      // Tap "Keep READY" closes the panel
+      await tester.tap(find.text('Keep READY'));
+      await tester.pumpAndSettle();
+
       expect(find.byType(KitchenTicketDetailPanel), findsNothing);
       expect(find.text('01'), findsOneWidget);
       expect(find.text('02'), findsNWidgets(2));
@@ -768,6 +872,42 @@ void main() {
       // Phone Header shows QC identity
       expect(find.text('QC scenario'), findsOneWidget);
       expect(find.text('Access TBD'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Phone layout displays Ready for Dispatch state with READY stage selected and Dispatcher identity in header',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      var handoverCalled = false;
+      await tester.pumpWidget(
+        buildPageSubject(
+          size: const Size(400, 800),
+          selectedTicket: KitchenBoardSampleData.t014Ready,
+          initialPanelState: KitchenTicketPanelState.readyForDispatch,
+          onContinueToHandover: () => handoverCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Ready for Dispatch detail panel is displayed
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('READY · OUTGOING CHECK'), findsOneWidget);
+      expect(find.text('Outgoing check'), findsOneWidget);
+      expect(find.text('Dispatcher final review'), findsOneWidget);
+      expect(find.text('Keep READY'), findsOneWidget);
+      expect(find.text('Continue to handover'), findsOneWidget);
+
+      // Phone Header shows Dispatcher identity
+      expect(find.text('Dispatcher'), findsOneWidget);
+      expect(find.text('Access TBD'), findsOneWidget);
+
+      // Tapping "Continue to handover" invokes callback
+      await tester.tap(find.text('Continue to handover'));
+      await tester.pumpAndSettle();
+      expect(handoverCalled, isTrue);
     });
   });
 }

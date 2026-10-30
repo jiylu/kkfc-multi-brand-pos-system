@@ -24,8 +24,8 @@ import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
-  ref.listen<bool>(sessionProvider, (_, __) => refresh.value++);
-  ref.listen<UserRole?>(userRoleProvider, (_, __) => refresh.value++);
+  ref.listen<bool>(sessionProvider, (_, _) => refresh.value++);
+  ref.listen<UserRole?>(userRoleProvider, (_, _) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
   final router = GoRouter(
