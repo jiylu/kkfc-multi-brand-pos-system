@@ -33,6 +33,9 @@ class KitchenTicketsPage extends StatefulWidget {
     this.onFailQC,
     this.onBackToQC,
     this.onUseSampleReason,
+    this.onSubmitReason,
+    this.onTestBlankReason,
+    this.onConfirmQCFail,
     this.onContinueToHandover,
     this.onAddPhoto,
     this.onRetakePhoto,
@@ -55,6 +58,9 @@ class KitchenTicketsPage extends StatefulWidget {
   final VoidCallback? onFailQC;
   final VoidCallback? onBackToQC;
   final VoidCallback? onUseSampleReason;
+  final VoidCallback? onSubmitReason;
+  final VoidCallback? onTestBlankReason;
+  final VoidCallback? onConfirmQCFail;
   final VoidCallback? onContinueToHandover;
   final VoidCallback? onAddPhoto;
   final VoidCallback? onRetakePhoto;
@@ -94,6 +100,11 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
       _panelState = KitchenTicketPanelState.photoPreview;
     } else if (widget.initialPanelState == KitchenTicketPanelState.photoRequired) {
       _panelState = KitchenTicketPanelState.photoRequired;
+    } else if (widget.initialPanelState == KitchenTicketPanelState.qcFailureReason) {
+      _panelState = KitchenTicketPanelState.qcFailureReason;
+      if (_qcReasonController.text.isEmpty) {
+        _qcReasonController.text = 'Missing requested modifier';
+      }
     } else if (widget.initialPanelState == KitchenTicketPanelState.missingQCReason) {
       _panelState = KitchenTicketPanelState.missingQCReason;
     } else if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
@@ -142,6 +153,11 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
         _panelState = KitchenTicketPanelState.photoPreview;
       } else if (widget.initialPanelState == KitchenTicketPanelState.photoRequired) {
         _panelState = KitchenTicketPanelState.photoRequired;
+      } else if (widget.initialPanelState == KitchenTicketPanelState.qcFailureReason) {
+        _panelState = KitchenTicketPanelState.qcFailureReason;
+        if (_qcReasonController.text.isEmpty) {
+          _qcReasonController.text = 'Missing requested modifier';
+        }
       } else if (widget.initialPanelState == KitchenTicketPanelState.missingQCReason) {
         _panelState = KitchenTicketPanelState.missingQCReason;
       } else if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
@@ -292,6 +308,40 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     setState(() {
       _qcReasonController.text = 'Incorrect modifier / special request not followed';
     });
+  }
+
+  void _handleSubmitReason() {
+    widget.onSubmitReason?.call();
+    setState(() {
+      _panelState = KitchenTicketPanelState.qcFailureReason;
+      if (_qcReasonController.text.trim().isEmpty) {
+        _qcReasonController.text = 'Missing requested modifier';
+      }
+      if (_localSelectedTicket?.ticket.ticketNumber == 'T-014' ||
+          _displayedTicket?.ticket.ticketNumber == 'T-014' ||
+          widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
+        _localSelectedTicket = KitchenBoardSampleData.t014Checking;
+        _displayedTicket = KitchenBoardSampleData.t014Checking;
+      }
+    });
+  }
+
+  void _handleTestBlankReason() {
+    widget.onTestBlankReason?.call();
+    setState(() {
+      _panelState = KitchenTicketPanelState.missingQCReason;
+      _qcReasonController.clear();
+      if (_localSelectedTicket?.ticket.ticketNumber == 'T-014' ||
+          _displayedTicket?.ticket.ticketNumber == 'T-014' ||
+          widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
+        _localSelectedTicket = KitchenBoardSampleData.t014Checking;
+        _displayedTicket = KitchenBoardSampleData.t014Checking;
+      }
+    });
+  }
+
+  void _handleConfirmQCFail() {
+    widget.onConfirmQCFail?.call();
   }
 
   void _handleContinueToHandover() {
@@ -446,6 +496,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onFailQC: _handleFailQC,
                 onBackToQC: _handleBackToQC,
                 onUseSampleReason: _handleUseSampleReason,
+                onSubmitReason: _handleSubmitReason,
+                onTestBlankReason: _handleTestBlankReason,
+                onConfirmQCFail: _handleConfirmQCFail,
                 onContinueToHandover: _handleContinueToHandover,
                 onAddPhoto: _handleAddPhoto,
                 onRetakePhoto: _handleRetakePhoto,
@@ -479,6 +532,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onFailQC: _handleFailQC,
                 onBackToQC: _handleBackToQC,
                 onUseSampleReason: _handleUseSampleReason,
+                onSubmitReason: _handleSubmitReason,
+                onTestBlankReason: _handleTestBlankReason,
+                onConfirmQCFail: _handleConfirmQCFail,
                 onContinueToHandover: _handleContinueToHandover,
                 onAddPhoto: _handleAddPhoto,
                 onRetakePhoto: _handleRetakePhoto,
@@ -503,7 +559,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
         _panelState == KitchenTicketPanelState.dispatcherCheck ||
         _panelState == KitchenTicketPanelState.handoverComplete;
     final isQC = _panelState == KitchenTicketPanelState.qualityCheck ||
-        _panelState == KitchenTicketPanelState.missingQCReason;
+        _panelState == KitchenTicketPanelState.missingQCReason ||
+        _panelState == KitchenTicketPanelState.qcFailureReason;
     final isPreparing = _panelState == KitchenTicketPanelState.preparing;
 
     return KitchenShell(
@@ -532,7 +589,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
         _panelState == KitchenTicketPanelState.dispatcherCheck ||
         _panelState == KitchenTicketPanelState.handoverComplete;
     final isQC = _panelState == KitchenTicketPanelState.qualityCheck ||
-        _panelState == KitchenTicketPanelState.missingQCReason;
+        _panelState == KitchenTicketPanelState.missingQCReason ||
+        _panelState == KitchenTicketPanelState.qcFailureReason;
     final isPreparing = _panelState == KitchenTicketPanelState.preparing;
     final isAcknowledged = _panelState == KitchenTicketPanelState.acknowledged;
 

@@ -11,12 +11,14 @@ class KitchenPanelConfirmChecklist extends StatelessWidget {
       'Verify brand and destination',
     ],
     this.showCheckIcon = true,
+    this.footer,
   });
 
   final String title;
   final Color titleColor;
   final List<String> items;
   final bool showCheckIcon;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +78,10 @@ class KitchenPanelConfirmChecklist extends StatelessWidget {
                 ),
               ],
             ),
+          ],
+          if (footer != null) ...[
+            const SizedBox(height: 12),
+            footer!,
           ],
         ],
       ),
