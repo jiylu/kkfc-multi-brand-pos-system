@@ -58,7 +58,15 @@ export class BrandsGuard implements CanActivate {
     if (source) {
       const identifier =
         source.source === 'body'
-          ? body?.[source.param]
+          ? source.param
+              .split('.')
+              .reduce<unknown>(
+                (value, key) =>
+                  value !== null && typeof value === 'object'
+                    ? (value as Record<string, unknown>)[key]
+                    : undefined,
+                body,
+              )
           : request.params[source.param];
 
       if (typeof identifier !== 'string' || identifier.trim() === '') {

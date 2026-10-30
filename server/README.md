@@ -93,6 +93,14 @@ $ npm run start:prod
 ## API documentation
 
 Swagger UI: `http://localhost:3000/api/docs` (JSON: `/api/docs-json`).
+
+Request requirements, response fields, and examples: [Orders API](docs/orders-api.md)
+and [Audit logs API](docs/audit-api.md).
+
+Order cancellation: `POST /api/brands/:brandId/orders/:orderId/cancel` requires
+`{ "cancellation_reason": "Customer requested cancellation." }` and returns the
+saved cancelled order with HTTP `200`. See [cancel request, response and errors](docs/orders-api.md#cancel-body-and-response).
+
 Log in through `POST /api/auth/login`, then paste the returned token into **Authorize**.
 Sessions expire after 24 hours. Protected routes require `Authorization: Bearer <token>`.
 Login returns `token`, `expires_at`, and a user profile with nullable `brand_id`.

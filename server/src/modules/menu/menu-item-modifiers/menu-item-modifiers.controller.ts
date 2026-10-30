@@ -1,3 +1,5 @@
+import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
+import { SafeMenuInterceptor } from '../safe-menu.interceptor';
 import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
@@ -36,6 +38,7 @@ import {
   BrandResourceType,
 } from '../../../shared/decorators/brand-resource.decorator';
 
+@UseMenuInterceptors(SafeMenuInterceptor)
 @Controller('menu-item-modifiers')
 @MenuItemModifiersDocs()
 @UseGuards(Authenticated, RolesGuard)

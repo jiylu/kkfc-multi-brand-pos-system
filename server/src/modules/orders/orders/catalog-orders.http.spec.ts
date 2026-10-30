@@ -1,3 +1,5 @@
+import { OrderItemsService } from '../order-items/order-items.service';
+import { OrderItemsRepository } from '../order-items/order-items.repository';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { OrderChannel } from '@prisma/client';
@@ -6,14 +8,15 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Client } from 'pg';
 import sharp from 'sharp';
-import { AppModule } from '../../app.module';
-import { PrismaService } from '../../shared/prisma/prisma.service';
-import { StorageService } from '../../shared/storage/storage.service';
+import { AppModule } from '../../../app.module';
+import { PrismaService } from '../../../shared/prisma/prisma.service';
+import { StorageService } from '../../../shared/storage/storage.service';
 import {
   cleanupCatalogFixture,
   createCatalogFixture,
   requireTestDatabase,
-} from '../../shared/testing/catalog.fixture';
+} from '../../../shared/testing/catalog.fixture';
+import { OrdersRepository } from './orders.repository';
 import { OrdersService } from './orders.service';
 
 describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)', () => {
@@ -615,7 +618,8 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
       },
     });
     const service = new OrdersService(
-      failingClient as unknown as PrismaService,
+      new OrdersRepository(failingClient as unknown as PrismaService),
+      new OrderItemsService(new OrderItemsRepository()),
     );
     await expect(
       service.confirm(
@@ -670,6 +674,379 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
       ).status,
     ).toBe(400);
     expect(await savedOrder(order.order_id)).toEqual(before);
+  });
+
+  it.each(
+    (['GRABFOOD', 'FOODPANDA'] as const).flatMap((order_channel) =>
+      (
+        ['merchant_store_reference', 'external_order_reference'] as const
+      ).flatMap((field) =>
+        [undefined, null, '', '   '].map((value) => ({
+          order_channel,
+          field,
+          value,
+        })),
+      ),
+    ),
+  )(
+    'IT-ORD-009 rejects $order_channel with $field=$value before persistence',
+    async ({ order_channel, field, value }) => {
+      const response = await request(
+        ordersPath(),
+        'POST',
+        { ...orderBody(order_channel), [field]: value },
+        1,
+      );
+      expect(response.status).toBe(400);
+      expect(
+        await prisma.order.count({
+          where: { brand_id: fixture.brand.brand_id },
+        }),
+      ).toBe(0);
+      expect(
+        await prisma.orderDailyCounter.count({
+          where: { brand_id: fixture.brand.brand_id },
+        }),
+      ).toBe(0);
+    },
+  );
+
+  it.each(
+    (['GRABFOOD', 'FOODPANDA'] as const).flatMap((order_channel) =>
+      [false, true].map((concurrent) => ({ order_channel, concurrent })),
+    ),
+  )(
+    'IT-ORD-010 blocks normalized $order_channel duplicates with concurrent=$concurrent and returns the saved order',
+    async ({ order_channel, concurrent }) => {
+      const body = orderBody(order_channel);
+      const duplicate = {
+        ...body,
+        order_id: randomUUID(),
+        merchant_store_reference: ` ${body.merchant_store_reference} `,
+        external_order_reference: ` ${body.external_order_reference} `,
+        notes: 'Different content must not replace the original order',
+      };
+      const responses = concurrent
+        ? await Promise.all([
+            request(ordersPath(), 'POST', body, 1),
+            request(ordersPath(), 'POST', duplicate, 1),
+          ])
+        : [
+            await request(ordersPath(), 'POST', body, 1),
+            await request(ordersPath(), 'POST', duplicate, 1),
+          ];
+      expect(responses.map((r) => r.status).sort()).toEqual([201, 409]);
+      const success = await json(responses.find((r) => r.status === 201)!);
+      const conflict = await json(responses.find((r) => r.status === 409)!);
+      expect(conflict).toMatchObject({
+        statusCode: 409,
+        code: 'DUPLICATE_PLATFORM_ORDER',
+        existing_order: success,
+      });
+      expect(JSON.stringify(conflict)).not.toMatch(
+        /create_request_hash|recipe_snapshot|Restricted fixture instructions/,
+      );
+      expect(
+        await prisma.order.count({
+          where: { brand_id: fixture.brand.brand_id },
+        }),
+      ).toBe(1);
+      expect(
+        await prisma.orderItem.count({
+          where: { order: { brand_id: fixture.brand.brand_id } },
+        }),
+      ).toBe(1);
+      expect(
+        await prisma.orderItemModifier.count({
+          where: {
+            order_item: { order: { brand_id: fixture.brand.brand_id } },
+          },
+        }),
+      ).toBe(1);
+      const next = await request(ordersPath(), 'POST', orderBody(), 1);
+      expect(next.status).toBe(201);
+      expect(await json(next)).toMatchObject({ order_number: 2 });
+    },
+  );
+
+  it.each([
+    { name: 'channel', change: { order_channel: 'FOODPANDA' } },
+    { name: 'store', change: { merchant_store_reference: 'another-store' } },
+    { name: 'store case', change: { merchant_store_reference: 'TEST-STORE' } },
+    {
+      name: 'external reference',
+      change: { external_order_reference: 'other' },
+    },
+    {
+      name: 'reference case',
+      change: { external_order_reference: 'PLATFORM-1' },
+    },
+  ] as const)(
+    'IT-ORD-011 permits platform lookalikes differing in $name',
+    async ({ change }) => {
+      const body = {
+        ...orderBody('GRABFOOD'),
+        external_order_reference: 'platform-1',
+      };
+      const responses = await Promise.all([
+        request(ordersPath(), 'POST', body, 1),
+        request(
+          ordersPath(),
+          'POST',
+          { ...body, ...change, order_id: randomUUID() },
+          1,
+        ),
+      ]);
+      expect(responses.map((r) => r.status)).toEqual([201, 201]);
+      expect(
+        await prisma.order.count({
+          where: { brand_id: fixture.brand.brand_id },
+        }),
+      ).toBe(2);
+    },
+  );
+
+  it.each(['DINE_IN', 'TAKEAWAY', 'GRABFOOD', 'FOODPANDA'] as const)(
+    'IT-ORD-012 recovers concurrent and committed %s creates with the same UUID',
+    async (channel) => {
+      const body = orderBody(channel);
+      const responses = await Promise.all([
+        request(ordersPath(), 'POST', body, 1),
+        request(ordersPath(), 'POST', body, 1),
+        request(ordersPath(), 'POST', body, 1),
+      ]);
+      expect(responses.map((r) => r.status)).toEqual([201, 201, 201]);
+      const orders = await Promise.all(responses.map(json));
+      expect(orders[1]).toEqual(orders[0]);
+      expect(orders[2]).toEqual(orders[0]);
+      const confirmed = await request(
+        `${ordersPath()}/${body.order_id}/confirm`,
+        'POST',
+        channel === 'DINE_IN' || channel === 'TAKEAWAY' ? payment : {},
+        1,
+      );
+      expect(confirmed.status).toBe(200);
+      const saved = await json(confirmed);
+      // Simulate recovery after the original committed response was lost, even
+      // when the current catalog would no longer accept a new order.
+      await prisma.menuItem.update({
+        where: { menu_item_id: fixture.item.menu_item_id },
+        data: { is_available: false },
+      });
+      const replay = await request(ordersPath(), 'POST', body, 0);
+      expect(replay.status).toBe(201);
+      expect(await json(replay)).toEqual(saved);
+      if (channel === 'GRABFOOD' || channel === 'FOODPANDA') {
+        const duplicate = await request(
+          ordersPath(),
+          'POST',
+          { ...body, order_id: randomUUID() },
+          1,
+        );
+        expect(duplicate.status).toBe(409);
+        expect(await json(duplicate)).toMatchObject({ existing_order: saved });
+      }
+      expect(
+        await prisma.order.count({
+          where: { brand_id: fixture.brand.brand_id },
+        }),
+      ).toBe(1);
+      expect(
+        await prisma.orderItem.count({ where: { order_id: body.order_id } }),
+      ).toBe(1);
+      expect(
+        await prisma.kitchenTicket.count({
+          where: { order_id: body.order_id },
+        }),
+      ).toBe(1);
+      expect(
+        await prisma.orderDailyCounter.findFirstOrThrow({
+          where: { brand_id: fixture.brand.brand_id },
+        }),
+      ).toMatchObject({ last_number: 1 });
+    },
+  );
+
+  it.each([false, true])(
+    'IT-ORD-013 rejects changed content for the same UUID with concurrent=%s',
+    async (concurrent) => {
+      const body = orderBody();
+      const changed = { ...body, notes: 'Changed request' };
+      const responses = concurrent
+        ? await Promise.all([
+            request(ordersPath(), 'POST', body, 1),
+            request(ordersPath(), 'POST', changed, 1),
+          ])
+        : [
+            await request(ordersPath(), 'POST', body, 1),
+            await request(ordersPath(), 'POST', changed, 1),
+          ];
+      expect(responses.map((r) => r.status).sort()).toEqual([201, 409]);
+      const success = await json(responses.find((r) => r.status === 201)!);
+      expect(
+        await json(responses.find((r) => r.status === 409)!),
+      ).toMatchObject({
+        code: 'ORDER_ID_CONFLICT',
+      });
+      expect(await savedOrder(body.order_id)).toMatchObject({
+        notes: success.notes,
+      });
+      expect(
+        await prisma.order.count({
+          where: { brand_id: fixture.brand.brand_id },
+        }),
+      ).toBe(1);
+    },
+  );
+
+  it('IT-ORD-014 never exposes another brand through platform or UUID conflicts', async () => {
+    const body = await draft('GRABFOOD');
+    const before = await savedOrder(body.order_id);
+    const otherPath = `/brands/${fixture.otherBrand.brand_id}/orders`;
+    const duplicate = await request(
+      otherPath,
+      'POST',
+      { ...body, order_id: randomUUID() },
+      3,
+    );
+    expect(duplicate.status).toBe(409);
+    const conflict = await json(duplicate);
+    expect(conflict).toEqual({
+      statusCode: 409,
+      error: 'Conflict',
+      code: 'DUPLICATE_PLATFORM_ORDER',
+      message: 'Platform order already exists.',
+      existing_order: null,
+    });
+    const reusedId = await request(otherPath, 'POST', body, 3);
+    expect(reusedId.status).toBe(409);
+    expect(await json(reusedId)).toEqual({
+      statusCode: 409,
+      error: 'Conflict',
+      code: 'ORDER_ID_CONFLICT',
+      message: 'Order ID was already used for a different request.',
+    });
+    // The route's guards also run on duplicate requests and replays.
+    expect((await request(ordersPath(), 'POST', body, 3)).status).toBe(403);
+    expect((await request(ordersPath(), 'POST', body, -1)).status).toBe(401);
+    expect(await savedOrder(body.order_id)).toEqual(before);
+    expect(
+      await prisma.order.count({
+        where: { brand_id: fixture.otherBrand.brand_id },
+      }),
+    ).toBe(0);
+  });
+
+  it('IT-ORD-015 concurrent conflicting confirmations preserve the winning payment and unique ticket numbers', async () => {
+    const first = await draft();
+    const second = await draft();
+    const confirmPath = `${ordersPath()}/${first.order_id}/confirm`;
+    const responses = await Promise.all([
+      request(confirmPath, 'POST', payment, 1),
+      request(
+        confirmPath,
+        'POST',
+        {
+          payment_method: 'CARD',
+          payment_status: 'PAID',
+          payment_reference: 'p1',
+        },
+        0,
+      ),
+      request(`${ordersPath()}/${second.order_id}/confirm`, 'POST', payment, 1),
+    ]);
+    expect(responses.map((r) => r.status)).toEqual([200, 200, 200]);
+    const orders = await Promise.all(responses.map(json));
+    expect(orders[0]).toEqual(orders[1]);
+    const saved = await savedOrder(first.order_id);
+    expect(saved.payment_method).toBe(orders[0].payment_method);
+    expect(saved.payment_status).toBe(orders[0].payment_status);
+    expect(saved.payment_reference).toBe(orders[0].payment_reference);
+    const tickets = await prisma.kitchenTicket.findMany({
+      where: { order: { brand_id: fixture.brand.brand_id } },
+    });
+    expect(tickets).toHaveLength(2);
+    expect(new Set(tickets.map((t) => t.ticket_number)).size).toBe(2);
+    expect(new Set(tickets.map((t) => t.order_id)).size).toBe(2);
+  });
+
+  it('IT-ORD-016 rolls back inserted order lines and modifiers, then safely retries the same UUID', async () => {
+    const body = orderBody();
+    const failingClient = prisma.$extends({
+      query: {
+        order: {
+          async create({ args, query }) {
+            await query(args);
+            throw new Error('Injected failure after order insertion');
+          },
+        },
+      },
+    });
+    const service = new OrdersService(
+      new OrdersRepository(failingClient as unknown as PrismaService),
+      new OrderItemsService(new OrderItemsRepository()),
+    );
+    await expect(
+      service.create(fixture.brand.brand_id, fixture.users[1].user_id, body),
+    ).rejects.toThrow('Injected failure after order insertion');
+    expect(
+      await prisma.order.count({ where: { order_id: body.order_id } }),
+    ).toBe(0);
+    expect(
+      await prisma.orderItem.count({ where: { order_id: body.order_id } }),
+    ).toBe(0);
+    expect(
+      await prisma.orderItemModifier.count({
+        where: { modifier_id: fixture.modifier.modifier_id },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.orderDailyCounter.count({
+        where: { brand_id: fixture.brand.brand_id },
+      }),
+    ).toBe(0);
+    const recovered = await request(ordersPath(), 'POST', body, 1);
+    expect(recovered.status).toBe(201);
+    expect(await json(recovered)).toMatchObject({ order_number: 1 });
+  });
+
+  it('IT-ORD-017 rolls back a ticket inserted before confirmation fails, then recovers with one ticket', async () => {
+    const body = await draft();
+    const before = await savedOrder(body.order_id);
+    const failingClient = prisma.$extends({
+      query: {
+        order: {
+          update() {
+            throw new Error('Injected failure after ticket insertion');
+          },
+        },
+      },
+    });
+    const service = new OrdersService(
+      new OrdersRepository(failingClient as unknown as PrismaService),
+      new OrderItemsService(new OrderItemsRepository()),
+    );
+    await expect(
+      service.confirm(
+        fixture.brand.brand_id,
+        body.order_id,
+        fixture.users[1].user_id,
+        payment as { payment_method: 'CASH'; payment_status: 'UNPAID' },
+      ),
+    ).rejects.toThrow('Injected failure after ticket insertion');
+    expect(await savedOrder(body.order_id)).toEqual(before);
+    expect(
+      await prisma.kitchenTicket.count({ where: { order_id: body.order_id } }),
+    ).toBe(0);
+    const path = `${ordersPath()}/${body.order_id}/confirm`;
+    const recovered = await request(path, 'POST', payment, 1);
+    expect(recovered.status).toBe(200);
+    const replay = await request(path, 'POST', {}, 1);
+    expect(replay.status).toBe(200);
+    expect(await json(replay)).toEqual(await json(recovered));
+    expect(
+      await prisma.kitchenTicket.count({ where: { order_id: body.order_id } }),
+    ).toBe(1);
   });
 
   it('assigns consecutive daily codes across channels and keeps cancelled draft numbers', async () => {
@@ -786,7 +1163,8 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
       },
     });
     const service = new OrdersService(
-      failingClient as unknown as PrismaService,
+      new OrdersRepository(failingClient as unknown as PrismaService),
+      new OrderItemsService(new OrderItemsRepository()),
     );
     await expect(
       service.create(fixture.brand.brand_id, fixture.users[1].user_id, body),

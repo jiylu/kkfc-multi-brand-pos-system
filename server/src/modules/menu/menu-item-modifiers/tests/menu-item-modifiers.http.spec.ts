@@ -155,7 +155,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
       menu_item: { brand_id: brandId },
     });
     for (const handler of Object.values(service))
-      handler.mockResolvedValue({ ok: true });
+      handler.mockResolvedValue({ name: 'Safe menu result' });
   });
 
   afterAll(async () => app?.close());
@@ -372,7 +372,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
         body: JSON.stringify(route.body),
       });
       expect(response.status).toBe(route.status);
-      expect(await response.json()).toEqual({ ok: true });
+      expect(await response.json()).toEqual({ name: 'Safe menu result' });
       expect(auth.validateSession).toHaveBeenCalledWith('test-session');
       expect(service[route.handler]).toHaveBeenCalledWith(...route.args);
       expect(service[route.handler]).toHaveBeenCalledTimes(1);

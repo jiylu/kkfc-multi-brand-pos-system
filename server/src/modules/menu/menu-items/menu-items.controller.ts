@@ -1,3 +1,5 @@
+import { UseInterceptors as UseMenuInterceptors } from '@nestjs/common';
+import { SafeMenuInterceptor } from '../safe-menu.interceptor';
 import { PinGuard } from '../../pin/pin.guard';
 import {
   Body,
@@ -51,6 +53,7 @@ import {
   MAX_ASSET_BYTES,
 } from '../../assets/assets.service';
 
+@UseMenuInterceptors(SafeMenuInterceptor)
 @Controller('menu-items')
 @MenuItemsDocs()
 @UseGuards(Authenticated, RolesGuard)
