@@ -133,7 +133,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.kitchenTickets,
-        builder: (context, state) => const KitchenTicketsPage(viewState: KitchenTicketsViewState.loading,), // TODO: Make state dynamic
+        builder: (context, state) => const KitchenTicketsPage(viewState: KitchenTicketsViewState.active),
       ),
     ],
   );

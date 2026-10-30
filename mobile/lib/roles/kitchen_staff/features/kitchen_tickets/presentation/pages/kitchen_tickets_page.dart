@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/data/models/kitchen_tickets_view_state.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/empty_queue_view.dart';
+import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_board/kitchen_board_phone_view.dart';
+import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_board/kitchen_board_tablet_view.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_board_heading.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_filter_bar.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation/widgets/kitchen_states/kitchen_sample_badge.dart';
@@ -9,11 +11,15 @@ import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_breakpoints.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_destination.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_metrics.dart';
+import 'package:mobile/roles/kitchen_staff/shared/kitchen_palette.dart';
 import 'package:mobile/roles/kitchen_staff/shared/kitchen_shell.dart';
 
 /// Kitchen Board (tablet) / Ticket queue (phone). Static states only.
 class KitchenTicketsPage extends StatelessWidget {
-  const KitchenTicketsPage({super.key, required this.viewState});
+  const KitchenTicketsPage({
+    super.key,
+    this.viewState = KitchenTicketsViewState.active,
+  });
 
   final KitchenTicketsViewState viewState;
 
@@ -24,7 +30,7 @@ class KitchenTicketsPage extends StatelessWidget {
       selectedDestination: KitchenDestination.orders,
       phoneHeaderBottom: const KitchenStageTabs(),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(tablet ? KitchenSpace.xl : KitchenSpace.md),
+        padding: EdgeInsets.all(tablet ? 24 : KitchenSpace.md),
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
@@ -40,8 +46,16 @@ class KitchenTicketsPage extends StatelessWidget {
                         'All permitted brands · live ticket workflow (sample data)',
                     trailing: KitchenSampleBadge(),
                   ),
-                  SizedBox(height: KitchenSpace.lg),
-                  const KitchenFilterBar(),
+                  SizedBox(height: KitchenSpace.md),
+                  KitchenFilterBar(
+                    trailing: Text(
+                      'FIGMA QA · T-014 / T-019 / T-020 interactive; other ticket actions are disabled samples.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            color: context.kitchenTextMuted,
+                          ),
+                    ),
+                  ),
                   SizedBox(height: KitchenSpace.md),
                 ] else ...[
                   const KitchenBoardHeading(
@@ -51,8 +65,13 @@ class KitchenTicketsPage extends StatelessWidget {
                   SizedBox(height: KitchenSpace.md),
                 ],
                 switch (viewState) {
-                  KitchenTicketsViewState.loading => LoadingQueueView(wide: tablet),
-                  KitchenTicketsViewState.empty => EmptyQueueView(wide: tablet),
+                  KitchenTicketsViewState.active => tablet
+                      ? const KitchenBoardTabletView()
+                      : const KitchenBoardPhoneView(),
+                  KitchenTicketsViewState.loading =>
+                    LoadingQueueView(wide: tablet),
+                  KitchenTicketsViewState.empty =>
+                    EmptyQueueView(wide: tablet),
                 },
               ],
             ),
