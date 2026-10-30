@@ -69,6 +69,9 @@ export class OrderTicketResponseDTO {
   order_id: string;
 
   @ApiProperty({ type: String })
+  order_code: string;
+
+  @ApiProperty({ type: String })
   ticket_number: string;
 
   @ApiProperty({ type: String, enum: KitchenTicketStatus })

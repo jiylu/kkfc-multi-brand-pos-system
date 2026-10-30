@@ -19,6 +19,7 @@ import { InventoryItemsModule } from './modules/inventory/inventory-items/invent
 import { RecipesModule } from './modules/recipe/recipes/recipes.module';
 import { MenuItemModifiersModule } from './modules/menu/menu-item-modifiers/menu-item-modifiers.module';
 import { MenuCatalogModule } from './modules/menu/menu-catalog/menu-catalog.module';
+import { KitchenTicketModule } from './modules/kitchen/kitchen-ticket/kitchen-ticket.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { MenuCatalogModule } from './modules/menu/menu-catalog/menu-catalog.modu
     RecipesModule,
     MenuItemModifiersModule,
     MenuCatalogModule,
+    KitchenTicketModule,
   ],
   controllers: [],
   providers: [

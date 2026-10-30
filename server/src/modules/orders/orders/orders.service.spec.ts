@@ -473,6 +473,7 @@ describe('Order lifecycle', () => {
     expect(tx.kitchenTicket.create).toHaveBeenCalledWith({
       data: {
         order_id: 'order',
+        order_code: draft.order_code,
         ticket_number: 'T-014',
         created_by_id: 'actor',
       },
@@ -536,6 +537,7 @@ describe('Order lifecycle', () => {
       expect(tx.kitchenTicket.create).toHaveBeenCalledWith({
         data: {
           order_id: 'order',
+          order_code: draft.order_code,
           ticket_number: ticket,
           created_by_id: 'actor',
         },
