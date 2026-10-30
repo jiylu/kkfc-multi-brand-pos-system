@@ -21,6 +21,8 @@ void main() {
     VoidCallback? onAddPhoto,
     VoidCallback? onRetakePhoto,
     VoidCallback? onSubmitPhoto,
+    VoidCallback? onConfirmHandover,
+    VoidCallback? onNotYet,
     String? backButtonLabel,
     String? acknowledgeButtonLabel,
   }) {
@@ -41,6 +43,8 @@ void main() {
           onAddPhoto: onAddPhoto,
           onRetakePhoto: onRetakePhoto,
           onSubmitPhoto: onSubmitPhoto,
+          onConfirmHandover: onConfirmHandover,
+          onNotYet: onNotYet,
           backButtonLabel: backButtonLabel,
           acknowledgeButtonLabel: acknowledgeButtonLabel,
         ),
@@ -61,6 +65,8 @@ void main() {
     VoidCallback? onAddPhoto,
     VoidCallback? onRetakePhoto,
     VoidCallback? onSubmitPhoto,
+    VoidCallback? onConfirmHandover,
+    VoidCallback? onNotYet,
   }) {
     return MaterialApp(
       theme: counterTheme,
@@ -78,6 +84,8 @@ void main() {
           onAddPhoto: onAddPhoto,
           onRetakePhoto: onRetakePhoto,
           onSubmitPhoto: onSubmitPhoto,
+          onConfirmHandover: onConfirmHandover,
+          onNotYet: onNotYet,
         ),
       ),
     );

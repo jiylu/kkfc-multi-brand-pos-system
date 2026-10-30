@@ -106,7 +106,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
   /// Callback when user taps "Retake photo".
   final VoidCallback? onRetakePhoto;
 
-  /// Callback when user taps "Submit photo (demo)".
+  /// Callback when user taps "Submit photo".
   final VoidCallback? onSubmitPhoto;
 
   /// Callback when user taps "Confirm handover".
@@ -438,9 +438,11 @@ class KitchenTicketDetailPanel extends StatelessWidget {
             acknowledgeLabel: resolvedActionLabel,
             isQC: isQC,
             onClose: _handleDismiss,
-            onBack: isPhotoPreview
-                ? (onRetakePhoto ?? onBack ?? _handleDismiss)
-                : _handleDismiss,
+            onBack: isDispatcherCheck
+                ? (onNotYet ?? onBack ?? _handleDismiss)
+                : (isPhotoPreview
+                    ? (onRetakePhoto ?? onBack ?? _handleDismiss)
+                    : _handleDismiss),
             onAcknowledge: resolvedOnAction,
             onPassQC: onPassQC ?? _handleDismiss,
             onFailQC: onFailQC,
