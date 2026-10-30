@@ -167,6 +167,9 @@ void main() {
       expect(find.text('Kitchen Board'), findsOneWidget);
       expect(find.text('NEW ORDERS'), findsOneWidget);
 
+      // Scrim is visible behind the panel
+      expect(find.byKey(const ValueKey('kitchen_panel_scrim')), findsOneWidget);
+
       // Right panel is visible
       expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
       expect(find.text('Ticket T-014'), findsOneWidget);
@@ -247,6 +250,67 @@ void main() {
 
       // Panel is closed
       expect(find.byType(KitchenTicketDetailPanel), findsNothing);
+    });
+
+    testWidgets(
+        'Tablet slides panel in from right when opening',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        buildPageSubject(size: const Size(1280, 1000)),
+      );
+      await tester.pumpAndSettle();
+
+      final acknowledgeButtons =
+          find.widgetWithText(FilledButton, 'Acknowledge');
+      await tester.tap(acknowledgeButtons.first);
+      await tester.pump(); // Starts opening animation
+
+      // At start or mid-flight of animation, SlideTransition exists
+      final slideFinder =
+          find.byKey(const ValueKey('kitchen_panel_slide_transition'));
+      expect(slideFinder, findsOneWidget);
+
+      final initialSlide = tester.widget<SlideTransition>(slideFinder);
+      expect(initialSlide.position.value.dx, greaterThan(0.0));
+
+      // After settling, it reaches Offset.zero (dx == 0)
+      await tester.pumpAndSettle();
+      final settledSlide = tester.widget<SlideTransition>(slideFinder);
+      expect(settledSlide.position.value, equals(Offset.zero));
+    });
+
+    testWidgets(
+        'Tablet tapping darkened background scrim closes the panel',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        buildPageSubject(size: const Size(1280, 1000)),
+      );
+      await tester.pumpAndSettle();
+
+      // Open panel
+      final acknowledgeButtons =
+          find.widgetWithText(FilledButton, 'Acknowledge');
+      await tester.tap(acknowledgeButtons.first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.byKey(const ValueKey('kitchen_panel_scrim')), findsOneWidget);
+
+      // Tap on the darkened background scrim
+      await tester.tap(find.byKey(const ValueKey('kitchen_panel_scrim')));
+      await tester.pumpAndSettle();
+
+      // Panel is closed
+      expect(find.byType(KitchenTicketDetailPanel), findsNothing);
+      expect(find.byKey(const ValueKey('kitchen_panel_scrim')), findsNothing);
     });
 
     testWidgets(

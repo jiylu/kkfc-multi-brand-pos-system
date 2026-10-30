@@ -37,24 +37,117 @@ class KitchenTicketsPage extends StatefulWidget {
   State<KitchenTicketsPage> createState() => _KitchenTicketsPageState();
 }
 
-class _KitchenTicketsPageState extends State<KitchenTicketsPage> {
-  KitchenBoardItem? _localSelectedTicket;
+class _KitchenTicketsPageState extends State<KitchenTicketsPage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _panelController;
+  late final Animation<Offset> _slideAnimation;
+  late final Animation<double> _scrimAnimation;
 
-  KitchenBoardItem? get _activeTicket =>
-      widget.selectedTicket ?? _localSelectedTicket;
+  KitchenBoardItem? _localSelectedTicket;
+  KitchenBoardItem? _displayedTicket;
+  bool _manuallyDismissed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayedTicket = widget.selectedTicket;
+    _panelController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _panelController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    ));
+    _scrimAnimation = CurvedAnimation(
+      parent: _panelController,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
+    );
+
+    if (widget.selectedTicket != null) {
+      _panelController.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(KitchenTicketsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedTicket != null && oldWidget.selectedTicket == null) {
+      _displayedTicket = widget.selectedTicket;
+      _manuallyDismissed = false;
+      _openPanel();
+    } else if (widget.selectedTicket == null && oldWidget.selectedTicket != null) {
+      _closePanel();
+    } else if (widget.selectedTicket != null &&
+        widget.selectedTicket != oldWidget.selectedTicket) {
+      setState(() {
+        _displayedTicket = widget.selectedTicket;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _panelController.dispose();
+    super.dispose();
+  }
+
+  KitchenBoardItem? get _activeTicket {
+    if (_manuallyDismissed) return null;
+    return widget.selectedTicket ?? _localSelectedTicket ?? _displayedTicket;
+  }
+
+  void _openPanel() {
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (reduceMotion) {
+      _panelController.value = 1.0;
+    } else {
+      _panelController.forward(from: 0.0);
+    }
+  }
 
   void _handleTicketAction(KitchenBoardItem item) {
     widget.onTicketAction?.call(item);
     setState(() {
       _localSelectedTicket = item;
+      _displayedTicket = item;
+      _manuallyDismissed = false;
     });
+    _openPanel();
   }
 
   void _handleClosePanel() {
     widget.onClosePanel?.call();
-    setState(() {
-      _localSelectedTicket = null;
-    });
+    _closePanel();
+  }
+
+  void _closePanel() {
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (reduceMotion) {
+      _panelController.value = 0.0;
+      if (mounted) {
+        setState(() {
+          _localSelectedTicket = null;
+          _displayedTicket = null;
+          _manuallyDismissed = true;
+        });
+      }
+    } else {
+      _panelController.reverse().then((_) {
+        if (mounted) {
+          setState(() {
+            _localSelectedTicket = null;
+            _displayedTicket = null;
+            _manuallyDismissed = true;
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -67,13 +160,29 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage> {
       body = Stack(
         children: [
           _buildBoard(context, tablet),
+          // Scrim overlay to darken the kitchen board in the background
+          Positioned.fill(
+            child: FadeTransition(
+              opacity: _scrimAnimation,
+              child: GestureDetector(
+                key: const ValueKey('kitchen_panel_scrim'),
+                behavior: HitTestBehavior.opaque,
+                onTap: _handleClosePanel,
+                child: const ColoredBox(
+                  color: Color(0x52000000),
+                ),
+              ),
+            ),
+          ),
+          // Right panel spanning from header to bottom and whole right side with slide animation
           Positioned(
             top: 0,
             right: 0,
             bottom: 0,
-            width: 440,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
+            width: 460,
+            child: SlideTransition(
+              key: const ValueKey('kitchen_panel_slide_transition'),
+              position: _slideAnimation,
               child: KitchenTicketDetailPanel(
                 ticket: activeTicket,
                 onClose: _handleClosePanel,
@@ -84,13 +193,21 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage> {
         ],
       );
     } else if (!tablet && activeTicket != null) {
-      body = Padding(
-        padding: const EdgeInsets.all(KitchenSpace.md),
-        child: KitchenTicketDetailPanel(
-          ticket: activeTicket,
-          onClose: _handleClosePanel,
-          onAcknowledge: widget.onAcknowledgeTicket,
-        ),
+      body = Stack(
+        children: [
+          _buildBoard(context, tablet),
+          Positioned.fill(
+            child: SlideTransition(
+              key: const ValueKey('kitchen_panel_slide_transition'),
+              position: _slideAnimation,
+              child: KitchenTicketDetailPanel(
+                ticket: activeTicket,
+                onClose: _handleClosePanel,
+                onAcknowledge: widget.onAcknowledgeTicket,
+              ),
+            ),
+          ),
+        ],
       );
     } else {
       body = _buildBoard(context, tablet);

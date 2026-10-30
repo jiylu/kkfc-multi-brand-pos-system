@@ -18,6 +18,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
     this.onBack,
     this.onAcknowledge,
     this.width,
+    this.borderRadius,
     this.backButtonLabel = 'Back to board',
     this.acknowledgeButtonLabel = 'Acknowledge ticket',
     this.paymentStatus = 'PAYMENT · UNPAID',
@@ -43,6 +44,9 @@ class KitchenTicketDetailPanel extends StatelessWidget {
   /// Optional fixed width for the panel (e.g. 400 or 440 on tablet).
   final double? width;
 
+  /// Optional border radius (defaults to zero for flush docked right panel).
+  final BorderRadiusGeometry? borderRadius;
+
   final String backButtonLabel;
   final String acknowledgeButtonLabel;
   final String paymentStatus;
@@ -65,16 +69,18 @@ class KitchenTicketDetailPanel extends StatelessWidget {
       width: width,
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1,
+        borderRadius: borderRadius ?? BorderRadius.zero,
+        border: const Border(
+          left: BorderSide(
+            color: Color(0xFFE2E8F0),
+            width: 1,
+          ),
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
+            color: Color(0x1F000000),
             blurRadius: 16,
-            offset: Offset(-2, 0),
+            offset: Offset(-4, 0),
           ),
         ],
       ),
