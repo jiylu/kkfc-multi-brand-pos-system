@@ -10,7 +10,6 @@ import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/presentation
 import 'package:mobile/roles/kitchen_staff/shared/widgets/kitchen_bottom_nav.dart';
 import 'package:mobile/roles/kitchen_staff/shared/widgets/kitchen_side_nav.dart';
 import 'package:mobile/roles/kitchen_staff/shared/widgets/kitchen_tablet_header.dart';
-import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_card.dart';
 
 void main() {
   Widget buildSubject({
