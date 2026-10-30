@@ -19,6 +19,8 @@ void main() {
     VoidCallback? onFailQC,
     VoidCallback? onContinueToHandover,
     VoidCallback? onAddPhoto,
+    VoidCallback? onRetakePhoto,
+    VoidCallback? onSubmitPhoto,
     String? backButtonLabel,
     String? acknowledgeButtonLabel,
   }) {
@@ -37,6 +39,8 @@ void main() {
           onFailQC: onFailQC,
           onContinueToHandover: onContinueToHandover,
           onAddPhoto: onAddPhoto,
+          onRetakePhoto: onRetakePhoto,
+          onSubmitPhoto: onSubmitPhoto,
           backButtonLabel: backButtonLabel,
           acknowledgeButtonLabel: acknowledgeButtonLabel,
         ),
@@ -55,6 +59,8 @@ void main() {
     VoidCallback? onFailQC,
     VoidCallback? onContinueToHandover,
     VoidCallback? onAddPhoto,
+    VoidCallback? onRetakePhoto,
+    VoidCallback? onSubmitPhoto,
   }) {
     return MaterialApp(
       theme: counterTheme,
@@ -70,6 +76,8 @@ void main() {
           onFailQC: onFailQC,
           onContinueToHandover: onContinueToHandover,
           onAddPhoto: onAddPhoto,
+          onRetakePhoto: onRetakePhoto,
+          onSubmitPhoto: onSubmitPhoto,
         ),
       ),
     );
@@ -504,6 +512,87 @@ void main() {
 
       expect(photoAdded, isTrue);
     });
+
+    testWidgets(
+        'renders all required elements for photo preview state (19 · Photo Preview)',
+        (tester) async {
+      await tester.pumpWidget(buildPanelSubject(
+        panelState: KitchenTicketPanelState.photoPreview,
+      ));
+      await tester.pumpAndSettle();
+
+      // Header
+      expect(find.text('PHOTO EVIDENCE · PREVIEW'), findsOneWidget);
+      expect(find.text('Review attachment'), findsOneWidget);
+      expect(
+        find.text('Illustrative local preview · not uploaded'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      // Ticket Summary Info
+      expect(find.text("T-014 · AURELIA'S INASAL"), findsOneWidget);
+      expect(find.text('Dine-in · Table 3 · sample'), findsOneWidget);
+      expect(find.text('READY'), findsOneWidget);
+      expect(find.text('PAYMENT · UNPAID'), findsOneWidget);
+
+      // Items & Modifiers
+      expect(find.textContaining('Paa Inasal'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Pecho Inasal'), findsAtLeastNWidgets(1));
+
+      // Attachment Preview Checklist
+      expect(find.text('ATTACHMENT PREVIEW · SAMPLE'), findsOneWidget);
+      expect(find.text('Photo selected for this ticket (demo)'), findsOneWidget);
+      expect(find.text('Confirm the correct order and contents'), findsOneWidget);
+
+      // Check icons omitted
+      expect(find.byIcon(Icons.check), findsNothing);
+
+      // Permission Note Banner
+      expect(
+        find.text('Preview alone does not persist evidence.'),
+        findsOneWidget,
+      );
+
+      // Bottom Actions (Retake photo outlined, Submit photo (demo) navy filled)
+      expect(find.text('Retake photo'), findsOneWidget);
+      expect(find.text('Submit photo (demo)'), findsOneWidget);
+    });
+
+    testWidgets('Retake photo button triggers onRetakePhoto callback in photoPreview state',
+        (tester) async {
+      var retakeCalled = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.photoPreview,
+          onRetakePhoto: () => retakeCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Retake photo'));
+      await tester.pumpAndSettle();
+
+      expect(retakeCalled, isTrue);
+    });
+
+    testWidgets(
+        'Submit photo button triggers onSubmitPhoto callback in photoPreview state',
+        (tester) async {
+      var submitCalled = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.photoPreview,
+          onSubmitPhoto: () => submitCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Submit photo (demo)'));
+      await tester.pumpAndSettle();
+
+      expect(submitCalled, isTrue);
+    });
   });
 
   group('KitchenTicketsPage integration with right panel', () {
@@ -837,12 +926,16 @@ void main() {
       var passQCCalled = false;
       var continueHandoverCalled = false;
       var addPhotoCalled = false;
+      var retakePhotoCalled = false;
+      var submitPhotoCalled = false;
       await tester.pumpWidget(
         buildPageSubject(
           size: const Size(1280, 1000),
           onPassQC: () => passQCCalled = true,
           onContinueToHandover: () => continueHandoverCalled = true,
           onAddPhoto: () => addPhotoCalled = true,
+          onRetakePhoto: () => retakePhotoCalled = true,
+          onSubmitPhoto: () => submitPhotoCalled = true,
         ),
       );
       await tester.pumpAndSettle();
@@ -953,10 +1046,47 @@ void main() {
       expect(find.text('Dispatcher · demo'), findsOneWidget);
       expect(find.text('Access policy pending'), findsOneWidget);
 
-      // Tap "Add photo" invokes callback
+      // Tap "Add photo" invokes callback and transitions to Photo preview state (19 · Photo Preview)
       await tester.tap(find.text('Add photo'));
       await tester.pumpAndSettle();
       expect(addPhotoCalled, isTrue);
+
+      // Panel is now in Photo preview state
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('PHOTO EVIDENCE · PREVIEW'), findsOneWidget);
+      expect(find.text('Review attachment'), findsOneWidget);
+      expect(
+        find.text('Illustrative local preview · not uploaded'),
+        findsOneWidget,
+      );
+      expect(find.text('ATTACHMENT PREVIEW · SAMPLE'), findsOneWidget);
+      expect(find.text('Photo selected for this ticket (demo)'), findsOneWidget);
+      expect(find.text('Confirm the correct order and contents'), findsOneWidget);
+      expect(
+        find.text('Preview alone does not persist evidence.'),
+        findsOneWidget,
+      );
+      expect(find.text('Retake photo'), findsOneWidget);
+      expect(find.text('Submit photo (demo)'), findsOneWidget);
+
+      // Board lane counts remain:
+      // NEW ORDERS: 01
+      expect(find.text('01'), findsOneWidget);
+      // COOKING: 02, QUALITY CHECK: 02
+      expect(find.text('02'), findsNWidgets(2));
+      // READY: 03
+      expect(find.text('03'), findsOneWidget);
+
+      // Tap "Submit photo (demo)" invokes callback
+      await tester.tap(find.text('Submit photo (demo)'));
+      await tester.pumpAndSettle();
+      expect(submitPhotoCalled, isTrue);
+
+      // Tap "Retake photo" transitions back to Photo required state
+      await tester.tap(find.text('Retake photo'));
+      await tester.pumpAndSettle();
+      expect(retakePhotoCalled, isTrue);
+      expect(find.text('Photo required'), findsOneWidget);
 
       // Tap "Keep READY" closes the panel
       await tester.tap(find.text('Keep READY'));
@@ -1068,6 +1198,48 @@ void main() {
       await tester.tap(find.text('Add photo'));
       await tester.pumpAndSettle();
       expect(photoAdded, isTrue);
+    });
+
+    testWidgets(
+        'Phone layout displays Photo preview state with READY stage selected and Dispatcher identity in header',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      var submitPhotoCalled = false;
+      await tester.pumpWidget(
+        buildPageSubject(
+          size: const Size(400, 800),
+          selectedTicket: KitchenBoardSampleData.t014Ready,
+          initialPanelState: KitchenTicketPanelState.photoPreview,
+          onSubmitPhoto: () => submitPhotoCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Photo preview detail panel is displayed
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('PHOTO EVIDENCE · PREVIEW'), findsOneWidget);
+      expect(find.text('Review attachment'), findsOneWidget);
+      expect(
+        find.text('Illustrative local preview · not uploaded'),
+        findsOneWidget,
+      );
+      expect(find.text('ATTACHMENT PREVIEW · SAMPLE'), findsOneWidget);
+      expect(find.text('Photo selected for this ticket (demo)'), findsOneWidget);
+      expect(find.text('Confirm the correct order and contents'), findsOneWidget);
+      expect(find.text('Retake photo'), findsOneWidget);
+      expect(find.text('Submit photo (demo)'), findsOneWidget);
+
+      // Phone Header shows Dispatcher identity
+      expect(find.text('Dispatcher'), findsOneWidget);
+      expect(find.text('Access TBD'), findsOneWidget);
+
+      // Tapping "Submit photo (demo)" invokes callback
+      await tester.tap(find.text('Submit photo (demo)'));
+      await tester.pumpAndSettle();
+      expect(submitPhotoCalled, isTrue);
     });
   });
 }

@@ -33,6 +33,8 @@ class KitchenTicketsPage extends StatefulWidget {
     this.onFailQC,
     this.onContinueToHandover,
     this.onAddPhoto,
+    this.onRetakePhoto,
+    this.onSubmitPhoto,
   });
 
   final KitchenTicketsViewState viewState;
@@ -47,6 +49,8 @@ class KitchenTicketsPage extends StatefulWidget {
   final VoidCallback? onFailQC;
   final VoidCallback? onContinueToHandover;
   final VoidCallback? onAddPhoto;
+  final VoidCallback? onRetakePhoto;
+  final VoidCallback? onSubmitPhoto;
 
   @override
   State<KitchenTicketsPage> createState() => _KitchenTicketsPageState();
@@ -68,7 +72,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     super.initState();
     _displayedTicket = widget.selectedTicket;
     _panelState = widget.initialPanelState;
-    if (widget.initialPanelState == KitchenTicketPanelState.photoRequired) {
+    if (widget.initialPanelState == KitchenTicketPanelState.photoPreview) {
+      _panelState = KitchenTicketPanelState.photoPreview;
+    } else if (widget.initialPanelState == KitchenTicketPanelState.photoRequired) {
       _panelState = KitchenTicketPanelState.photoRequired;
     } else if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
       _panelState = KitchenTicketPanelState.readyForDispatch;
@@ -108,7 +114,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     super.didUpdateWidget(oldWidget);
     if (widget.selectedTicket != null && oldWidget.selectedTicket == null) {
       _displayedTicket = widget.selectedTicket;
-      if (widget.initialPanelState == KitchenTicketPanelState.photoRequired) {
+      if (widget.initialPanelState == KitchenTicketPanelState.photoPreview) {
+        _panelState = KitchenTicketPanelState.photoPreview;
+      } else if (widget.initialPanelState == KitchenTicketPanelState.photoRequired) {
         _panelState = KitchenTicketPanelState.photoRequired;
       } else if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
         _panelState = KitchenTicketPanelState.readyForDispatch;
@@ -245,6 +253,32 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
 
   void _handleAddPhoto() {
     widget.onAddPhoto?.call();
+    setState(() {
+      _panelState = KitchenTicketPanelState.photoPreview;
+      if (_localSelectedTicket?.ticket.ticketNumber == 'T-014' ||
+          _displayedTicket?.ticket.ticketNumber == 'T-014' ||
+          widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
+        _localSelectedTicket = KitchenBoardSampleData.t014Ready;
+        _displayedTicket = KitchenBoardSampleData.t014Ready;
+      }
+    });
+  }
+
+  void _handleRetakePhoto() {
+    widget.onRetakePhoto?.call();
+    setState(() {
+      _panelState = KitchenTicketPanelState.photoRequired;
+      if (_localSelectedTicket?.ticket.ticketNumber == 'T-014' ||
+          _displayedTicket?.ticket.ticketNumber == 'T-014' ||
+          widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
+        _localSelectedTicket = KitchenBoardSampleData.t014Ready;
+        _displayedTicket = KitchenBoardSampleData.t014Ready;
+      }
+    });
+  }
+
+  void _handleSubmitPhoto() {
+    widget.onSubmitPhoto?.call();
   }
 
   void _handleClosePanel() {
@@ -320,6 +354,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onFailQC: _handleFailQC,
                 onContinueToHandover: _handleContinueToHandover,
                 onAddPhoto: _handleAddPhoto,
+                onRetakePhoto: _handleRetakePhoto,
+                onSubmitPhoto: _handleSubmitPhoto,
               ),
             ),
           ),
@@ -344,6 +380,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onFailQC: _handleFailQC,
                 onContinueToHandover: _handleContinueToHandover,
                 onAddPhoto: _handleAddPhoto,
+                onRetakePhoto: _handleRetakePhoto,
+                onSubmitPhoto: _handleSubmitPhoto,
               ),
             ),
           ),
@@ -354,7 +392,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     }
 
     final isReady = _panelState == KitchenTicketPanelState.readyForDispatch ||
-        _panelState == KitchenTicketPanelState.photoRequired;
+        _panelState == KitchenTicketPanelState.photoRequired ||
+        _panelState == KitchenTicketPanelState.photoPreview;
     final isQC = _panelState == KitchenTicketPanelState.qualityCheck;
     final isPreparing = _panelState == KitchenTicketPanelState.preparing;
 
@@ -379,7 +418,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
 
   Widget _buildBoard(BuildContext context, bool tablet) {
     final isReady = _panelState == KitchenTicketPanelState.readyForDispatch ||
-        _panelState == KitchenTicketPanelState.photoRequired;
+        _panelState == KitchenTicketPanelState.photoRequired ||
+        _panelState == KitchenTicketPanelState.photoPreview;
     final isQC = _panelState == KitchenTicketPanelState.qualityCheck;
     final isPreparing = _panelState == KitchenTicketPanelState.preparing;
     final isAcknowledged = _panelState == KitchenTicketPanelState.acknowledged;
