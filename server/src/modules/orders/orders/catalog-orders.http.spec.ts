@@ -283,7 +283,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     { user: 0, status: 201 },
     { user: 1, status: 403 },
     { user: 2, status: 201 },
-    { user: 3, status: 403 },
+    { user: 3, status: 201 },
     { user: -1, status: 401 },
   ])(
     'IT-MCH-001 Given session $user When creating a channel Then return $status through real guards',
@@ -563,12 +563,11 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
   );
 
   it.each([0, 1, 2, 3, -1])(
-    'IT-ORD-003 Given session %s When creating an order Then enforce brand and session permissions',
+    'IT-ORD-003 Given session %s When creating an order Then allow shared brand access and require authentication',
     async (user) => {
-      const allowed = user >= 0 && user < 3;
       expect(
         (await request(ordersPath(), 'POST', orderBody(), user)).status,
-      ).toBe(allowed ? 201 : user < 0 ? 401 : 403);
+      ).toBe(user < 0 ? 401 : 201);
     },
   );
 
@@ -972,8 +971,13 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
       code: 'ORDER_ID_CONFLICT',
       message: 'Order ID was already used for a different request.',
     });
-    // The route's guards also run on duplicate requests and replays.
-    expect((await request(ordersPath(), 'POST', body, 3)).status).toBe(403);
+    // Managers can replay orders across brands; authentication still applies.
+    const replay = await request(ordersPath(), 'POST', body, 3);
+    expect(replay.status).toBe(201);
+    expect(await json(replay)).toMatchObject({
+      order_id: body.order_id,
+      brand_id: fixture.brand.brand_id,
+    });
     expect((await request(ordersPath(), 'POST', body, -1)).status).toBe(401);
     expect(await savedOrder(body.order_id)).toEqual(before);
     expect(
