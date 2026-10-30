@@ -116,7 +116,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     } else if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
       _panelState = KitchenTicketPanelState.readyForDispatch;
     } else if (widget.selectedTicket?.ticket.status == KkfcStatus.reworking) {
-      _panelState = KitchenTicketPanelState.reworkRequired;
+      _panelState = KitchenTicketPanelState.qualityCheck;
       _t014IsReworking = true;
     } else if (widget.selectedTicket?.ticket.status == KkfcStatus.checking) {
       _panelState = KitchenTicketPanelState.qualityCheck;
@@ -175,7 +175,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
       } else if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
         _panelState = KitchenTicketPanelState.readyForDispatch;
       } else if (widget.selectedTicket?.ticket.status == KkfcStatus.reworking) {
-        _panelState = KitchenTicketPanelState.reworkRequired;
+        _panelState = KitchenTicketPanelState.qualityCheck;
         _t014IsReworking = true;
       } else if (widget.selectedTicket?.ticket.status == KkfcStatus.checking) {
         _panelState = KitchenTicketPanelState.qualityCheck;
@@ -227,7 +227,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
       if (item.ticket.status == KkfcStatus.ready) {
         _panelState = KitchenTicketPanelState.readyForDispatch;
       } else if (item.ticket.status == KkfcStatus.reworking) {
-        _panelState = KitchenTicketPanelState.reworkRequired;
+        _panelState = KitchenTicketPanelState.qualityCheck;
         _t014IsReworking = true;
       } else if (item.ticket.status == KkfcStatus.checking) {
         _panelState = KitchenTicketPanelState.qualityCheck;
@@ -751,7 +751,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 SizedBox(height: KitchenSpace.md),
                 KitchenFilterBar(
                   trailing: Text(
-                    'FIGMA QA · T-014 / T-019 / T-020 interactive; other ticket actions are disabled samples.',
+                    'NOTE: This is still a static work-in-progress build.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontSize: 11,
                           color: context.kitchenTextMuted,

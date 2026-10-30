@@ -146,7 +146,7 @@ abstract final class KitchenBoardSampleData {
         ),
       ],
     ),
-    actionLabel: 'Return to QC',
+    actionLabel: 'View rework',
     isActionEnabled: true,
   );
 
