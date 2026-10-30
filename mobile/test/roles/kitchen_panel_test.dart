@@ -18,6 +18,7 @@ void main() {
     VoidCallback? onPassQC,
     VoidCallback? onFailQC,
     VoidCallback? onContinueToHandover,
+    VoidCallback? onAddPhoto,
     String? backButtonLabel,
     String? acknowledgeButtonLabel,
   }) {
@@ -35,6 +36,7 @@ void main() {
           onPassQC: onPassQC,
           onFailQC: onFailQC,
           onContinueToHandover: onContinueToHandover,
+          onAddPhoto: onAddPhoto,
           backButtonLabel: backButtonLabel,
           acknowledgeButtonLabel: acknowledgeButtonLabel,
         ),
@@ -52,6 +54,7 @@ void main() {
     VoidCallback? onPassQC,
     VoidCallback? onFailQC,
     VoidCallback? onContinueToHandover,
+    VoidCallback? onAddPhoto,
   }) {
     return MaterialApp(
       theme: counterTheme,
@@ -66,6 +69,7 @@ void main() {
           onPassQC: onPassQC,
           onFailQC: onFailQC,
           onContinueToHandover: onContinueToHandover,
+          onAddPhoto: onAddPhoto,
         ),
       ),
     );
@@ -423,6 +427,83 @@ void main() {
 
       expect(continued, isTrue);
     });
+
+    testWidgets(
+        'renders all required elements for photo required state (18 · Photo Missing)',
+        (tester) async {
+      await tester.pumpWidget(buildPanelSubject(
+        panelState: KitchenTicketPanelState.photoRequired,
+      ));
+      await tester.pumpAndSettle();
+
+      // Header
+      expect(find.text('PHOTO MISSING · BLOCKED'), findsOneWidget);
+      expect(find.text('Photo required'), findsOneWidget);
+      expect(find.text('Handover remains unavailable'), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      // Ticket Summary Info
+      expect(find.text("T-014 · AURELIA'S INASAL"), findsOneWidget);
+      expect(find.text('Dine-in · Table 3 · sample'), findsOneWidget);
+      expect(find.text('READY'), findsOneWidget);
+      expect(find.text('PAYMENT · UNPAID'), findsOneWidget);
+
+      // Items & Modifiers
+      expect(find.textContaining('Paa Inasal'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Pecho Inasal'), findsAtLeastNWidgets(1));
+
+      // Required Evidence Checklist
+      expect(find.text('REQUIRED EVIDENCE MISSING'), findsOneWidget);
+      expect(find.text('Add an authorized pre-handover photo'), findsOneWidget);
+      expect(find.text('Ticket stays READY until verified'), findsOneWidget);
+
+      // Notice that check icons are not shown for missing evidence
+      expect(find.byIcon(Icons.check), findsNothing);
+
+      // Permission Note Banner
+      expect(
+        find.text('No completion is implied by missing evidence.'),
+        findsOneWidget,
+      );
+
+      // Bottom Actions (Keep READY outlined, Add photo without demo navy filled)
+      expect(find.text('Keep READY'), findsOneWidget);
+      expect(find.text('Add photo'), findsOneWidget);
+    });
+
+    testWidgets('Keep READY button triggers onClose callback in photoRequired state',
+        (tester) async {
+      var closed = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.photoRequired,
+          onClose: () => closed = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Keep READY'));
+      await tester.pumpAndSettle();
+
+      expect(closed, isTrue);
+    });
+
+    testWidgets('Add photo button triggers onAddPhoto callback in photoRequired state',
+        (tester) async {
+      var photoAdded = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.photoRequired,
+          onAddPhoto: () => photoAdded = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Add photo'));
+      await tester.pumpAndSettle();
+
+      expect(photoAdded, isTrue);
+    });
   });
 
   group('KitchenTicketsPage integration with right panel', () {
@@ -754,10 +835,14 @@ void main() {
       addTearDown(tester.view.reset);
 
       var passQCCalled = false;
+      var continueHandoverCalled = false;
+      var addPhotoCalled = false;
       await tester.pumpWidget(
         buildPageSubject(
           size: const Size(1280, 1000),
           onPassQC: () => passQCCalled = true,
+          onContinueToHandover: () => continueHandoverCalled = true,
+          onAddPhoto: () => addPhotoCalled = true,
         ),
       );
       await tester.pumpAndSettle();
@@ -835,6 +920,44 @@ void main() {
       // READY: 03
       expect(find.text('03'), findsOneWidget);
 
+      // Tap "Continue to handover" on panel -> transitions to Photo required state (18 · Photo Missing)
+      await tester.tap(find.text('Continue to handover'));
+      await tester.pumpAndSettle();
+
+      expect(continueHandoverCalled, isTrue);
+
+      // Panel is now in Photo required state
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('PHOTO MISSING · BLOCKED'), findsOneWidget);
+      expect(find.text('Photo required'), findsOneWidget);
+      expect(find.text('Handover remains unavailable'), findsOneWidget);
+      expect(find.text('REQUIRED EVIDENCE MISSING'), findsOneWidget);
+      expect(find.text('Add an authorized pre-handover photo'), findsOneWidget);
+      expect(find.text('Ticket stays READY until verified'), findsOneWidget);
+      expect(
+        find.text('No completion is implied by missing evidence.'),
+        findsOneWidget,
+      );
+      expect(find.text('Keep READY'), findsOneWidget);
+      expect(find.text('Add photo'), findsOneWidget);
+
+      // Board lane counts remain:
+      // NEW ORDERS: 01
+      expect(find.text('01'), findsOneWidget);
+      // COOKING: 02, QUALITY CHECK: 02
+      expect(find.text('02'), findsNWidgets(2));
+      // READY: 03
+      expect(find.text('03'), findsOneWidget);
+
+      // Header shows Dispatcher identity
+      expect(find.text('Dispatcher · demo'), findsOneWidget);
+      expect(find.text('Access policy pending'), findsOneWidget);
+
+      // Tap "Add photo" invokes callback
+      await tester.tap(find.text('Add photo'));
+      await tester.pumpAndSettle();
+      expect(addPhotoCalled, isTrue);
+
       // Tap "Keep READY" closes the panel
       await tester.tap(find.text('Keep READY'));
       await tester.pumpAndSettle();
@@ -908,6 +1031,43 @@ void main() {
       await tester.tap(find.text('Continue to handover'));
       await tester.pumpAndSettle();
       expect(handoverCalled, isTrue);
+    });
+
+    testWidgets(
+        'Phone layout displays Photo required state with READY stage selected and Dispatcher identity in header',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      var photoAdded = false;
+      await tester.pumpWidget(
+        buildPageSubject(
+          size: const Size(400, 800),
+          selectedTicket: KitchenBoardSampleData.t014Ready,
+          initialPanelState: KitchenTicketPanelState.photoRequired,
+          onAddPhoto: () => photoAdded = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Photo required detail panel is displayed
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('PHOTO MISSING · BLOCKED'), findsOneWidget);
+      expect(find.text('Photo required'), findsOneWidget);
+      expect(find.text('Handover remains unavailable'), findsOneWidget);
+      expect(find.text('REQUIRED EVIDENCE MISSING'), findsOneWidget);
+      expect(find.text('Keep READY'), findsOneWidget);
+      expect(find.text('Add photo'), findsOneWidget);
+
+      // Phone Header shows Dispatcher identity
+      expect(find.text('Dispatcher'), findsOneWidget);
+      expect(find.text('Access TBD'), findsOneWidget);
+
+      // Tapping "Add photo" invokes callback
+      await tester.tap(find.text('Add photo'));
+      await tester.pumpAndSettle();
+      expect(photoAdded, isTrue);
     });
   });
 }

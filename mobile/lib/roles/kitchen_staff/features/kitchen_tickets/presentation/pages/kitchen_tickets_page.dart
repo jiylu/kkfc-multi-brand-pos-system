@@ -32,6 +32,7 @@ class KitchenTicketsPage extends StatefulWidget {
     this.onPassQC,
     this.onFailQC,
     this.onContinueToHandover,
+    this.onAddPhoto,
   });
 
   final KitchenTicketsViewState viewState;
@@ -45,6 +46,7 @@ class KitchenTicketsPage extends StatefulWidget {
   final VoidCallback? onPassQC;
   final VoidCallback? onFailQC;
   final VoidCallback? onContinueToHandover;
+  final VoidCallback? onAddPhoto;
 
   @override
   State<KitchenTicketsPage> createState() => _KitchenTicketsPageState();
@@ -66,7 +68,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     super.initState();
     _displayedTicket = widget.selectedTicket;
     _panelState = widget.initialPanelState;
-    if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
+    if (widget.initialPanelState == KitchenTicketPanelState.photoRequired) {
+      _panelState = KitchenTicketPanelState.photoRequired;
+    } else if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
       _panelState = KitchenTicketPanelState.readyForDispatch;
     } else if (widget.selectedTicket?.ticket.status == KkfcStatus.checking) {
       _panelState = KitchenTicketPanelState.qualityCheck;
@@ -104,7 +108,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     super.didUpdateWidget(oldWidget);
     if (widget.selectedTicket != null && oldWidget.selectedTicket == null) {
       _displayedTicket = widget.selectedTicket;
-      if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
+      if (widget.initialPanelState == KitchenTicketPanelState.photoRequired) {
+        _panelState = KitchenTicketPanelState.photoRequired;
+      } else if (widget.selectedTicket?.ticket.status == KkfcStatus.ready) {
         _panelState = KitchenTicketPanelState.readyForDispatch;
       } else if (widget.selectedTicket?.ticket.status == KkfcStatus.checking) {
         _panelState = KitchenTicketPanelState.qualityCheck;
@@ -226,6 +232,19 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
 
   void _handleContinueToHandover() {
     widget.onContinueToHandover?.call();
+    setState(() {
+      _panelState = KitchenTicketPanelState.photoRequired;
+      if (_localSelectedTicket?.ticket.ticketNumber == 'T-014' ||
+          _displayedTicket?.ticket.ticketNumber == 'T-014' ||
+          widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
+        _localSelectedTicket = KitchenBoardSampleData.t014Ready;
+        _displayedTicket = KitchenBoardSampleData.t014Ready;
+      }
+    });
+  }
+
+  void _handleAddPhoto() {
+    widget.onAddPhoto?.call();
   }
 
   void _handleClosePanel() {
@@ -300,6 +319,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onPassQC: _handlePassQC,
                 onFailQC: _handleFailQC,
                 onContinueToHandover: _handleContinueToHandover,
+                onAddPhoto: _handleAddPhoto,
               ),
             ),
           ),
@@ -323,6 +343,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onPassQC: _handlePassQC,
                 onFailQC: _handleFailQC,
                 onContinueToHandover: _handleContinueToHandover,
+                onAddPhoto: _handleAddPhoto,
               ),
             ),
           ),
@@ -332,7 +353,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
       body = _buildBoard(context, tablet);
     }
 
-    final isReady = _panelState == KitchenTicketPanelState.readyForDispatch;
+    final isReady = _panelState == KitchenTicketPanelState.readyForDispatch ||
+        _panelState == KitchenTicketPanelState.photoRequired;
     final isQC = _panelState == KitchenTicketPanelState.qualityCheck;
     final isPreparing = _panelState == KitchenTicketPanelState.preparing;
 
@@ -356,7 +378,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
   }
 
   Widget _buildBoard(BuildContext context, bool tablet) {
-    final isReady = _panelState == KitchenTicketPanelState.readyForDispatch;
+    final isReady = _panelState == KitchenTicketPanelState.readyForDispatch ||
+        _panelState == KitchenTicketPanelState.photoRequired;
     final isQC = _panelState == KitchenTicketPanelState.qualityCheck;
     final isPreparing = _panelState == KitchenTicketPanelState.preparing;
     final isAcknowledged = _panelState == KitchenTicketPanelState.acknowledged;

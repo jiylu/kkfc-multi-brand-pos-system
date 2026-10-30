@@ -10,11 +10,13 @@ class KitchenPanelConfirmChecklist extends StatelessWidget {
       'Check all items and modifiers',
       'Verify brand and destination',
     ],
+    this.showCheckIcon = true,
   });
 
   final String title;
   final Color titleColor;
   final List<String> items;
+  final bool showCheckIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +56,14 @@ class KitchenPanelConfirmChecklist extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.check,
-                  size: 16,
-                  color: Color(0xFF1E293B),
-                ),
-                const SizedBox(width: 8),
+                if (showCheckIcon) ...[
+                  const Icon(
+                    Icons.check,
+                    size: 16,
+                    color: Color(0xFF1E293B),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: Text(
                     items[i],
