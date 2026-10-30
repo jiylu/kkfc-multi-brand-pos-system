@@ -7,8 +7,10 @@ extension KitchenPalette on BuildContext {
 
   Color get kitchenChrome => _scheme.primary; // navy bars
   Color get kitchenOnChrome => _scheme.onPrimary;
-  Color get kitchenChromeRaised =>
-      Color.alphaBlend(_scheme.onPrimary.withValues(alpha: 0.12), _scheme.primary);
+  Color get kitchenChromeRaised => Color.alphaBlend(
+    _scheme.onPrimary.withValues(alpha: 0.12),
+    _scheme.primary,
+  );
   Color get kitchenSelected => _scheme.secondaryContainer; // peach
   Color get kitchenOnSelected => _scheme.onSecondaryContainer;
   Color get kitchenPage => _scheme.surface;

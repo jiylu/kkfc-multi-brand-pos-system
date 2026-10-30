@@ -10,10 +10,7 @@ import 'package:mobile/shared/widgets/status_badge/kkfc_status.dart';
 
 export 'package:mobile/shared/data/models/kitchen_ticket_data.dart';
 
-enum KitchenTicketVariant {
-  standard,
-  board,
-}
+enum KitchenTicketVariant { standard, board }
 
 class KitchenTicketCard extends StatelessWidget {
   const KitchenTicketCard({
@@ -124,50 +121,47 @@ class KitchenTicketCard extends StatelessWidget {
 
     final (statusBg, statusFg, statusText) = switch (ticket.status) {
       KkfcStatus.queued => (
-          const Color(0xFFE0F2FE),
-          const Color(0xFF0284C7),
-          'QUEUED'
-        ),
+        const Color(0xFFE0F2FE),
+        const Color(0xFF0284C7),
+        'QUEUED',
+      ),
       KkfcStatus.acknowledged => (
-          const Color(0xFFE0F2FE),
-          const Color(0xFF0284C7),
-          'ACKNOWLEDGED'
-        ),
+        const Color(0xFFE0F2FE),
+        const Color(0xFF0284C7),
+        'ACKNOWLEDGED',
+      ),
       KkfcStatus.preparing => (
-          const Color(0xFFFEF3C7),
-          const Color(0xFFD97706),
-          'PREPARING'
-        ),
+        const Color(0xFFFEF3C7),
+        const Color(0xFFD97706),
+        'PREPARING',
+      ),
       KkfcStatus.checking => (
-          const Color(0xFFEDE9FE),
-          const Color(0xFF7C3AED),
-          'CHECKING'
-        ),
+        const Color(0xFFEDE9FE),
+        const Color(0xFF7C3AED),
+        'CHECKING',
+      ),
       KkfcStatus.reworking => (
-          const Color(0xFFEDE9FE),
-          const Color(0xFF7C3AED),
-          'REWORKING'
-        ),
+        const Color(0xFFEDE9FE),
+        const Color(0xFF7C3AED),
+        'REWORKING',
+      ),
       KkfcStatus.ready => (
-          const Color(0xFFDCFCE7),
-          const Color(0xFF15803D),
-          'READY'
-        ),
+        const Color(0xFFDCFCE7),
+        const Color(0xFF15803D),
+        'READY',
+      ),
       _ => (
-          const Color(0xFFF1F5F9),
-          const Color(0xFF64748B),
-          ticket.status.name.toUpperCase()
-        ),
+        const Color(0xFFF1F5F9),
+        const Color(0xFF64748B),
+        ticket.status.name.toUpperCase(),
+      ),
     };
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
         boxShadow: const [
           BoxShadow(
             color: Color(0x08000000),
@@ -194,7 +188,10 @@ class KitchenTicketCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: isLate
                       ? const Color(0xFFFEE2E2)

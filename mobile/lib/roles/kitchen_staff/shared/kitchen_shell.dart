@@ -40,38 +40,38 @@ class KitchenShell extends StatelessWidget {
   }
 
   Widget _tablet() => Column(
-        children: [
-          KitchenTabletHeader(
-            role: staffRole ?? 'Kitchen staff',
-            status: staffStatus ?? 'Authorized workspace',
-          ),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                KitchenSideNav(
-                  selected: selectedDestination,
-                  onSelected: onDestinationSelected,
-                ),
-                Expanded(child: body),
-              ],
+    children: [
+      KitchenTabletHeader(
+        role: staffRole ?? 'Kitchen staff',
+        status: staffStatus ?? 'Authorized workspace',
+      ),
+      Expanded(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            KitchenSideNav(
+              selected: selectedDestination,
+              onSelected: onDestinationSelected,
             ),
-          ),
-        ],
-      );
+            Expanded(child: body),
+          ],
+        ),
+      ),
+    ],
+  );
 
   Widget _phone() => Column(
-        children: [
-          KitchenPhoneHeader(
-            bottom: phoneHeaderBottom,
-            role: staffRole ?? 'Kitchen staff',
-            status: staffStatus ?? 'Authorized',
-          ),
-          Expanded(child: body),
-          KitchenBottomNav(
-            selected: selectedDestination,
-            onSelected: onDestinationSelected,
-          ),
-        ],
-      );
+    children: [
+      KitchenPhoneHeader(
+        bottom: phoneHeaderBottom,
+        role: staffRole ?? 'Kitchen staff',
+        status: staffStatus ?? 'Authorized',
+      ),
+      Expanded(child: body),
+      KitchenBottomNav(
+        selected: selectedDestination,
+        onSelected: onDestinationSelected,
+      ),
+    ],
+  );
 }

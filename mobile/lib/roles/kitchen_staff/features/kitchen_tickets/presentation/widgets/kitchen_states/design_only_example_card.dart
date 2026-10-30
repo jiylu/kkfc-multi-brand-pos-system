@@ -21,7 +21,9 @@ class DesignOnlyExampleCard extends StatelessWidget {
         color: context.kitchenCardMuted,
         borderRadius: BorderRadius.circular(KitchenRadius.md),
         border: Border.all(
-            color: context.kitchenOutline, width: KitchenMetrics.borderWidth),
+          color: context.kitchenOutline,
+          width: KitchenMetrics.borderWidth,
+        ),
       ),
       child: SizedBox(
         width: double.infinity,
@@ -30,15 +32,27 @@ class DesignOnlyExampleCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('DESIGN-ONLY EXAMPLE',
-                  style: text.labelSmall?.copyWith(color: context.kitchenTextMuted)),
+              Text(
+                'DESIGN-ONLY EXAMPLE',
+                style: text.labelSmall?.copyWith(
+                  color: context.kitchenTextMuted,
+                ),
+              ),
               SizedBox(height: KitchenSpace.lg),
-              Text(title,
-                  style: text.titleMedium?.copyWith(
-                      color: context.kitchenText, fontWeight: FontWeight.w700)),
+              Text(
+                title,
+                style: text.titleMedium?.copyWith(
+                  color: context.kitchenText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               SizedBox(height: KitchenSpace.lg),
-              Text(message,
-                  style: text.bodySmall?.copyWith(color: context.kitchenTextMuted)),
+              Text(
+                message,
+                style: text.bodySmall?.copyWith(
+                  color: context.kitchenTextMuted,
+                ),
+              ),
             ],
           ),
         ),

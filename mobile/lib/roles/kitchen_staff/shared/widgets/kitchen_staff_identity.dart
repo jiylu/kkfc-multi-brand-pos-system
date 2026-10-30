@@ -20,8 +20,13 @@ class KitchenStaffIdentity extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(role,
-            style: text.labelLarge?.copyWith(color: color, fontWeight: FontWeight.w700)),
+        Text(
+          role,
+          style: text.labelLarge?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         Text(status, style: text.labelSmall?.copyWith(color: color)),
       ],
     );

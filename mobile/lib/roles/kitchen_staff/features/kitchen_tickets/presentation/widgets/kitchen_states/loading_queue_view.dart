@@ -17,10 +17,8 @@ class LoadingQueueView extends StatelessWidget {
       statusLabel: 'SYNC IN PROGRESS',
       headerIcon: Symbols.radio_button_unchecked,
       title: 'Loading Kitchen tickets',
-      description:
-          'Fetching current tickets. Totals, timers and actions are not yet confirmed.',
-      nextMessage:
-          'Prevent actions until the initial server response identifies ticket state.',
+      description: 'Fetching current tickets. Totals, timers and actions are not yet confirmed.',
+      nextMessage: 'Prevent actions until the initial server response identifies ticket state.',
       exampleTitle: 'Waiting for ticket data',
       exampleMessage:
           'Action buttons remain unavailable until the queue finishes loading.',

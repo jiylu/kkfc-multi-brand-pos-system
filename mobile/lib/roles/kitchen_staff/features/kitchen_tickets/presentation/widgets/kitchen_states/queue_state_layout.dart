@@ -54,9 +54,7 @@ class QueueStateLayout extends StatelessWidget {
         SizedBox(height: KitchenSpace.md),
         Text(
           description,
-          style: Theme.of(context)
-              .textTheme
-              .bodyMedium
+          style: Theme.of(context).textTheme.bodyMedium
               ?.copyWith(color: context.kitchenTextMuted),
         ),
         SizedBox(height: KitchenSpace.lg),

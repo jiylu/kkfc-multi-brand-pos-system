@@ -15,18 +15,22 @@ class KitchenFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = Theme.of(context).textTheme.labelLarge?.copyWith(
-        color: context.kitchenText, fontWeight: FontWeight.w700);
+    final label = Theme.of(context).textTheme.labelLarge
+        ?.copyWith(color: context.kitchenText, fontWeight: FontWeight.w700);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: context.kitchenCard,
         borderRadius: BorderRadius.circular(KitchenRadius.md),
         border: Border.all(
-            color: context.kitchenOutline, width: KitchenMetrics.borderWidth),
+          color: context.kitchenOutline,
+          width: KitchenMetrics.borderWidth,
+        ),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
-            horizontal: KitchenSpace.md, vertical: KitchenSpace.md),
+          horizontal: KitchenSpace.md,
+          vertical: KitchenSpace.md,
+        ),
         child: Row(
           children: [
             Expanded(

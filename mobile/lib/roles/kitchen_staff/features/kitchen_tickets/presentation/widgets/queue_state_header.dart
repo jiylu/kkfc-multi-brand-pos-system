@@ -35,9 +35,9 @@ class QueueStateHeader extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: context.kitchenText,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: context.kitchenText,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],

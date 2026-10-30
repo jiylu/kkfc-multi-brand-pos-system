@@ -35,10 +35,7 @@ class KitchenPhoneHeader extends StatelessWidget {
                 const Flexible(child: KitchenBrandCard()),
                 SizedBox(width: KitchenSpace.md),
                 Flexible(
-                  child: KitchenStaffIdentity(
-                    role: role,
-                    status: status,
-                  ),
+                  child: KitchenStaffIdentity(role: role, status: status),
                 ),
                 SizedBox(width: KitchenSpace.sm),
                 LogoutButton(

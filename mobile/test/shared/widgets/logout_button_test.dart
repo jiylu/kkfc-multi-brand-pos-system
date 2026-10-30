@@ -29,54 +29,53 @@ class _FakeAuthRepository extends AuthRepository {
 }
 
 void main() {
-  testWidgets('LogoutButton renders with tooltip and triggers sign-out on tap', (
-    tester,
-  ) async {
-    final repo = _FakeAuthRepository();
-    var onLoggedOutCalled = false;
+  testWidgets(
+    'LogoutButton renders with tooltip and triggers sign-out on tap',
+    (tester) async {
+      final repo = _FakeAuthRepository();
+      var onLoggedOutCalled = false;
 
-    final container = ProviderContainer(
-      overrides: [
-        initialTokenProvider.overrideWithValue('tok-abc'),
-        authRepositoryProvider.overrideWithValue(repo),
-      ],
-    );
-    addTearDown(container.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          initialTokenProvider.overrideWithValue('tok-abc'),
+          authRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    container.read(cartProvider.notifier).add(_meal);
-    container.read(orderReferenceProvider.notifier).set('REF-123');
-    container.read(storeReferenceProvider.notifier).set('STORE-1');
-    container.read(menuSearchProvider.notifier).set('chicken');
-    container.read(menuChannelProvider.notifier).select(MenuChannel.takeaway);
+      container.read(cartProvider.notifier).add(_meal);
+      container.read(orderReferenceProvider.notifier).set('REF-123');
+      container.read(storeReferenceProvider.notifier).set('STORE-1');
+      container.read(menuSearchProvider.notifier).set('chicken');
+      container.read(menuChannelProvider.notifier).select(MenuChannel.takeaway);
 
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp(
-          theme: counterTheme,
-          home: Scaffold(
-            body: LogoutButton(
-              onLoggedOut: () => onLoggedOutCalled = true,
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: counterTheme,
+            home: Scaffold(
+              body: LogoutButton(onLoggedOut: () => onLoggedOutCalled = true),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byType(LogoutButton), findsOneWidget);
-    expect(find.byTooltip('Logout'), findsOneWidget);
+      expect(find.byType(LogoutButton), findsOneWidget);
+      expect(find.byTooltip('Logout'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Logout'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Logout'));
+      await tester.pumpAndSettle();
 
-    expect(container.read(cartProvider), isEmpty);
-    expect(container.read(orderReferenceProvider), isEmpty);
-    expect(container.read(storeReferenceProvider), isEmpty);
-    expect(container.read(menuSearchProvider), isEmpty);
-    expect(container.read(menuChannelProvider), MenuChannel.dineIn);
-    expect(container.read(sessionTokenProvider), isNull);
-    expect(repo.logoutTokens, ['tok-abc']);
-    expect(onLoggedOutCalled, isTrue);
-  });
+      expect(container.read(cartProvider), isEmpty);
+      expect(container.read(orderReferenceProvider), isEmpty);
+      expect(container.read(storeReferenceProvider), isEmpty);
+      expect(container.read(menuSearchProvider), isEmpty);
+      expect(container.read(menuChannelProvider), MenuChannel.dineIn);
+      expect(container.read(sessionTokenProvider), isNull);
+      expect(repo.logoutTokens, ['tok-abc']);
+      expect(onLoggedOutCalled, isTrue);
+    },
+  );
 }

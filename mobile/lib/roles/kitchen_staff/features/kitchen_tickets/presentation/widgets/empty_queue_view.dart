@@ -19,7 +19,8 @@ class EmptyQueueView extends StatelessWidget {
       title: 'Queue is clear',
       description:
           'There are no confirmed orders in the selected brand/channel queue.',
-      nextMessage: 'New tickets appear after an order is confirmed by the server.',
+      nextMessage:
+          'New tickets appear after an order is confirmed by the server.',
       exampleTitle: 'No active tasks',
       exampleMessage:
           'A confirmed empty queue means no pending tickets for these filters. '

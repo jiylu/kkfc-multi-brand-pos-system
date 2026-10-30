@@ -62,7 +62,12 @@ void main() {
 
         expect(find.byType(LoginScreen), findsOneWidget);
         expect(
-          container.read(routerProvider).routeInformationProvider.value.uri.path,
+          container
+              .read(routerProvider)
+              .routeInformationProvider
+              .value
+              .uri
+              .path,
           AppRoutes.login,
         );
       },
@@ -82,8 +87,12 @@ void main() {
             tokenStoreProvider.overrideWithValue(_MemoryTokenStore()),
             menuItemsProvider.overrideWith((ref) async => []),
             availabilityMenuItemsProvider.overrideWith((ref) async => []),
-            authenticatedBrandIdProvider.overrideWith((ref) async => '00000000-0000-0000-0000-000000000001'),
-            assignedBrandProvider.overrideWith((ref) async => sampleAssignedBrands.first),
+            authenticatedBrandIdProvider.overrideWith(
+              (ref) async => '00000000-0000-0000-0000-000000000001',
+            ),
+            assignedBrandProvider.overrideWith(
+              (ref) async => sampleAssignedBrands.first,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -95,7 +104,12 @@ void main() {
 
         expect(find.byType(KitchenTicketsPage), findsOneWidget);
         expect(
-          container.read(routerProvider).routeInformationProvider.value.uri.path,
+          container
+              .read(routerProvider)
+              .routeInformationProvider
+              .value
+              .uri
+              .path,
           AppRoutes.kitchenTickets,
         );
       },
@@ -115,8 +129,12 @@ void main() {
             tokenStoreProvider.overrideWithValue(_MemoryTokenStore()),
             menuItemsProvider.overrideWith((ref) async => []),
             availabilityMenuItemsProvider.overrideWith((ref) async => []),
-            authenticatedBrandIdProvider.overrideWith((ref) async => '00000000-0000-0000-0000-000000000001'),
-            assignedBrandProvider.overrideWith((ref) async => sampleAssignedBrands.first),
+            authenticatedBrandIdProvider.overrideWith(
+              (ref) async => '00000000-0000-0000-0000-000000000001',
+            ),
+            assignedBrandProvider.overrideWith(
+              (ref) async => sampleAssignedBrands.first,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -128,7 +146,12 @@ void main() {
 
         expect(find.byType(KitchenTicketsPage), findsOneWidget);
         expect(
-          container.read(routerProvider).routeInformationProvider.value.uri.path,
+          container
+              .read(routerProvider)
+              .routeInformationProvider
+              .value
+              .uri
+              .path,
           AppRoutes.kitchenTickets,
         );
       },
@@ -148,8 +171,12 @@ void main() {
             tokenStoreProvider.overrideWithValue(_MemoryTokenStore()),
             menuItemsProvider.overrideWith((ref) async => []),
             availabilityMenuItemsProvider.overrideWith((ref) async => []),
-            authenticatedBrandIdProvider.overrideWith((ref) async => '00000000-0000-0000-0000-000000000001'),
-            assignedBrandProvider.overrideWith((ref) async => sampleAssignedBrands.first),
+            authenticatedBrandIdProvider.overrideWith(
+              (ref) async => '00000000-0000-0000-0000-000000000001',
+            ),
+            assignedBrandProvider.overrideWith(
+              (ref) async => sampleAssignedBrands.first,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -165,7 +192,12 @@ void main() {
 
         expect(find.byType(KitchenTicketsPage), findsOneWidget);
         expect(
-          container.read(routerProvider).routeInformationProvider.value.uri.path,
+          container
+              .read(routerProvider)
+              .routeInformationProvider
+              .value
+              .uri
+              .path,
           AppRoutes.kitchenTickets,
         );
       },
@@ -185,8 +217,12 @@ void main() {
             tokenStoreProvider.overrideWithValue(_MemoryTokenStore()),
             menuItemsProvider.overrideWith((ref) async => []),
             availabilityMenuItemsProvider.overrideWith((ref) async => []),
-            authenticatedBrandIdProvider.overrideWith((ref) async => '00000000-0000-0000-0000-000000000001'),
-            assignedBrandProvider.overrideWith((ref) async => sampleAssignedBrands.first),
+            authenticatedBrandIdProvider.overrideWith(
+              (ref) async => '00000000-0000-0000-0000-000000000001',
+            ),
+            assignedBrandProvider.overrideWith(
+              (ref) async => sampleAssignedBrands.first,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -202,7 +238,12 @@ void main() {
 
         expect(find.byType(KitchenTicketsPage), findsNothing);
         expect(
-          container.read(routerProvider).routeInformationProvider.value.uri.path,
+          container
+              .read(routerProvider)
+              .routeInformationProvider
+              .value
+              .uri
+              .path,
           AppRoutes.menu,
         );
       },
@@ -222,8 +263,12 @@ void main() {
             tokenStoreProvider.overrideWithValue(_MemoryTokenStore()),
             menuItemsProvider.overrideWith((ref) async => []),
             availabilityMenuItemsProvider.overrideWith((ref) async => []),
-            authenticatedBrandIdProvider.overrideWith((ref) async => '00000000-0000-0000-0000-000000000001'),
-            assignedBrandProvider.overrideWith((ref) async => sampleAssignedBrands.first),
+            authenticatedBrandIdProvider.overrideWith(
+              (ref) async => '00000000-0000-0000-0000-000000000001',
+            ),
+            assignedBrandProvider.overrideWith(
+              (ref) async => sampleAssignedBrands.first,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -243,7 +288,12 @@ void main() {
         expect(container.read(userRoleProvider), isNull);
         expect(find.byType(LoginScreen), findsOneWidget);
         expect(
-          container.read(routerProvider).routeInformationProvider.value.uri.path,
+          container
+              .read(routerProvider)
+              .routeInformationProvider
+              .value
+              .uri
+              .path,
           AppRoutes.login,
         );
       },
@@ -263,8 +313,12 @@ void main() {
             tokenStoreProvider.overrideWithValue(_MemoryTokenStore()),
             menuItemsProvider.overrideWith((ref) async => []),
             availabilityMenuItemsProvider.overrideWith((ref) async => []),
-            authenticatedBrandIdProvider.overrideWith((ref) async => '00000000-0000-0000-0000-000000000001'),
-            assignedBrandProvider.overrideWith((ref) async => sampleAssignedBrands.first),
+            authenticatedBrandIdProvider.overrideWith(
+              (ref) async => '00000000-0000-0000-0000-000000000001',
+            ),
+            assignedBrandProvider.overrideWith(
+              (ref) async => sampleAssignedBrands.first,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -284,7 +338,12 @@ void main() {
         expect(container.read(userRoleProvider), isNull);
         expect(find.byType(LoginScreen), findsOneWidget);
         expect(
-          container.read(routerProvider).routeInformationProvider.value.uri.path,
+          container
+              .read(routerProvider)
+              .routeInformationProvider
+              .value
+              .uri
+              .path,
           AppRoutes.login,
         );
       },

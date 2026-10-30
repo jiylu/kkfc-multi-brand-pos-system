@@ -28,18 +28,22 @@ class KitchenBoardPhoneView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isQC = stageTitle.toUpperCase().contains('QC') ||
+    final isQC =
+        stageTitle.toUpperCase().contains('QC') ||
         stageTitle.toUpperCase().contains('QUALITY');
     final isCooking = stageTitle.toUpperCase().contains('COOK');
-    final effectiveBg = stageBackgroundColor ??
+    final effectiveBg =
+        stageBackgroundColor ??
         (isQC
             ? const Color(0xFFF7F3FD)
             : (isCooking ? const Color(0xFFFDF6EE) : const Color(0xFFF1F6FB)));
-    final effectiveBorder = stageBorderColor ??
+    final effectiveBorder =
+        stageBorderColor ??
         (isQC
             ? const Color(0xFFE8DCFA)
             : (isCooking ? const Color(0xFFF7E2CD) : const Color(0xFFD6E4EE)));
-    final effectiveColor = stageColor ??
+    final effectiveColor =
+        stageColor ??
         (isQC
             ? const Color(0xFF7C3AED)
             : (isCooking ? const Color(0xFFD97706) : const Color(0xFF0284C7)));

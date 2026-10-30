@@ -4,11 +4,7 @@ import 'package:mobile/shared/widgets/kitchen_ticket_card/kitchen_ticket_header.
 
 /// Compact card showing the upcoming ticket in the phone queue.
 class UpNextTicketCard extends StatelessWidget {
-  const UpNextTicketCard({
-    super.key,
-    required this.ticket,
-    this.onTap,
-  });
+  const UpNextTicketCard({super.key, required this.ticket, this.onTap});
 
   final KitchenTicketData ticket;
   final VoidCallback? onTap;
@@ -25,10 +21,7 @@ class UpNextTicketCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFE2E8F0),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
           boxShadow: const [
             BoxShadow(
               color: Color(0x08000000),
@@ -54,10 +47,7 @@ class UpNextTicketCard extends StatelessWidget {
             const SizedBox(height: 3),
             Text(
               '$brandShort · ${ticket.channel} · $elapsedStr',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF64748B),
-              ),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
             ),
             const SizedBox(height: 10),
             for (var i = 0; i < ticket.items.length; i++) ...[

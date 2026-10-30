@@ -25,12 +25,20 @@ class KitchenBoardHeading extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style: text.headlineMedium?.copyWith(
-                      color: context.kitchenText, fontWeight: FontWeight.w700)),
+              Text(
+                title,
+                style: text.headlineMedium?.copyWith(
+                  color: context.kitchenText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               SizedBox(height: KitchenSpace.xs),
-              Text(subtitle,
-                  style: text.bodySmall?.copyWith(color: context.kitchenTextMuted)),
+              Text(
+                subtitle,
+                style: text.bodySmall?.copyWith(
+                  color: context.kitchenTextMuted,
+                ),
+              ),
             ],
           ),
         ),

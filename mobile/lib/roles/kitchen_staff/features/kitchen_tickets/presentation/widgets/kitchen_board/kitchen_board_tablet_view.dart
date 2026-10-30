@@ -34,10 +34,7 @@ class KitchenBoardTabletView extends StatelessWidget {
         tickets: qualityCheck,
         onTicketAction: onTicketAction,
       ),
-      KitchenLaneColumn.ready(
-        tickets: ready,
-        onTicketAction: onTicketAction,
-      ),
+      KitchenLaneColumn.ready(tickets: ready, onTicketAction: onTicketAction),
     ];
 
     return LayoutBuilder(

@@ -32,16 +32,11 @@ class KitchenSegmentTabs extends StatelessWidget {
       child: Row(
         mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final s in segments) expand ? Expanded(child: s) : s,
-        ],
+        children: [for (final s in segments) expand ? Expanded(child: s) : s],
       ),
     );
     if (expand) return row;
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: row,
-    );
+    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: row);
   }
 }
 
@@ -54,7 +49,9 @@ class _Segment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? context.kitchenOnSelected : context.kitchenOnChrome;
+    final color = selected
+        ? context.kitchenOnSelected
+        : context.kitchenOnChrome;
     return Semantics(
       button: true,
       selected: selected,
@@ -65,17 +62,17 @@ class _Segment extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: KitchenMetrics.controlHeight),
+            constraints: const BoxConstraints(
+              minHeight: KitchenMetrics.controlHeight,
+            ),
             child: Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: KitchenSpace.lg),
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(context).textTheme.labelMedium
+                      ?.copyWith(color: color, fontWeight: FontWeight.w700),
                 ),
               ),
             ),

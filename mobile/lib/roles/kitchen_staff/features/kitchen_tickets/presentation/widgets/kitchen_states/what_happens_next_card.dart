@@ -17,7 +17,9 @@ class WhatHappensNextCard extends StatelessWidget {
         color: context.kitchenCardMuted,
         borderRadius: BorderRadius.circular(KitchenRadius.md),
         border: Border.all(
-            color: context.kitchenOutline, width: KitchenMetrics.borderWidth),
+          color: context.kitchenOutline,
+          width: KitchenMetrics.borderWidth,
+        ),
       ),
       child: SizedBox(
         width: double.infinity,
@@ -26,13 +28,18 @@ class WhatHappensNextCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('WHAT HAPPENS NEXT',
-                  style: text.labelSmall?.copyWith(
-                      color: context.semanticColors.info.fg,
-                      fontWeight: FontWeight.w700)),
+              Text(
+                'WHAT HAPPENS NEXT',
+                style: text.labelSmall?.copyWith(
+                  color: context.semanticColors.info.fg,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               SizedBox(height: KitchenSpace.sm),
-              Text(message,
-                  style: text.bodySmall?.copyWith(color: context.kitchenText)),
+              Text(
+                message,
+                style: text.bodySmall?.copyWith(color: context.kitchenText),
+              ),
             ],
           ),
         ),

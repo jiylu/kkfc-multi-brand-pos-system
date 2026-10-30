@@ -23,11 +23,7 @@ class KitchenPanelTicketInfo extends StatelessWidget {
     status: KkfcStatus.queued,
     channel: 'Dine-in',
     reference: 'Table 3 · sample',
-    brand: AssignedBrand(
-      id: 'brand-ai',
-      code: 'AI',
-      name: "Aurelia's Inasal",
-    ),
+    brand: AssignedBrand(id: 'brand-ai', code: 'AI', name: "Aurelia's Inasal"),
     items: [
       KitchenTicketItem(
         quantity: 2,
@@ -58,28 +54,26 @@ class KitchenPanelTicketInfo extends StatelessWidget {
 
     final (statusBg, statusFg) = switch (effectiveStatus) {
       KkfcStatus.queued || KkfcStatus.acknowledged => (
-          const Color(0xFFE0F2FE),
-          const Color(0xFF0284C7),
-        ),
+        const Color(0xFFE0F2FE),
+        const Color(0xFF0284C7),
+      ),
       KkfcStatus.preparing => (
-          const Color(0xFFFEF3C7),
-          const Color(0xFFD97706),
-        ),
+        const Color(0xFFFEF3C7),
+        const Color(0xFFD97706),
+      ),
       KkfcStatus.checking || KkfcStatus.reworking => (
-          const Color(0xFFEDE9FE),
-          const Color(0xFF7C3AED),
-        ),
+        const Color(0xFFEDE9FE),
+        const Color(0xFF7C3AED),
+      ),
       KkfcStatus.ready || KkfcStatus.handedOver => (
-          const Color(0xFFDCFCE7),
-          const Color(0xFF15803D),
-        ),
-      _ => (
-          const Color(0xFFF1F5F9),
-          const Color(0xFF64748B),
-        ),
+        const Color(0xFFDCFCE7),
+        const Color(0xFF15803D),
+      ),
+      _ => (const Color(0xFFF1F5F9), const Color(0xFF64748B)),
     };
 
-    final brandLine = '${ticket.ticketNumber} · ${ticket.brand.name.toUpperCase()}';
+    final brandLine =
+        '${ticket.ticketNumber} · ${ticket.brand.name.toUpperCase()}';
     final destinationLine = ticket.reference.contains('sample')
         ? '${ticket.channel} · ${ticket.reference}'
         : '${ticket.channel} · ${ticket.reference} · sample';
@@ -88,10 +82,7 @@ class KitchenPanelTicketInfo extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
         boxShadow: const [
           BoxShadow(
             color: Color(0x06000000),
@@ -150,10 +141,7 @@ class KitchenPanelTicketInfo extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: const Color(0xFFE2E8F0),
-                    width: 1,
-                  ),
+                  border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
                 ),
                 child: Text(
                   paymentStatus,

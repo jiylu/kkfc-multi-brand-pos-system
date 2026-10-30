@@ -24,7 +24,8 @@ class QueueActionButton extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: KitchenSpace.xl),
         alignment: Alignment.centerLeft,
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(KitchenRadius.sm)),
+          borderRadius: BorderRadius.circular(KitchenRadius.sm),
+        ),
       ),
       child: Text(label),
     );

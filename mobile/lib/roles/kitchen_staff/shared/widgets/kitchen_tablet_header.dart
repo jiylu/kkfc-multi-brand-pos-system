@@ -21,7 +21,10 @@ class KitchenTabletHeader extends StatelessWidget {
     return ColoredBox(
       color: context.kitchenChrome,
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: KitchenSpace.lg, vertical: KitchenSpace.md),
+        padding: EdgeInsets.symmetric(
+          horizontal: KitchenSpace.lg,
+          vertical: KitchenSpace.md,
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -35,10 +38,7 @@ class KitchenTabletHeader extends StatelessWidget {
               ),
             ),
             SizedBox(width: KitchenSpace.lg),
-            KitchenStaffIdentity(
-              role: role,
-              status: status,
-            ),
+            KitchenStaffIdentity(role: role, status: status),
             SizedBox(width: KitchenSpace.sm),
             LogoutButton(color: context.kitchenOnChrome),
           ],

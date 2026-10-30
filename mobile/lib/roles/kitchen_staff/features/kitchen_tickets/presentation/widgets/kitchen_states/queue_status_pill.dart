@@ -19,15 +19,15 @@ class QueueStatusPill extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
-            horizontal: KitchenSpace.md, vertical: KitchenSpace.sm),
+          horizontal: KitchenSpace.md,
+          vertical: KitchenSpace.sm,
+        ),
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text(
             label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: tone.fg,
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: tone.fg, fontWeight: FontWeight.w700),
           ),
         ),
       ),

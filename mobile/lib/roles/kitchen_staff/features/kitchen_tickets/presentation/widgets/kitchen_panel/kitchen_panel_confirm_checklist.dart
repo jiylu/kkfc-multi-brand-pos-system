@@ -26,10 +26,7 @@ class KitchenPanelConfirmChecklist extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
         boxShadow: const [
           BoxShadow(
             color: Color(0x06000000),
@@ -59,11 +56,7 @@ class KitchenPanelConfirmChecklist extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (showCheckIcon) ...[
-                  const Icon(
-                    Icons.check,
-                    size: 16,
-                    color: Color(0xFF1E293B),
-                  ),
+                  const Icon(Icons.check, size: 16, color: Color(0xFF1E293B)),
                   const SizedBox(width: 8),
                 ],
                 Expanded(
@@ -79,10 +72,7 @@ class KitchenPanelConfirmChecklist extends StatelessWidget {
               ],
             ),
           ],
-          if (footer != null) ...[
-            const SizedBox(height: 12),
-            footer!,
-          ],
+          if (footer != null) ...[const SizedBox(height: 12), footer!],
         ],
       ),
     );

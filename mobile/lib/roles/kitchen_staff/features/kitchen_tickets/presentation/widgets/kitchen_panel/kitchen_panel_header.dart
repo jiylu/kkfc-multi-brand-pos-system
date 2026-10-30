@@ -28,23 +28,19 @@ class KitchenPanelHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedTitle = title ??
+    final resolvedTitle =
+        title ??
         (ticketNumber != null
             ? (ticketNumber!.startsWith('Ticket')
-                ? ticketNumber!
-                : 'Ticket $ticketNumber')
+                  ? ticketNumber!
+                  : 'Ticket $ticketNumber')
             : 'Ticket T-014');
 
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
         border: topAccentColor != null
-            ? Border(
-                top: BorderSide(
-                  color: topAccentColor!,
-                  width: 3,
-                ),
-              )
+            ? Border(top: BorderSide(color: topAccentColor!, width: 3))
             : null,
       ),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),

@@ -22,16 +22,25 @@ class KitchenBrandCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(KitchenRadius.sm),
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: KitchenSpace.md, vertical: KitchenSpace.sm),
+        padding: EdgeInsets.symmetric(
+          horizontal: KitchenSpace.md,
+          vertical: KitchenSpace.sm,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: text.titleSmall?.copyWith(
-                    color: context.kitchenText, fontWeight: FontWeight.w700)),
-            Text(subtitle,
-                style: text.labelSmall?.copyWith(color: context.kitchenTextMuted)),
+            Text(
+              title,
+              style: text.titleSmall?.copyWith(
+                color: context.kitchenText,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: text.labelSmall?.copyWith(color: context.kitchenTextMuted),
+            ),
           ],
         ),
       ),

@@ -14,20 +14,30 @@ class KitchenSampleBadge extends StatelessWidget {
         color: context.kitchenCard,
         borderRadius: BorderRadius.circular(KitchenRadius.sm),
         border: Border.all(
-            color: context.kitchenOutline, width: KitchenMetrics.borderWidth),
+          color: context.kitchenOutline,
+          width: KitchenMetrics.borderWidth,
+        ),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
-            horizontal: KitchenSpace.md, vertical: KitchenSpace.sm),
+          horizontal: KitchenSpace.md,
+          vertical: KitchenSpace.sm,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('KITCHEN STAFF',
-                style: text.labelMedium?.copyWith(
-                    color: context.kitchenText, fontWeight: FontWeight.w700)),
-            Text('DESIGN SAMPLE · NOT LIVE',
-                style: text.labelSmall?.copyWith(color: context.kitchenTextMuted)),
+            Text(
+              'KITCHEN STAFF',
+              style: text.labelMedium?.copyWith(
+                color: context.kitchenText,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              'DESIGN SAMPLE · NOT LIVE',
+              style: text.labelSmall?.copyWith(color: context.kitchenTextMuted),
+            ),
           ],
         ),
       ),

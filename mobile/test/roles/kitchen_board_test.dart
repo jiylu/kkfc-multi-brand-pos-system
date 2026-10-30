@@ -26,15 +26,14 @@ void main() {
   }
 
   group('Kitchen Board · Tablet', () {
-    testWidgets('renders 4 lanes with sample tickets and headers',
-        (tester) async {
+    testWidgets('renders 4 lanes with sample tickets and headers', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1280, 1000);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        buildSubject(size: const Size(1280, 1000)),
-      );
+      await tester.pumpWidget(buildSubject(size: const Size(1280, 1000)));
       await tester.pumpAndSettle();
 
       // Tablet chrome & navigation
@@ -84,15 +83,14 @@ void main() {
   });
 
   group('Kitchen Board · Phone', () {
-    testWidgets('renders stage queue with active card and up next card',
-        (tester) async {
+    testWidgets('renders stage queue with active card and up next card', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(400, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        buildSubject(size: const Size(400, 800)),
-      );
+      await tester.pumpWidget(buildSubject(size: const Size(400, 800)));
       await tester.pumpAndSettle();
 
       // Phone chrome & navigation

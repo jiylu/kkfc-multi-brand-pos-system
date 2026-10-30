@@ -20,7 +20,9 @@ class KitchenNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? context.kitchenOnSelected : context.kitchenOnChrome;
+    final color = selected
+        ? context.kitchenOnSelected
+        : context.kitchenOnChrome;
     return Semantics(
       button: true,
       selected: selected,
@@ -32,7 +34,9 @@ class KitchenNavItem extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: KitchenMetrics.controlHeight),
+            constraints: const BoxConstraints(
+              minHeight: KitchenMetrics.controlHeight,
+            ),
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: KitchenSpace.xs,
@@ -47,7 +51,8 @@ class KitchenNavItem extends StatelessWidget {
                   Text(
                     destination.label,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
+                    style: Theme.of(context).textTheme.labelSmall
+                        ?.copyWith(color: color),
                   ),
                 ],
               ),

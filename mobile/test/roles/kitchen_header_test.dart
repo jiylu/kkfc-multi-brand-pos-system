@@ -8,12 +8,12 @@ import 'package:mobile/roles/kitchen_staff/shared/widgets/kitchen_tablet_header.
 import 'package:mobile/shared/widgets/logout_button.dart';
 
 void main() {
-  testWidgets('KitchenTabletHeader centers all header contents', (tester) async {
+  testWidgets('KitchenTabletHeader centers all header contents', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(body: KitchenTabletHeader()),
-        ),
+        child: MaterialApp(home: Scaffold(body: KitchenTabletHeader())),
       ),
     );
 
@@ -33,9 +33,7 @@ void main() {
   testWidgets('KitchenPhoneHeader centers all header contents', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(body: KitchenPhoneHeader()),
-        ),
+        child: MaterialApp(home: Scaffold(body: KitchenPhoneHeader())),
       ),
     );
 

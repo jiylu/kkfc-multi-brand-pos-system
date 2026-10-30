@@ -17,7 +17,10 @@ class KitchenQueuePanel extends StatelessWidget {
         color: context.kitchenCard,
         borderRadius: BorderRadius.circular(KitchenRadius.lg),
         border: Border(
-          top: BorderSide(color: tone.fg, width: KitchenMetrics.panelAccentWidth),
+          top: BorderSide(
+            color: tone.fg,
+            width: KitchenMetrics.panelAccentWidth,
+          ),
         ),
       ),
       child: Padding(padding: EdgeInsets.all(KitchenSpace.lg), child: child),

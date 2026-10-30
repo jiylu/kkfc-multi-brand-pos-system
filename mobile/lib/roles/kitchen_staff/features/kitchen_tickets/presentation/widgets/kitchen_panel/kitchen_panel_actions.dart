@@ -41,7 +41,8 @@ class KitchenPanelActions extends StatelessWidget {
       final passLabel = backLabel.isEmpty || backLabel == 'Back to board'
           ? 'Pass QC'
           : backLabel;
-      final failLabel = acknowledgeLabel.isEmpty || acknowledgeLabel == 'Acknowledge ticket'
+      final failLabel =
+          acknowledgeLabel.isEmpty || acknowledgeLabel == 'Acknowledge ticket'
           ? 'Fail QC'
           : acknowledgeLabel;
 
@@ -78,7 +79,9 @@ class KitchenPanelActions extends StatelessWidget {
                 height: 48,
                 child: FilledButton(
                   key: const ValueKey('kitchen_panel_fail_qc_button'),
-                  onPressed: isAcknowledgeEnabled ? (onFailQC ?? onAcknowledge) : null,
+                  onPressed: isAcknowledgeEnabled
+                      ? (onFailQC ?? onAcknowledge)
+                      : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFB91C1C),
                     disabledBackgroundColor: const Color(0xFF94A3B8),
@@ -138,8 +141,8 @@ class KitchenPanelActions extends StatelessWidget {
                   label: backLabel == 'Back to board'
                       ? 'Back to brand'
                       : (backLabel == 'Stay acknowledged'
-                          ? 'Stay here'
-                          : backLabel),
+                            ? 'Stay here'
+                            : backLabel),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
