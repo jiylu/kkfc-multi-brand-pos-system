@@ -16,7 +16,8 @@
         "publicPath": "./reports/integration",
         "filename": "report.html",
         "pageTitle": "KKFC POS - Integration Tests (IT) Report",
-        "expand": true
+        "expand": false,
+        "inlineSource": true
       }
     ]
   ]

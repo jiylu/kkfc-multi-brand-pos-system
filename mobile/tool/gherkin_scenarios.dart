@@ -9,7 +9,7 @@ List<Map<String, String>> readAuthScenarios(String source) {
     final text = line.trim();
     if (text.isEmpty || text.startsWith('#')) continue;
     if (text.startsWith('@')) {
-      pendingId = RegExp(r'@([A-Z]+-MOB-AUTH-\d+)\b')
+      pendingId = RegExp(r'@([A-Z]+-MOB-(?:AUTH|POS|ORD)-\d+)\b')
           .firstMatch(text)
           ?.group(1);
     } else if (text.startsWith('Feature:')) {

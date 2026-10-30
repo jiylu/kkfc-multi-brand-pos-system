@@ -12,6 +12,7 @@
   "include": [
     "seed.ts",
     "seed-test.ts",
+    "mobile-pos-fixtures.ts",
     "seed.check.ts",
     "../src/database/database.config.ts"
   ]

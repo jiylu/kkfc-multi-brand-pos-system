@@ -82,7 +82,108 @@ continue to run separately.
 using the real login API and platform secure storage. It checks successful login,
 the redirect to the menu, token persistence, acceptance of that token by
 `GET /auth/me`, and rejection of a wrong password without a local session.
-The menu currently uses sample data; these tests cover authentication only.
+These tests cover authentication only; the separate POS suite covers the API menu and cart flow.
+
+### Mobile POS core flow integration tests
+
+`integration_test/pos_core_test.dart` is a separate device suite covering the real
+API-backed flow from login through the assigned brand, channel selection, menu,
+and cart. It checks adding and merging quantities, cart controls and clearing,
+Dine-in to Takeaway repricing, search, and rejection of unavailable menu items.
+Staff currently have one assigned brand; the test verifies the assigned brand
+loads from the API rather than testing access to multiple brands. The cart is
+local draft state. Order submission, payments, and persisted orders are outside
+this suite's scope. No providers or HTTP responses are mocked.
+
+Start the same isolated database and test API described below. Then, from
+`server/`, prepare fixtures on that API's test database:
+
+```powershell
+$env:TEST_DATABASE_URL = 'postgresql://pos:mobile-test-only@localhost:5544/pos_mobile_test'
+npx.cmd ts-node -P prisma/tsconfig.seed.json prisma/mobile-pos-fixtures.ts prepare
+```
+
+This creates a private test brand, cashier account, recipe, two menu items, and
+Dine-in (100 pesos) / Takeaway (125 pesos) channel prices. It saves generated test
+credentials and IDs in gitignored `mobile/.fixtures/pos-flow.json`. Preparation
+requires a database with `test` in its name and refuses to overwrite an existing
+fixture file. It does not reset or alter existing accounts or catalogs.
+
+With the API and emulator running, run from `mobile/`:
+
+```powershell
+dart run tool/run_integration_tests.dart --suite=pos -d emulator-5554
+```
+
+HTML, JSON, Gherkin, and raw logs are saved under `reports/integration/<timestamp>/`.
+The Gherkin source is `features/mobile/pos-core.integration.feature`. The default
+runner without `--suite=pos` still runs only the authentication suite. Neither
+device suite runs in CI.
+
+For a USB-connected phone, configure `adb reverse tcp:3001 tcp:3001` and use:
+
+```powershell
+dart run tool/run_integration_tests.dart --suite=pos -d <device-id> --dart-define-from-file=.fixtures/pos-flow.json --dart-define=API_URL=http://localhost:3001/api
+```
+
+Each test starts signed out and revokes its own session afterward. After testing,
+run from `server/` with the same `TEST_DATABASE_URL`:
+
+```powershell
+npx.cmd ts-node -P prisma/tsconfig.seed.json prisma/mobile-pos-fixtures.ts cleanup
+```
+
+Cleanup deletes only this fixture's records and removes its generated file. Stop
+the temporary database only after cleanup. Regenerate fixtures before rerunning
+the suite if they were removed.
+
+### Order review and API lifecycle integration tests
+
+The separate `--suite=orders` suite combines current mobile UI coverage with real
+API contract checks. **The mobile Send action currently only creates a draft.**
+It does not call `/verify` or `/confirm`, the duplicate-specific UI is not wired
+to API conflicts, and the confirmation screen's ticket is a placeholder.
+These limitations are also shown in the HTML report; passing this suite does not
+mean the complete verification/confirmation flow is connected in the mobile UI.
+
+The suite covers:
+
+- Login, assigned brand/channel/menu/cart, review, and repeated-send suppression
+  in the UI, followed by direct API verification and confirmation of that draft.
+- Real API create retries, conflicting UUID payloads, brand-prefixed daily order
+  codes, platform duplicate prevention, and idempotent confirmation/ticket creation.
+- Availability changes through an isolated fixture manager: the API rejects a
+  stale draft at verification/confirmation, and the UI preserves a rejected cart.
+  Stock quantity reservation/posting is outside the backend's current scope.
+
+Start the shared test API below, then prepare separate order fixtures from
+`server/` (these do not overwrite the earlier POS fixture):
+
+```powershell
+$env:TEST_DATABASE_URL = 'postgresql://pos:mobile-test-only@localhost:5544/pos_mobile_test'
+npx.cmd ts-node -P prisma/tsconfig.seed.json prisma/mobile-pos-fixtures.ts prepare --orders
+```
+
+Run from `mobile/`:
+
+```powershell
+dart run tool/run_integration_tests.dart --suite=orders -d emulator-5554
+```
+
+The gitignored `.fixtures/order-flow.json` contains the dedicated brand, staff
+and manager accounts and menu IDs. The suite creates real test orders and
+tickets. References/UUIDs are unique per run and tests restore changed availability.
+Run cleanup from `server/` with the same `TEST_DATABASE_URL` when finished:
+
+```powershell
+npx.cmd ts-node -P prisma/tsconfig.seed.json prisma/mobile-pos-fixtures.ts cleanup --orders
+```
+
+Cleanup removes this fixture's orders, tickets, daily counters, catalog, accounts,
+and sessions only. Reports include HTML, Gherkin, JSON, and raw logs under
+`reports/integration/`. This suite is not added to CI.
+
+### Shared test API setup
 
 Start the isolated, temporary PostgreSQL database from the repository root:
 
