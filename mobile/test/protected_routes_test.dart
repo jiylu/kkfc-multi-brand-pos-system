@@ -22,6 +22,7 @@ void main() {
   final routes = [
     AppRoutes.menu,
     AppRoutes.orders,
+    AppRoutes.cancelOrder,
     AppRoutes.channelChange,
     AppRoutes.availability,
   ];

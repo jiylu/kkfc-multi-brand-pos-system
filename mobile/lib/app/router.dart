@@ -20,6 +20,7 @@ import '../features/order_entry/presentation/pages/order_entry_screen.dart';
 import '../features/order_entry/presentation/pages/platform_reference_screen.dart';
 import '../roles/kitchen_staff/features/kitchen_tickets/presentation/pages/kitchen_tickets_page.dart';
 import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/data/models/kitchen_tickets_view_state.dart';
+import '../features/orders/cancel/presentation/pages/cancel_order_screen.dart';
 import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -77,6 +78,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.orders,
         builder: (context, state) => const OrdersScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.cancelOrder,
+        builder: (context, state) {
+          // Live mode is opt-in: /orders/cancel?orderId=<uuid>[&orderCode=GC-00001]
+          // Without orderId the screen runs the demo states with sample data.
+          final query = state.uri.queryParameters;
+          return CancelOrderScreen(
+            orderId: query['orderId'],
+            orderCode: query['orderCode'],
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.availability,
