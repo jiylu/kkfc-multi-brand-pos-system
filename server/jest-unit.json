@@ -17,7 +17,8 @@
         "publicPath": "./reports/unit",
         "filename": "report.html",
         "pageTitle": "KKFC POS - Unit Tests (UT) Report",
-        "expand": true
+        "expand": false,
+        "inlineSource": true
       }
     ]
   ]

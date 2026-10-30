@@ -9,7 +9,11 @@ async function main() {
   requireTestDatabase();
   const database = new URL(process.env.TEST_DATABASE_URL!);
   const databaseId = `${database.host}${database.pathname}`;
-  const path = resolve(__dirname, '../../mobile/.fixtures/pos-flow.json');
+  const orders = process.argv.includes('--orders');
+  const path = resolve(
+    __dirname,
+    `../../mobile/.fixtures/${orders ? 'order' : 'pos'}-flow.json`,
+  );
   const prisma = new PrismaService();
   try {
     if (process.argv[2] === 'cleanup') {
@@ -20,6 +24,14 @@ async function main() {
       if (fixture.POS_DATABASE !== databaseId)
         throw new Error('Fixture belongs to a different test database.');
       await prisma.$transaction(async (tx) => {
+        const orderWhere = { brand_id: fixture.POS_BRAND_ID };
+        await tx.orderItemModifier.deleteMany({
+          where: { order_item: { order: orderWhere } },
+        });
+        await tx.kitchenTicket.deleteMany({ where: { order: orderWhere } });
+        await tx.orderItem.deleteMany({ where: { order: orderWhere } });
+        await tx.order.deleteMany({ where: orderWhere });
+        await tx.orderDailyCounter.deleteMany({ where: orderWhere });
         await tx.menuItemChannel.deleteMany({
           where: { menu_item: { brand_id: fixture.POS_BRAND_ID } },
         });
@@ -27,10 +39,17 @@ async function main() {
           where: { brand_id: fixture.POS_BRAND_ID },
         });
         await tx.recipe.delete({ where: { recipe_id: fixture.POS_RECIPE_ID } });
+        const userIds = [fixture.POS_USER_ID, fixture.POS_MANAGER_ID].filter(
+          Boolean,
+        );
+        await tx.auditLog.deleteMany({ where: { actor_id: { in: userIds } } });
         await tx.userSession.deleteMany({
-          where: { user_id: fixture.POS_USER_ID },
+          where: { user_id: { in: userIds } },
         });
-        await tx.user.delete({ where: { user_id: fixture.POS_USER_ID } });
+        await tx.userPinCredential.deleteMany({
+          where: { user_id: { in: userIds } },
+        });
+        await tx.user.deleteMany({ where: { user_id: { in: userIds } } });
         await tx.brand.delete({ where: { brand_id: fixture.POS_BRAND_ID } });
       });
       await unlink(path);
@@ -59,9 +78,21 @@ async function main() {
       const brand = await tx.brand.create({
         data: {
           code: suffix.slice(0, 4).toUpperCase(),
-          name: 'POS flow test brand',
+          name: orders ? 'Order flow test brand' : 'POS flow test brand',
         },
       });
+      const manager = orders
+        ? await tx.user.create({
+            data: {
+              username: `mgr_${suffix.replaceAll('-', '').slice(0, 12)}`,
+              first_name: 'Order',
+              last_name: 'Tester',
+              role: 'MANAGER',
+              brand_id: brand.brand_id,
+              password_hash: passwordHash,
+            },
+          })
+        : null;
       const user = await tx.user.create({
         data: {
           username: `pos_${suffix.replaceAll('-', '').slice(0, 12)}`,
@@ -106,6 +137,15 @@ async function main() {
               order_channel: 'TAKEAWAY',
               price: 125,
             },
+            ...(orders
+              ? [
+                  {
+                    menu_item_id: item.menu_item_id,
+                    order_channel: 'GRABFOOD' as const,
+                    price: 150,
+                  },
+                ]
+              : []),
           ],
         });
         items.push(item);
@@ -117,6 +157,13 @@ async function main() {
         TEST_PASSWORD: password,
         POS_DATABASE: databaseId,
         POS_USER_ID: user.user_id,
+        ...(manager
+          ? {
+              POS_MANAGER_ID: manager.user_id,
+              POS_MANAGER_USERNAME: manager.username,
+              POS_MANAGER_PASSWORD: password,
+            }
+          : {}),
         POS_BRAND_ID: brand.brand_id,
         POS_RECIPE_ID: recipe.recipe_id,
         POS_MENU_ITEM_ID: items[0].menu_item_id,
@@ -126,7 +173,7 @@ async function main() {
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, JSON.stringify(fixture, null, 2));
     console.log(
-      'Prepared isolated mobile POS fixtures in mobile/.fixtures/pos-flow.json.',
+      `Prepared isolated fixtures in mobile/.fixtures/${orders ? 'order' : 'pos'}-flow.json.`,
     );
   } finally {
     await prisma.$disconnect();
