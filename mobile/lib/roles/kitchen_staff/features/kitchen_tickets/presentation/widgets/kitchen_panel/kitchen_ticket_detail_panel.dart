@@ -33,6 +33,9 @@ enum KitchenTicketPanelState {
 
   /// Dispatcher final check / confirm handover state (10 · Dispatcher Check).
   dispatcherCheck,
+
+  /// Handover completed / final release state (11 · Handover Completed).
+  handoverComplete,
 }
 
 /// The ticket detail panel (right panel on tablet, full queue detail on phone).
@@ -57,6 +60,8 @@ class KitchenTicketDetailPanel extends StatelessWidget {
     this.onSubmitPhoto,
     this.onConfirmHandover,
     this.onNotYet,
+    this.onBackToKitchenBoard,
+    this.onHistoryPending,
     this.width,
     this.borderRadius,
     this.badgeText,
@@ -115,6 +120,12 @@ class KitchenTicketDetailPanel extends StatelessWidget {
   /// Callback when user taps "Not yet".
   final VoidCallback? onNotYet;
 
+  /// Callback when user taps "Back to Kitchen Board".
+  final VoidCallback? onBackToKitchenBoard;
+
+  /// Callback when user taps "History (pending)".
+  final VoidCallback? onHistoryPending;
+
   /// Optional fixed width for the panel (e.g. 400 or 440 on tablet).
   final double? width;
 
@@ -142,6 +153,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ticketData = ticket.ticket;
+    final isHandoverComplete = panelState == KitchenTicketPanelState.handoverComplete;
     final isDispatcherCheck = panelState == KitchenTicketPanelState.dispatcherCheck;
     final isPhotoPreview = panelState == KitchenTicketPanelState.photoPreview;
     final isPhotoRequired = panelState == KitchenTicketPanelState.photoRequired;
@@ -151,21 +163,23 @@ class KitchenTicketDetailPanel extends StatelessWidget {
     final isAcknowledged = panelState == KitchenTicketPanelState.acknowledged;
 
     final resolvedBadgeText = badgeText ??
-        (isDispatcherCheck
-            ? 'HANDOVER'
-            : (isPhotoPreview
-                ? 'PHOTO EVIDENCE · PREVIEW'
-                : (isPhotoRequired
-                    ? 'PHOTO MISSING · BLOCKED'
-                    : (isReady
-                        ? 'READY · OUTGOING CHECK'
-                        : (isQC
-                            ? 'QC · CHECKER AUTHORIZATION PENDING'
-                            : (isPreparing
-                                ? 'COOKING · PREPARING'
-                                : (isAcknowledged ? 'ACKNOWLEDGED' : 'NEW ORDER · QUEUED')))))));
+        (isHandoverComplete
+            ? 'HANDED OVER'
+            : (isDispatcherCheck
+                ? 'HANDOVER'
+                : (isPhotoPreview
+                    ? 'PHOTO EVIDENCE · PREVIEW'
+                    : (isPhotoRequired
+                        ? 'PHOTO MISSING · BLOCKED'
+                        : (isReady
+                            ? 'READY · OUTGOING CHECK'
+                            : (isQC
+                                ? 'QC · CHECKER AUTHORIZATION PENDING'
+                                : (isPreparing
+                                    ? 'COOKING · PREPARING'
+                                    : (isAcknowledged ? 'ACKNOWLEDGED' : 'NEW ORDER · QUEUED'))))))));
 
-    final resolvedBadgeColor = isDispatcherCheck
+    final resolvedBadgeColor = (isHandoverComplete || isDispatcherCheck)
         ? const Color(0xFF16A34A)
         : ((isPhotoPreview || isPhotoRequired)
             ? const Color(0xFF0284C7)
@@ -177,7 +191,7 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                         ? const Color(0xFFD97706)
                         : const Color(0xFF0284C7)))));
 
-    final resolvedHeaderBg = (isDispatcherCheck || isReady)
+    final resolvedHeaderBg = (isHandoverComplete || isDispatcherCheck || isReady)
         ? const Color(0xFFF0FAF4)
         : ((isPhotoPreview || isPhotoRequired)
             ? Colors.white
@@ -187,61 +201,72 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                     ? const Color(0xFFFDF6EE)
                     : Colors.white)));
 
-    final resolvedTopAccentColor = (isDispatcherCheck || isReady) ? const Color(0xFF16A34A) : null;
+    final resolvedTopAccentColor =
+        (isHandoverComplete || isDispatcherCheck || isReady) ? const Color(0xFF16A34A) : null;
 
     final rawNumber = ticketData.ticketNumber.replaceFirst('Ticket ', '');
     final resolvedTitle = title ??
-        (isDispatcherCheck
-            ? 'Confirm handover'
-            : (isPhotoPreview
-                ? 'Review attachment'
-                : (isPhotoRequired
-                    ? 'Photo required'
-                    : (isReady
-                        ? 'Outgoing check'
-                        : (isQC
-                            ? 'Inspect $rawNumber'
-                            : (isPreparing
-                                ? 'Prepare $rawNumber'
-                                : (isAcknowledged
-                                    ? 'Begin preparation'
-                                    : (ticketData.ticketNumber.startsWith('Ticket')
-                                        ? ticketData.ticketNumber
-                                        : 'Ticket ${ticketData.ticketNumber}'))))))));
+        (isHandoverComplete
+            ? 'Handover complete'
+            : (isDispatcherCheck
+                ? 'Confirm handover'
+                : (isPhotoPreview
+                    ? 'Review attachment'
+                    : (isPhotoRequired
+                        ? 'Photo required'
+                        : (isReady
+                            ? 'Outgoing check'
+                            : (isQC
+                                ? 'Inspect $rawNumber'
+                                : (isPreparing
+                                    ? 'Prepare $rawNumber'
+                                    : (isAcknowledged
+                                        ? 'Begin preparation'
+                                        : (ticketData.ticketNumber.startsWith('Ticket')
+                                            ? ticketData.ticketNumber
+                                            : 'Ticket ${ticketData.ticketNumber}')))))))));
 
     final resolvedSubtitle = subtitle ??
-        (isDispatcherCheck
-            ? 'Record final order release'
-            : (isPhotoPreview
-                ? 'Illustrative local preview · not uploaded'
-                : (isPhotoRequired
-                    ? 'Handover remains unavailable'
-                    : (isReady
-                        ? 'Dispatcher final review'
-                        : (isQC
-                            ? 'Verify the prepared order'
-                            : (isPreparing
-                                ? 'Cooking in progress'
-                                : (isAcknowledged
-                                    ? 'Ticket claimed by kitchen staff'
-                                    : 'Ready to acknowledge')))))));
+        (isHandoverComplete
+            ? 'Illustrative successful state'
+            : (isDispatcherCheck
+                ? 'Record final order release'
+                : (isPhotoPreview
+                    ? 'Illustrative local preview · not uploaded'
+                    : (isPhotoRequired
+                        ? 'Handover remains unavailable'
+                        : (isReady
+                            ? 'Dispatcher final review'
+                            : (isQC
+                                ? 'Verify the prepared order'
+                                : (isPreparing
+                                    ? 'Cooking in progress'
+                                    : (isAcknowledged
+                                        ? 'Ticket claimed by kitchen staff'
+                                        : 'Ready to acknowledge'))))))));
 
     final resolvedConfirmTitle = confirmationTitle ??
-        (isDispatcherCheck
-            ? 'PRE-HANDOVER CHECK'
-            : (isPhotoPreview
-                ? 'ATTACHMENT PREVIEW · SAMPLE'
-                : (isPhotoRequired
-                    ? 'REQUIRED EVIDENCE MISSING'
-                    : (isReady
-                        ? 'DISPATCHER CHECK'
-                        : (isQC
-                            ? 'QUALITY CHECKLIST'
-                            : (isPreparing
-                                ? 'PREPARATION CHECK'
-                                : (isAcknowledged ? 'START COOKING' : 'CONFIRM THE ORDER')))))));
+        (isHandoverComplete
+            ? 'FINAL STATE'
+            : (isDispatcherCheck
+                ? 'PRE-HANDOVER CHECK'
+                : (isPhotoPreview
+                    ? 'ATTACHMENT PREVIEW · SAMPLE'
+                    : (isPhotoRequired
+                        ? 'REQUIRED EVIDENCE MISSING'
+                        : (isReady
+                            ? 'DISPATCHER CHECK'
+                            : (isQC
+                                ? 'QUALITY CHECKLIST'
+                                : (isPreparing
+                                    ? 'PREPARATION CHECK'
+                                    : (isAcknowledged ? 'START COOKING' : 'CONFIRM THE ORDER'))))))));
 
-    final resolvedConfirmColor = (isDispatcherCheck || isPhotoPreview || isPhotoRequired || isReady)
+    final resolvedConfirmColor = (isHandoverComplete ||
+            isDispatcherCheck ||
+            isPhotoPreview ||
+            isPhotoRequired ||
+            isReady)
         ? const Color(0xFF16A34A)
         : (isQC
             ? const Color(0xFF7C3AED)
@@ -250,108 +275,121 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                 : const Color(0xFF0284C7)));
 
     final resolvedConfirmItems = confirmationItems ??
-        (isDispatcherCheck
+        (isHandoverComplete
             ? const [
-                'Correct order and recipient',
-                'Check approved photo requirement',
+                'Ticket handed over in prototype',
+                'Payment remains independent',
               ]
-            : (isPhotoPreview
+            : (isDispatcherCheck
                 ? const [
-                    'Photo selected for this ticket (demo)',
-                    'Confirm the correct order and contents',
+                    'Correct order and recipient',
+                    'Check approved photo requirement',
                   ]
-                : (isPhotoRequired
+                : (isPhotoPreview
                     ? const [
-                        'Add an authorized pre-handover photo',
-                        'Ticket stays READY until verified',
+                        'Photo selected for this ticket (demo)',
+                        'Confirm the correct order and contents',
                       ]
-                    : (isReady
+                    : (isPhotoRequired
                         ? const [
-                            'Confirm packing and destination',
-                            'Review photo evidence rule',
+                            'Add an authorized pre-handover photo',
+                            'Ticket stays READY until verified',
                           ]
-                        : (isQC
+                        : (isReady
                             ? const [
-                                'Quantities and modifiers match',
-                                'Packaging and destination correct',
+                                'Confirm packing and destination',
+                                'Review photo evidence rule',
                               ]
-                            : (isPreparing
+                            : (isQC
                                 ? const [
-                                    '2 × Paa Inasal · extra rice',
-                                    '1 × Pecho Inasal · no onions',
+                                    'Quantities and modifiers match',
+                                    'Packaging and destination correct',
                                   ]
-                                : (isAcknowledged
+                                : (isPreparing
                                     ? const [
-                                        'Review quantities and modifiers',
-                                        'Begin preparation when ready',
+                                        '2 × Paa Inasal · extra rice',
+                                        '1 × Pecho Inasal · no onions',
                                       ]
-                                    : const [
-                                        'Check all items and modifiers',
-                                        'Verify brand and destination',
-                                      ])))))));
+                                    : (isAcknowledged
+                                        ? const [
+                                            'Review quantities and modifiers',
+                                            'Begin preparation when ready',
+                                          ]
+                                        : const [
+                                            'Check all items and modifiers',
+                                            'Verify brand and destination',
+                                          ]))))))));
 
     final resolvedPermissionNotice = permissionNotice ??
-        (isDispatcherCheck
-            ? 'Dispatcher authorization and photo policy pending.'
-            : (isPhotoPreview
-                ? 'Preview alone does not persist evidence.'
-                : (isPhotoRequired
-                    ? 'No completion is implied by missing evidence.'
-                    : (isReady
-                        ? 'Dispatcher authorization and photo policy pending.'
-                        : (isQC
-                            ? 'QC action shown as demo; approved checker rights required.'
-                            : (isPreparing
-                                ? 'Next approved transition is CHECKING.'
-                                : (isAcknowledged
-                                    ? 'Server must confirm the next status.'
-                                    : 'Preparer permission requires Backend approval.')))))));
+        (isHandoverComplete
+            ? 'Backend confirmation still required.'
+            : (isDispatcherCheck
+                ? 'Dispatcher authorization and photo policy pending.'
+                : (isPhotoPreview
+                    ? 'Preview alone does not persist evidence.'
+                    : (isPhotoRequired
+                        ? 'No completion is implied by missing evidence.'
+                        : (isReady
+                            ? 'Dispatcher authorization and photo policy pending.'
+                            : (isQC
+                                ? 'QC action shown as demo; approved checker rights required.'
+                                : (isPreparing
+                                    ? 'Next approved transition is CHECKING.'
+                                    : (isAcknowledged
+                                        ? 'Server must confirm the next status.'
+                                        : 'Preparer permission requires Backend approval.'))))))));
 
-    final defaultBack = isDispatcherCheck
-        ? 'Not yet'
-        : (isPhotoPreview
-            ? 'Retake photo'
-            : ((isPhotoRequired || isReady)
-                ? 'Keep READY'
-                : (isQC
-                    ? 'Pass QC'
-                    : (isPreparing
-                        ? 'Keep preparing'
-                        : (isAcknowledged
-                            ? (context.isKitchenTablet ? 'Stay acknowledged' : 'Stay here')
-                            : 'Back to board')))));
+    final defaultBack = isHandoverComplete
+        ? 'History (pending)'
+        : (isDispatcherCheck
+            ? 'Not yet'
+            : (isPhotoPreview
+                ? 'Retake photo'
+                : ((isPhotoRequired || isReady)
+                    ? 'Keep READY'
+                    : (isQC
+                        ? 'Pass QC'
+                        : (isPreparing
+                            ? 'Keep preparing'
+                            : (isAcknowledged
+                                ? (context.isKitchenTablet ? 'Stay acknowledged' : 'Stay here')
+                                : 'Back to board'))))));
     final resolvedBackLabel = backButtonLabel ?? defaultBack;
 
     final resolvedActionLabel = acknowledgeButtonLabel ??
-        (isDispatcherCheck
-            ? 'Confirm handover'
-            : (isPhotoPreview
-                ? 'Submit photo (demo)'
-                : (isPhotoRequired
-                    ? 'Add photo'
-                    : (isReady
-                        ? 'Continue to handover'
-                        : (isQC
-                            ? 'Fail QC'
-                            : (isPreparing
-                                ? 'Send to QC'
-                                : (isAcknowledged ? 'Begin preparation' : 'Acknowledge ticket')))))));
+        (isHandoverComplete
+            ? 'Back to Kitchen Board'
+            : (isDispatcherCheck
+                ? 'Confirm handover'
+                : (isPhotoPreview
+                    ? 'Submit photo (demo)'
+                    : (isPhotoRequired
+                        ? 'Add photo'
+                        : (isReady
+                            ? 'Continue to handover'
+                            : (isQC
+                                ? 'Fail QC'
+                                : (isPreparing
+                                    ? 'Send to QC'
+                                    : (isAcknowledged ? 'Begin preparation' : 'Acknowledge ticket'))))))));
 
-    final resolvedOnAction = isDispatcherCheck
-        ? (onConfirmHandover ?? onAcknowledge)
-        : (isPhotoPreview
-            ? (onSubmitPhoto ?? onAcknowledge)
-            : (isPhotoRequired
-                ? (onAddPhoto ?? onAcknowledge)
-                : (isReady
-                    ? onContinueToHandover
-                    : (isQC
-                        ? onFailQC
-                        : (isPreparing
-                            ? onSendToQC
-                            : (isAcknowledged
-                                ? (onBeginPreparation ?? onAcknowledge)
-                                : onAcknowledge))))));
+    final resolvedOnAction = isHandoverComplete
+        ? (onBackToKitchenBoard ?? onClose ?? _handleDismiss)
+        : (isDispatcherCheck
+            ? (onConfirmHandover ?? onAcknowledge)
+            : (isPhotoPreview
+                ? (onSubmitPhoto ?? onAcknowledge)
+                : (isPhotoRequired
+                    ? (onAddPhoto ?? onAcknowledge)
+                    : (isReady
+                        ? onContinueToHandover
+                        : (isQC
+                            ? onFailQC
+                            : (isPreparing
+                                ? onSendToQC
+                                : (isAcknowledged
+                                    ? (onBeginPreparation ?? onAcknowledge)
+                                    : onAcknowledge)))))));
 
     final panelWidget = Container(
       width: width,
@@ -400,16 +438,18 @@ class KitchenTicketDetailPanel extends StatelessWidget {
                 children: [
                   KitchenPanelTicketInfo(
                     ticket: ticketData,
-                    statusOverride: (isDispatcherCheck ||
-                            isPhotoPreview ||
-                            isPhotoRequired ||
-                            isReady)
-                        ? KkfcStatus.ready
-                        : (isQC
-                            ? KkfcStatus.checking
-                            : (isPreparing
-                                ? KkfcStatus.preparing
-                                : (isAcknowledged ? KkfcStatus.acknowledged : null))),
+                    statusOverride: isHandoverComplete
+                        ? KkfcStatus.handedOver
+                        : ((isDispatcherCheck ||
+                                isPhotoPreview ||
+                                isPhotoRequired ||
+                                isReady)
+                            ? KkfcStatus.ready
+                            : (isQC
+                                ? KkfcStatus.checking
+                                : (isPreparing
+                                    ? KkfcStatus.preparing
+                                    : (isAcknowledged ? KkfcStatus.acknowledged : null)))),
                     paymentStatus: paymentStatus,
                   ),
                   const SizedBox(height: 12),
@@ -438,15 +478,17 @@ class KitchenTicketDetailPanel extends StatelessWidget {
             acknowledgeLabel: resolvedActionLabel,
             isQC: isQC,
             onClose: _handleDismiss,
-            onBack: isDispatcherCheck
-                ? (onNotYet ?? onBack ?? _handleDismiss)
-                : (isPhotoPreview
-                    ? (onRetakePhoto ?? onBack ?? _handleDismiss)
-                    : _handleDismiss),
+            onBack: isHandoverComplete
+                ? (onHistoryPending ?? onBack ?? () {})
+                : (isDispatcherCheck
+                    ? (onNotYet ?? onBack ?? _handleDismiss)
+                    : (isPhotoPreview
+                        ? (onRetakePhoto ?? onBack ?? _handleDismiss)
+                        : _handleDismiss)),
             onAcknowledge: resolvedOnAction,
             onPassQC: onPassQC ?? _handleDismiss,
             onFailQC: onFailQC,
-            isAcknowledgeEnabled: ticket.isActionEnabled,
+            isAcknowledgeEnabled: isHandoverComplete ? true : ticket.isActionEnabled,
           ),
         ],
       ),

@@ -52,6 +52,7 @@ class KitchenPanelTicketInfo extends StatelessWidget {
       KkfcStatus.checking => 'CHECKING',
       KkfcStatus.reworking => 'REWORKING',
       KkfcStatus.ready => 'READY',
+      KkfcStatus.handedOver => 'HANDED_OVER',
       _ => effectiveStatus.name.toUpperCase(),
     };
 
@@ -68,7 +69,7 @@ class KitchenPanelTicketInfo extends StatelessWidget {
           const Color(0xFFEDE9FE),
           const Color(0xFF7C3AED),
         ),
-      KkfcStatus.ready => (
+      KkfcStatus.ready || KkfcStatus.handedOver => (
           const Color(0xFFDCFCE7),
           const Color(0xFF15803D),
         ),
@@ -123,7 +124,10 @@ class KitchenPanelTicketInfo extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -141,7 +145,6 @@ class KitchenPanelTicketInfo extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(

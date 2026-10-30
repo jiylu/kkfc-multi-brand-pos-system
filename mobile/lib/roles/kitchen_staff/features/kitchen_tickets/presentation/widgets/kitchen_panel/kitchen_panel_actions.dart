@@ -115,9 +115,13 @@ class KitchenPanelActions extends StatelessWidget {
                 onPressed: _handleBack,
                 style: OutlinedButton.styleFrom(
                   backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF0F172A),
-                  side: const BorderSide(
-                    color: Color(0xFFCBD5E1),
+                  foregroundColor: backLabel == 'History (pending)'
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF0F172A),
+                  side: BorderSide(
+                    color: backLabel == 'History (pending)'
+                        ? const Color(0xFFE2E8F0)
+                        : const Color(0xFFCBD5E1),
                     width: 1,
                   ),
                   shape: RoundedRectangleBorder(

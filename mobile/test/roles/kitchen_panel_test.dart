@@ -23,6 +23,8 @@ void main() {
     VoidCallback? onSubmitPhoto,
     VoidCallback? onConfirmHandover,
     VoidCallback? onNotYet,
+    VoidCallback? onBackToKitchenBoard,
+    VoidCallback? onHistoryPending,
     String? backButtonLabel,
     String? acknowledgeButtonLabel,
   }) {
@@ -45,6 +47,8 @@ void main() {
           onSubmitPhoto: onSubmitPhoto,
           onConfirmHandover: onConfirmHandover,
           onNotYet: onNotYet,
+          onBackToKitchenBoard: onBackToKitchenBoard,
+          onHistoryPending: onHistoryPending,
           backButtonLabel: backButtonLabel,
           acknowledgeButtonLabel: acknowledgeButtonLabel,
         ),
@@ -67,6 +71,8 @@ void main() {
     VoidCallback? onSubmitPhoto,
     VoidCallback? onConfirmHandover,
     VoidCallback? onNotYet,
+    VoidCallback? onBackToKitchenBoard,
+    VoidCallback? onHistoryPending,
   }) {
     return MaterialApp(
       theme: counterTheme,
@@ -86,6 +92,8 @@ void main() {
           onSubmitPhoto: onSubmitPhoto,
           onConfirmHandover: onConfirmHandover,
           onNotYet: onNotYet,
+          onBackToKitchenBoard: onBackToKitchenBoard,
+          onHistoryPending: onHistoryPending,
         ),
       ),
     );
@@ -601,6 +609,164 @@ void main() {
 
       expect(submitCalled, isTrue);
     });
+
+    testWidgets(
+        'renders all required elements for dispatcher check state (10 · Dispatcher Check)',
+        (tester) async {
+      await tester.pumpWidget(buildPanelSubject(
+        panelState: KitchenTicketPanelState.dispatcherCheck,
+      ));
+      await tester.pumpAndSettle();
+
+      // Header
+      expect(find.text('HANDOVER'), findsOneWidget);
+      expect(find.text('Confirm handover'), findsNWidgets(2)); // Title and action button
+      expect(find.text('Record final order release'), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      // Ticket Summary Info
+      expect(find.text("T-014 · AURELIA'S INASAL"), findsOneWidget);
+      expect(find.text('Dine-in · Table 3 · sample'), findsOneWidget);
+      expect(find.text('READY'), findsOneWidget);
+      expect(find.text('PAYMENT · UNPAID'), findsOneWidget);
+
+      // Items & Modifiers
+      expect(find.textContaining('Paa Inasal'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Pecho Inasal'), findsAtLeastNWidgets(1));
+
+      // Pre-Handover Checklist
+      expect(find.text('PRE-HANDOVER CHECK'), findsOneWidget);
+      expect(find.text('Correct order and recipient'), findsOneWidget);
+      expect(find.text('Check approved photo requirement'), findsOneWidget);
+
+      // Check icons are shown
+      expect(find.byIcon(Icons.check), findsAtLeastNWidgets(2));
+
+      // Permission Note Banner
+      expect(
+        find.text('Dispatcher authorization and photo policy pending.'),
+        findsOneWidget,
+      );
+
+      // Bottom Actions (Not yet outlined, Confirm handover navy filled)
+      expect(find.text('Not yet'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Confirm handover'), findsOneWidget);
+    });
+
+    testWidgets('Not yet button triggers onNotYet callback in dispatcherCheck state',
+        (tester) async {
+      var notYetCalled = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.dispatcherCheck,
+          onNotYet: () => notYetCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Not yet'));
+      await tester.pumpAndSettle();
+
+      expect(notYetCalled, isTrue);
+    });
+
+    testWidgets(
+        'Confirm handover button triggers onConfirmHandover callback in dispatcherCheck state',
+        (tester) async {
+      var confirmCalled = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.dispatcherCheck,
+          onConfirmHandover: () => confirmCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirm handover'));
+      await tester.pumpAndSettle();
+
+      expect(confirmCalled, isTrue);
+    });
+
+    testWidgets(
+        'renders all required elements for handover complete state (11 · Handover Completed)',
+        (tester) async {
+      await tester.pumpWidget(buildPanelSubject(
+        ticket: KitchenBoardSampleData.t014HandedOver,
+        panelState: KitchenTicketPanelState.handoverComplete,
+      ));
+      await tester.pumpAndSettle();
+
+      // Header
+      expect(find.text('HANDED OVER'), findsOneWidget);
+      expect(find.text('Handover complete'), findsOneWidget);
+      expect(find.text('Illustrative successful state'), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+
+      // Ticket Summary Info
+      expect(find.text("T-014 · AURELIA'S INASAL"), findsOneWidget);
+      expect(find.text('Dine-in · Table 3 · sample'), findsOneWidget);
+      expect(find.text('HANDED_OVER'), findsOneWidget);
+      expect(find.text('PAYMENT · UNPAID'), findsOneWidget);
+
+      // Items & Modifiers
+      expect(find.textContaining('Paa Inasal'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Pecho Inasal'), findsAtLeastNWidgets(1));
+
+      // Final State Checklist
+      expect(find.text('FINAL STATE'), findsOneWidget);
+      expect(find.text('Ticket handed over in prototype'), findsOneWidget);
+      expect(find.text('Payment remains independent'), findsOneWidget);
+
+      // Check icons are shown
+      expect(find.byIcon(Icons.check), findsAtLeastNWidgets(2));
+
+      // Permission Note Banner
+      expect(
+        find.text('Backend confirmation still required.'),
+        findsOneWidget,
+      );
+
+      // Bottom Actions (History (pending) outlined, Back to Kitchen Board navy filled)
+      expect(find.text('History (pending)'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Back to Kitchen Board'), findsOneWidget);
+    });
+
+    testWidgets(
+        'History (pending) button triggers onHistoryPending callback in handoverComplete state',
+        (tester) async {
+      var historyCalled = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.handoverComplete,
+          onHistoryPending: () => historyCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('History (pending)'));
+      await tester.pumpAndSettle();
+
+      expect(historyCalled, isTrue);
+    });
+
+    testWidgets(
+        'Back to Kitchen Board button triggers onBackToKitchenBoard callback in handoverComplete state',
+        (tester) async {
+      var backToBoardCalled = false;
+      await tester.pumpWidget(
+        buildPanelSubject(
+          panelState: KitchenTicketPanelState.handoverComplete,
+          onBackToKitchenBoard: () => backToBoardCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Back to Kitchen Board'));
+      await tester.pumpAndSettle();
+
+      expect(backToBoardCalled, isTrue);
+    });
   });
 
   group('KitchenTicketsPage integration with right panel', () {
@@ -936,6 +1102,8 @@ void main() {
       var addPhotoCalled = false;
       var retakePhotoCalled = false;
       var submitPhotoCalled = false;
+      var confirmHandoverCalled = false;
+      var backToBoardCalled = false;
       await tester.pumpWidget(
         buildPageSubject(
           size: const Size(1280, 1000),
@@ -944,6 +1112,8 @@ void main() {
           onAddPhoto: () => addPhotoCalled = true,
           onRetakePhoto: () => retakePhotoCalled = true,
           onSubmitPhoto: () => submitPhotoCalled = true,
+          onConfirmHandover: () => confirmHandoverCalled = true,
+          onBackToKitchenBoard: () => backToBoardCalled = true,
         ),
       );
       await tester.pumpAndSettle();
@@ -1085,20 +1255,56 @@ void main() {
       // READY: 03
       expect(find.text('03'), findsOneWidget);
 
-      // Tap "Submit photo (demo)" invokes callback
-      await tester.tap(find.text('Submit photo (demo)'));
-      await tester.pumpAndSettle();
-      expect(submitPhotoCalled, isTrue);
-
       // Tap "Retake photo" transitions back to Photo required state
       await tester.tap(find.text('Retake photo'));
       await tester.pumpAndSettle();
       expect(retakePhotoCalled, isTrue);
       expect(find.text('Photo required'), findsOneWidget);
 
-      // Tap "Keep READY" closes the panel
-      await tester.tap(find.text('Keep READY'));
+      // Re-enter preview
+      await tester.tap(find.text('Add photo'));
       await tester.pumpAndSettle();
+
+      // Tap "Submit photo (demo)" invokes callback and transitions to Dispatcher check state (10 · Dispatcher Check)
+      await tester.tap(find.text('Submit photo (demo)'));
+      await tester.pumpAndSettle();
+      expect(submitPhotoCalled, isTrue);
+
+      // Panel is now in Dispatcher check state
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('HANDOVER'), findsOneWidget);
+      expect(find.text('Confirm handover'), findsNWidgets(2)); // Title and button
+      expect(find.text('Record final order release'), findsOneWidget);
+      expect(find.text('PRE-HANDOVER CHECK'), findsOneWidget);
+      expect(find.text('Correct order and recipient'), findsOneWidget);
+      expect(find.text('Check approved photo requirement'), findsOneWidget);
+      expect(find.text('Not yet'), findsOneWidget);
+
+      // Tap "Confirm handover" button invokes callback and transitions to Handover complete state (11 · Handover Completed)
+      final confirmButtons = find.widgetWithText(FilledButton, 'Confirm handover');
+      await tester.tap(confirmButtons);
+      await tester.pumpAndSettle();
+      expect(confirmHandoverCalled, isTrue);
+
+      // Panel is now in Handover complete state
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('HANDED OVER'), findsOneWidget);
+      expect(find.text('Handover complete'), findsOneWidget);
+      expect(find.text('Illustrative successful state'), findsOneWidget);
+      expect(find.text('FINAL STATE'), findsOneWidget);
+      expect(find.text('Ticket handed over in prototype'), findsOneWidget);
+      expect(find.text('Payment remains independent'), findsOneWidget);
+      expect(
+        find.text('Backend confirmation still required.'),
+        findsOneWidget,
+      );
+      expect(find.text('History (pending)'), findsOneWidget);
+      expect(find.text('Back to Kitchen Board'), findsOneWidget);
+
+      // Tap "Back to Kitchen Board" closes the panel
+      await tester.tap(find.widgetWithText(FilledButton, 'Back to Kitchen Board'));
+      await tester.pumpAndSettle();
+      expect(backToBoardCalled, isTrue);
 
       expect(find.byType(KitchenTicketDetailPanel), findsNothing);
       expect(find.text('01'), findsOneWidget);
@@ -1248,6 +1454,89 @@ void main() {
       await tester.tap(find.text('Submit photo (demo)'));
       await tester.pumpAndSettle();
       expect(submitPhotoCalled, isTrue);
+    });
+
+    testWidgets(
+        'Phone layout displays Dispatcher check state with READY stage selected and Dispatcher identity in header',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      var handoverConfirmed = false;
+      await tester.pumpWidget(
+        buildPageSubject(
+          size: const Size(400, 800),
+          selectedTicket: KitchenBoardSampleData.t014Ready,
+          initialPanelState: KitchenTicketPanelState.dispatcherCheck,
+          onConfirmHandover: () => handoverConfirmed = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Dispatcher check detail panel is displayed
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('HANDOVER'), findsOneWidget);
+      expect(find.text('Confirm handover'), findsNWidgets(2)); // Title and button
+      expect(find.text('Record final order release'), findsOneWidget);
+      expect(find.text('PRE-HANDOVER CHECK'), findsOneWidget);
+      expect(find.text('Correct order and recipient'), findsOneWidget);
+      expect(find.text('Check approved photo requirement'), findsOneWidget);
+      expect(find.text('Not yet'), findsOneWidget);
+
+      // Phone Header shows Dispatcher identity
+      expect(find.text('Dispatcher'), findsOneWidget);
+      expect(find.text('Access TBD'), findsOneWidget);
+
+      // Tapping "Confirm handover" button invokes callback
+      final confirmButtons = find.widgetWithText(FilledButton, 'Confirm handover');
+      await tester.tap(confirmButtons);
+      await tester.pumpAndSettle();
+      expect(handoverConfirmed, isTrue);
+    });
+
+    testWidgets(
+        'Phone layout displays Handover complete state with READY stage selected and Dispatcher identity in header',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      var backToBoardCalled = false;
+      await tester.pumpWidget(
+        buildPageSubject(
+          size: const Size(400, 800),
+          selectedTicket: KitchenBoardSampleData.t014HandedOver,
+          initialPanelState: KitchenTicketPanelState.handoverComplete,
+          onBackToKitchenBoard: () => backToBoardCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Handover complete detail panel is displayed
+      expect(find.byType(KitchenTicketDetailPanel), findsOneWidget);
+      expect(find.text('HANDED OVER'), findsOneWidget);
+      expect(find.text('Handover complete'), findsOneWidget);
+      expect(find.text('Illustrative successful state'), findsOneWidget);
+      expect(find.text('FINAL STATE'), findsOneWidget);
+      expect(find.text('Ticket handed over in prototype'), findsOneWidget);
+      expect(find.text('Payment remains independent'), findsOneWidget);
+      expect(
+        find.text('Backend confirmation still required.'),
+        findsOneWidget,
+      );
+      expect(find.text('History (pending)'), findsOneWidget);
+      expect(find.text('Back to Kitchen Board'), findsOneWidget);
+
+      // Phone Header shows Dispatcher identity
+      expect(find.text('Dispatcher'), findsOneWidget);
+      expect(find.text('Access TBD'), findsOneWidget);
+
+      // Tapping "Back to Kitchen Board" button invokes callback
+      final backButtons = find.widgetWithText(FilledButton, 'Back to Kitchen Board');
+      await tester.tap(backButtons);
+      await tester.pumpAndSettle();
+      expect(backToBoardCalled, isTrue);
     });
   });
 }

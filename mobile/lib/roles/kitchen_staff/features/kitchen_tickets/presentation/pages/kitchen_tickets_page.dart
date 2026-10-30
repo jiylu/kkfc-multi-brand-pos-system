@@ -37,6 +37,8 @@ class KitchenTicketsPage extends StatefulWidget {
     this.onSubmitPhoto,
     this.onConfirmHandover,
     this.onNotYet,
+    this.onBackToKitchenBoard,
+    this.onHistoryPending,
   });
 
   final KitchenTicketsViewState viewState;
@@ -55,6 +57,8 @@ class KitchenTicketsPage extends StatefulWidget {
   final VoidCallback? onSubmitPhoto;
   final VoidCallback? onConfirmHandover;
   final VoidCallback? onNotYet;
+  final VoidCallback? onBackToKitchenBoard;
+  final VoidCallback? onHistoryPending;
 
   @override
   State<KitchenTicketsPage> createState() => _KitchenTicketsPageState();
@@ -76,7 +80,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     super.initState();
     _displayedTicket = widget.selectedTicket;
     _panelState = widget.initialPanelState;
-    if (widget.initialPanelState == KitchenTicketPanelState.dispatcherCheck) {
+    if (widget.initialPanelState == KitchenTicketPanelState.handoverComplete) {
+      _panelState = KitchenTicketPanelState.handoverComplete;
+    } else if (widget.initialPanelState == KitchenTicketPanelState.dispatcherCheck) {
       _panelState = KitchenTicketPanelState.dispatcherCheck;
     } else if (widget.initialPanelState == KitchenTicketPanelState.photoPreview) {
       _panelState = KitchenTicketPanelState.photoPreview;
@@ -120,7 +126,9 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     super.didUpdateWidget(oldWidget);
     if (widget.selectedTicket != null && oldWidget.selectedTicket == null) {
       _displayedTicket = widget.selectedTicket;
-      if (widget.initialPanelState == KitchenTicketPanelState.dispatcherCheck) {
+      if (widget.initialPanelState == KitchenTicketPanelState.handoverComplete) {
+        _panelState = KitchenTicketPanelState.handoverComplete;
+      } else if (widget.initialPanelState == KitchenTicketPanelState.dispatcherCheck) {
         _panelState = KitchenTicketPanelState.dispatcherCheck;
       } else if (widget.initialPanelState == KitchenTicketPanelState.photoPreview) {
         _panelState = KitchenTicketPanelState.photoPreview;
@@ -300,6 +308,24 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
 
   void _handleConfirmHandover() {
     widget.onConfirmHandover?.call();
+    setState(() {
+      _panelState = KitchenTicketPanelState.handoverComplete;
+      if (_localSelectedTicket?.ticket.ticketNumber == 'T-014' ||
+          _displayedTicket?.ticket.ticketNumber == 'T-014' ||
+          widget.selectedTicket?.ticket.ticketNumber == 'T-014') {
+        _localSelectedTicket = KitchenBoardSampleData.t014HandedOver;
+        _displayedTicket = KitchenBoardSampleData.t014HandedOver;
+      }
+    });
+  }
+
+  void _handleBackToKitchenBoard() {
+    widget.onBackToKitchenBoard?.call();
+    _handleClosePanel();
+  }
+
+  void _handleHistoryPending() {
+    widget.onHistoryPending?.call();
   }
 
   void _handleNotYet() {
@@ -384,6 +410,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onSubmitPhoto: _handleSubmitPhoto,
                 onConfirmHandover: _handleConfirmHandover,
                 onNotYet: _handleNotYet,
+                onBackToKitchenBoard: _handleBackToKitchenBoard,
+                onHistoryPending: _handleHistoryPending,
               ),
             ),
           ),
@@ -412,6 +440,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 onSubmitPhoto: _handleSubmitPhoto,
                 onConfirmHandover: _handleConfirmHandover,
                 onNotYet: _handleNotYet,
+                onBackToKitchenBoard: _handleBackToKitchenBoard,
+                onHistoryPending: _handleHistoryPending,
               ),
             ),
           ),
@@ -424,7 +454,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     final isReady = _panelState == KitchenTicketPanelState.readyForDispatch ||
         _panelState == KitchenTicketPanelState.photoRequired ||
         _panelState == KitchenTicketPanelState.photoPreview ||
-        _panelState == KitchenTicketPanelState.dispatcherCheck;
+        _panelState == KitchenTicketPanelState.dispatcherCheck ||
+        _panelState == KitchenTicketPanelState.handoverComplete;
     final isQC = _panelState == KitchenTicketPanelState.qualityCheck;
     final isPreparing = _panelState == KitchenTicketPanelState.preparing;
 
@@ -451,7 +482,8 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
     final isReady = _panelState == KitchenTicketPanelState.readyForDispatch ||
         _panelState == KitchenTicketPanelState.photoRequired ||
         _panelState == KitchenTicketPanelState.photoPreview ||
-        _panelState == KitchenTicketPanelState.dispatcherCheck;
+        _panelState == KitchenTicketPanelState.dispatcherCheck ||
+        _panelState == KitchenTicketPanelState.handoverComplete;
     final isQC = _panelState == KitchenTicketPanelState.qualityCheck;
     final isPreparing = _panelState == KitchenTicketPanelState.preparing;
     final isAcknowledged = _panelState == KitchenTicketPanelState.acknowledged;
@@ -499,15 +531,17 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
           ]
         : KitchenBoardSampleData.ready;
 
-    final effectiveActivePhoneTicket = isReady
-        ? KitchenBoardSampleData.t014Ready
-        : (isQC
-            ? KitchenBoardSampleData.t014Checking
-            : (isPreparing
-                ? KitchenBoardSampleData.t014Preparing
-                : (isAcknowledged
-                    ? KitchenBoardSampleData.t014Acknowledged
-                    : KitchenBoardSampleData.t014)));
+    final effectiveActivePhoneTicket = _panelState == KitchenTicketPanelState.handoverComplete
+        ? KitchenBoardSampleData.t014HandedOver
+        : (isReady
+            ? KitchenBoardSampleData.t014Ready
+            : (isQC
+                ? KitchenBoardSampleData.t014Checking
+                : (isPreparing
+                    ? KitchenBoardSampleData.t014Preparing
+                    : (isAcknowledged
+                        ? KitchenBoardSampleData.t014Acknowledged
+                        : KitchenBoardSampleData.t014))));
 
     final effectiveUpNextPhoneTicket = isReady
         ? KitchenBoardSampleData.t017
