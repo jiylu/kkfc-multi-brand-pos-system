@@ -13,14 +13,19 @@ class CancelContextCard extends StatelessWidget {
     required this.step,
     required this.body,
     required this.stateLabel,
+    this.stateCaption = 'DESIGN REVIEW STATE',
     this.compact = false,
   });
 
   final CancelOrderStep step;
   final String body;
 
-  /// Copy of the "DESIGN REVIEW STATE" chip, e.g. "SERVER CONFIRMED".
+  /// Copy of the state chip, e.g. "SERVER CONFIRMED".
   final String stateLabel;
+
+  /// Caption above [stateLabel]. The demo screens label it as a design review
+  /// state; a live order labels it as the server state.
+  final String stateCaption;
 
   final bool compact;
 
@@ -43,10 +48,7 @@ class CancelContextCard extends StatelessWidget {
           color: tone.bg,
           borderRadius: BorderRadius.circular(MenuRadius.md),
         ),
-        child: Text(
-          body,
-          style: text.bodySmall?.copyWith(color: tone.fg),
-        ),
+        child: Text(body, style: text.bodySmall?.copyWith(color: tone.fg)),
       );
     }
 
@@ -94,7 +96,7 @@ class CancelContextCard extends StatelessWidget {
           ),
           SizedBox(height: MenuSpace.xl),
           Text(
-            'DESIGN REVIEW STATE',
+            stateCaption,
             style: text.labelSmall?.copyWith(
               color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w700,

@@ -1,9 +1,9 @@
 import 'package:mobile/features/orders/cancel/data/models/cancel_order_models.dart';
 
-/// Prototype fixture for the cancel-order screens.
+/// Demo fixture for the cancel-order screens.
 ///
-/// Every value here is sample data: `T-014` does not exist in the database and
-/// the cancellation endpoint has not been implemented yet.
+/// Every value here is sample data: `T-014` does not exist in the database.
+/// Live screens (opened with `?orderId=`) do not use it for requests.
 const sampleCancelOrder = CancelOrderTicket(
   number: 'T-014',
   brandName: "Aurelia's Inasal",

@@ -59,7 +59,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.cancelOrder,
-        builder: (context, state) => const CancelOrderScreen(),
+        builder: (context, state) {
+          // Live mode is opt-in: /orders/cancel?orderId=<uuid>[&orderCode=GC-00001]
+          // Without orderId the screen runs the demo states with sample data.
+          final query = state.uri.queryParameters;
+          return CancelOrderScreen(
+            orderId: query['orderId'],
+            orderCode: query['orderCode'],
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.availability,

@@ -3,8 +3,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mobile/app/theme/theme.dart';
+import 'package:mobile/features/auth/providers/auth_profile_provider.dart';
 import 'package:mobile/features/orders/cancel/data/models/cancel_order_models.dart';
+import 'package:mobile/features/orders/cancel/data/models/cancel_order_outcome.dart';
+import 'package:mobile/features/orders/cancel/data/repositories/cancel_order_repository.dart';
 import 'package:mobile/features/orders/cancel/presentation/pages/cancel_order_screen.dart';
+
+const _liveOrderId = '11111111-1111-4111-8111-111111111111';
+
+class _FakeCancelRepository implements CancelOrderRepository {
+  _FakeCancelRepository(this.result);
+
+  CancelOrderResult result;
+  final calls = <({String brandId, String orderId, String reason})>[];
+
+  @override
+  Future<CancelOrderResult> cancel({
+    required String brandId,
+    required String orderId,
+    required String reason,
+  }) async {
+    calls.add((brandId: brandId, orderId: orderId, reason: reason));
+    return result;
+  }
+}
 
 void main() {
   Future<void> pumpCancelOrder(
@@ -20,6 +42,32 @@ void main() {
         child: MaterialApp(
           theme: counterTheme,
           home: CancelOrderScreen(initialStep: step),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> pumpLiveCancelOrder(
+    WidgetTester tester,
+    _FakeCancelRepository repository,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          cancelOrderRepositoryProvider.overrideWithValue(repository),
+          authenticatedBrandIdProvider.overrideWith((ref) async => 'brand-1'),
+        ],
+        child: MaterialApp(
+          theme: counterTheme,
+          home: const CancelOrderScreen(
+            orderId: _liveOrderId,
+            orderCode: 'GC-00007',
+          ),
         ),
       ),
     );
@@ -68,7 +116,7 @@ void main() {
 
       expect(find.text('Cancelling order'), findsOneWidget);
       expect(find.text('Checking…'), findsOneWidget);
-      expect(find.text('Processing…'), findsOneWidget);
+      expect(find.text('Cancelling…'), findsOneWidget);
       expect(find.text('Sample: Confirmed'), findsOneWidget);
       expect(find.text('Sample: Denied'), findsOneWidget);
     },
@@ -84,7 +132,7 @@ void main() {
 
       expect(find.text('Order cancelled'), findsOneWidget);
       expect(find.text('CANCELLED'), findsWidgets);
-      expect(find.text('SERVER CONFIRMED'), findsOneWidget);
+      expect(find.text('SAMPLE OUTCOME'), findsOneWidget);
       expect(find.text('Back to menu'), findsOneWidget);
     },
   );
@@ -137,6 +185,108 @@ void main() {
       expect(find.text('Cancel this order?'), findsOneWidget);
       expect(find.text('Keep order'), findsOneWidget);
       expect(find.text('Cancel order'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'IT-MOB-CANCEL-008 Given a live order When the reason is submitted Then the server result is shown',
+    (tester) async {
+      final repository = _FakeCancelRepository(
+        CancelOrderAccepted(
+          const CancelOrderOutcome(
+            orderId: _liveOrderId,
+            status: 'CANCELLED',
+            orderCode: 'GC-00007',
+            cancellationReason: 'Customer changed their mind.',
+          ),
+        ),
+      );
+      await pumpLiveCancelOrder(tester, repository);
+
+      // Live mode never shows the demo outcome controls.
+      expect(find.text('Sample: Confirmed'), findsNothing);
+
+      await tester.enterText(
+        find.byType(TextField),
+        'Customer changed their mind.',
+      );
+      await tester.tap(find.text('Cancel order'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Order cancelled'), findsOneWidget);
+      expect(find.text('SERVER CONFIRMED'), findsOneWidget);
+      expect(find.text('SAMPLE OUTCOME'), findsNothing);
+      expect(find.text('No kitchen ticket'), findsOneWidget);
+      expect(repository.calls, hasLength(1));
+      expect(repository.calls.single.brandId, 'brand-1');
+      expect(repository.calls.single.orderId, _liveOrderId);
+      expect(repository.calls.single.reason, 'Customer changed their mind.');
+    },
+  );
+
+  testWidgets(
+    'IT-MOB-CANCEL-009 Given a live order When the server rejects the cancellation Then the denied step shows the message',
+    (tester) async {
+      final repository = _FakeCancelRepository(
+        const CancelOrderDenied(
+          'Completed orders or handed-over tickets cannot be cancelled.',
+          statusCode: 409,
+        ),
+      );
+      await pumpLiveCancelOrder(tester, repository);
+
+      await tester.enterText(find.byType(TextField), 'Customer request.');
+      await tester.tap(find.text('Cancel order'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cancellation denied'), findsOneWidget);
+      expect(find.text('HTTP 409'), findsOneWidget);
+      expect(
+        find.text(
+          'Completed orders or handed-over tickets cannot be cancelled.',
+        ),
+        findsWidgets,
+      );
+      expect(find.text('Retry cancellation'), findsNothing);
+      expect(find.text('Back to orders'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'IT-MOB-CANCEL-010 Given a denied live order When retrying Then the same request is sent again',
+    (tester) async {
+      final repository = _FakeCancelRepository(
+        const CancelOrderDenied('Could not reach the server.', retryable: true),
+      );
+      await pumpLiveCancelOrder(tester, repository);
+
+      await tester.enterText(find.byType(TextField), 'Customer request.');
+      await tester.tap(find.text('Cancel order'));
+      await tester.pumpAndSettle();
+      expect(repository.calls, hasLength(1));
+
+      await tester.tap(find.text('Retry cancellation'));
+      await tester.pumpAndSettle();
+
+      expect(repository.calls, hasLength(2));
+      expect(repository.calls.last.orderId, _liveOrderId);
+      expect(repository.calls.last.reason, 'Customer request.');
+    },
+  );
+
+  testWidgets(
+    'IT-MOB-CANCEL-011 Given a live order with no reason Then nothing is sent to the server',
+    (tester) async {
+      final repository = _FakeCancelRepository(
+        const CancelOrderDenied('Unused.'),
+      );
+      await pumpLiveCancelOrder(tester, repository);
+
+      await tester.tap(find.text('Cancel order'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Reason is required'), findsOneWidget);
+      expect(repository.calls, isEmpty);
     },
   );
 }

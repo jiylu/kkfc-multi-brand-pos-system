@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 
 /// One screen of the cancel-order workflow (design frames 10-15).
 ///
-/// The backend has no cancellation endpoint yet, so the screen moves between
-/// these steps locally. When the API lands, a server response should select
-/// the step instead of the prototype controls.
+/// Demo mode moves between these steps locally. Live mode (`orderId` set) lets
+/// the server response select [cancelled] or [denied]; approval stays demo-only
+/// because the API has no approval route.
 enum CancelOrderStep {
   review('Review request'),
   reasonRequired('Missing reason'),
@@ -34,8 +34,8 @@ extension CancelOrderStepDesign on CancelOrderStep {
   };
 
   CancelTone get tone => switch (this) {
-    CancelOrderStep.review || CancelOrderStep.approvalRequired =>
-      CancelTone.warning,
+    CancelOrderStep.review ||
+    CancelOrderStep.approvalRequired => CancelTone.warning,
     CancelOrderStep.reasonRequired => CancelTone.danger,
     CancelOrderStep.processing => CancelTone.info,
     CancelOrderStep.cancelled => CancelTone.success,
@@ -49,7 +49,11 @@ extension CancelOrderStepDesign on CancelOrderStep {
   };
 }
 
-/// Sample order shown while the cancellation API does not exist.
+/// Sample order shown in demo mode, before an order UUID is available.
+///
+/// The cancellation endpoint exists (`POST /brands/:brandId/orders/:orderId/cancel`),
+/// but there is no order list to pick a real order from, so the demo screens
+/// still run on this fixture.
 @immutable
 class CancelOrderTicket {
   const CancelOrderTicket({

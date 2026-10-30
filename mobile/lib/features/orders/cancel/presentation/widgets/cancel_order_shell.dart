@@ -18,8 +18,8 @@ class CancelOrderShell extends StatelessWidget {
     required this.header,
     required this.bodyBuilder,
     required this.actions,
-    this.staffName = 'Ana R.',
-    this.staffRole = 'Order staff',
+    this.staffName,
+    this.staffRole,
   });
 
   final Widget header;
@@ -29,8 +29,11 @@ class CancelOrderShell extends StatelessWidget {
   final Widget Function(BuildContext context, bool isTablet) bodyBuilder;
 
   final List<CancelAction> actions;
-  final String staffName;
-  final String staffRole;
+
+  /// Null falls back to the shared header defaults, which is what a live order
+  /// uses until the profile is surfaced by the header.
+  final String? staffName;
+  final String? staffRole;
 
   @override
   Widget build(BuildContext context) {
@@ -50,9 +53,7 @@ class CancelOrderShell extends StatelessWidget {
           final content = ColoredBox(
             color: scheme.surface,
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(
-                isTablet ? MenuSpace.xl : MenuSpace.md,
-              ),
+              padding: EdgeInsets.all(isTablet ? MenuSpace.xl : MenuSpace.md),
               child: Align(
                 alignment: Alignment.topLeft,
                 child: ConstrainedBox(
@@ -70,10 +71,7 @@ class CancelOrderShell extends StatelessWidget {
             ),
           );
 
-          final footer = _CancelFooter(
-            actions: actions,
-            expanded: !isTablet,
-          );
+          final footer = _CancelFooter(actions: actions, expanded: !isTablet);
 
           if (isTablet) {
             return Column(
@@ -131,9 +129,7 @@ class _CancelFooter extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.all(
-          expanded ? MenuSpace.md : MenuSpace.lg,
-        ),
+        padding: EdgeInsets.all(expanded ? MenuSpace.md : MenuSpace.lg),
         child: CancelActionBar(actions: actions, expanded: expanded),
       ),
     );
