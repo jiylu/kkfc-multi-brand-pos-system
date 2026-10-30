@@ -367,6 +367,7 @@ Table order_item_modifiers {
 Table kitchen_tickets {
   kitchen_ticket_id uuid [pk]
   order_id uuid [not null, unique, ref: - orders.order_id]
+  order_code varchar(64) [not null, note: 'Copied from the order when confirmed.']
   ticket_number varchar(64) [not null, unique]
   status kitchen_ticket_statuses [not null, default: 'QUEUED']
   preparer_id uuid [ref: > users.user_id]

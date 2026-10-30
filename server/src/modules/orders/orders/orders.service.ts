@@ -300,7 +300,13 @@ export class OrdersService {
         throw new ServiceUnavailableException(
           'Ticket number exceeds storage capacity.',
         );
-      await this.repository.createTicket(orderId, ticketNumber, actorId, tx);
+      await this.repository.createTicket(
+        orderId,
+        order.order_code,
+        ticketNumber,
+        actorId,
+        tx,
+      );
       const confirmed = await this.repository.update(
         orderId,
         {

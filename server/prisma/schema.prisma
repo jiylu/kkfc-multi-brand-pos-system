@@ -690,6 +690,7 @@ model ProductionBatchInput {
 model KitchenTicket {
   kitchen_ticket_id      String              @id @default(uuid()) @db.Uuid
   order_id               String              @unique @db.Uuid
+  order_code             String              @db.VarChar(64)
   /// T- plus a running number, minimum 3 digits; may grow beyond T-99999 (64 characters maximum).
   ticket_number          String              @unique @db.VarChar(64)
   status                 KitchenTicketStatus @default(QUEUED)

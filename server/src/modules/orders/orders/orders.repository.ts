@@ -140,6 +140,7 @@ export class OrdersRepository {
 
   createTicket(
     orderId: string,
+    orderCode: string,
     ticketNumber: string,
     actorId: string,
     tx: Prisma.TransactionClient,
@@ -147,6 +148,7 @@ export class OrdersRepository {
     return tx.kitchenTicket.create({
       data: {
         order_id: orderId,
+        order_code: orderCode,
         ticket_number: ticketNumber,
         created_by_id: actorId,
       },

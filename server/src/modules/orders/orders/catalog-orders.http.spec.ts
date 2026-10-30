@@ -563,6 +563,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     const saved = await savedOrder(order.order_id);
     expect(saved.status).toBe('CONFIRMED');
     expect(saved.kitchen_tickets_order).toMatchObject({
+      order_code: before.order_code,
       status: 'QUEUED',
       created_by_id: fixture.users[1].user_id,
     });
