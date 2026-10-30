@@ -169,6 +169,7 @@ export class KitchenTicketRepository {
     return tx.kitchenTicket.update({
       where: {
         kitchen_ticket_id: kitchenTicketId,
+        preparer_id: null,
       },
       data: {
         preparer_id: preparerId,
@@ -184,6 +185,7 @@ export class KitchenTicketRepository {
     return tx.kitchenTicket.update({
       where: {
         kitchen_ticket_id: kitchenTicketId,
+        checker_id: null,
       },
       data: {
         checker_id: checkerId,

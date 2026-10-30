@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { KitchenTicketStatus, Prisma } from '@prisma/client';
 import { assertExists } from '../../../shared/assertions/assert-exists';
+import { assertValidPagination } from '../../../shared/assertions/assert-valid-pagination';
 import { OrdersRepository } from '../../orders/orders/orders.repository';
 import { CreateKitchenTicketDTO } from './dto/create-kitchen-ticket.dto';
 import { KitchenTicketRepository } from './kitchen-ticket.repository';
@@ -45,6 +46,7 @@ export class KitchenTicketService {
 
   async findAll(skip: number, take: number) {
     this.logger.debug(`Listing kitchen tickets: skip=${skip}, take=${take}`);
+    assertValidPagination(skip, this.logger);
     const result = await this.kitchenTicketRepository.findAll(skip, take);
 
     this.logger.log(
@@ -449,6 +451,17 @@ export class KitchenTicketService {
     const ticket = await this.kitchenTicketRepository.findOne(kitchenTicketId);
     assertExists(ticket, 'KitchenTicket', kitchenTicketId, this.logger);
 
+    if (ticket.preparer_id !== null) {
+      this.logger.warn(
+        `Cannot assign preparer to ticket ${kitchenTicketId}, preparer=${ticket.preparer_id}`,
+      );
+
+      throw new ConflictException({
+        code: 'KITCHEN_TICKET_PREPARER_ALREADY_ASSIGNED',
+        message: 'Cannot assign preparer. Ticket already has a preparer.',
+      });
+    }
+
     const updated = await this.kitchenTicketRepository.assignPreparer(
       kitchenTicketId,
       preparerId,
@@ -466,6 +479,17 @@ export class KitchenTicketService {
     );
     const ticket = await this.kitchenTicketRepository.findOne(kitchenTicketId);
     assertExists(ticket, 'KitchenTicket', kitchenTicketId, this.logger);
+
+    if (ticket.checker_id !== null) {
+      this.logger.warn(
+        `Cannot assign checker to ticket ${kitchenTicketId}, checker=${ticket.checker_id}`,
+      );
+
+      throw new ConflictException({
+        code: 'KITCHEN_TICKET_CHECKER_ALREADY_ASSIGNED',
+        message: 'Cannot assign checker. Ticket already has a checker.',
+      });
+    }
 
     const updated = await this.kitchenTicketRepository.assignChecker(
       kitchenTicketId,
