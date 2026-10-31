@@ -39,6 +39,8 @@ const nestedFields = new Set([
   'meta',
   'menu_item',
   'modifier',
+  'menuItemModifier',
+  'modifierDetails',
   'menu_items',
   'menu_item_channels_menu_item',
   'menu_item_modifiers_menu_item',

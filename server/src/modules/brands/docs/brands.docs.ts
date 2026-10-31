@@ -13,6 +13,22 @@ import {
 } from '@nestjs/swagger';
 import { UpdateBrandDTO } from '../dto/update-brand.dto';
 
+const brandExample = {
+  brand_id: '00000000-0000-4000-8000-000000000001',
+  code: 'KKFC',
+  name: 'King Kungs Kafe',
+  logo_url:
+    'uploads/00000000-0000-4000-8000-000000000004/00000000-0000-4000-8000-000000000005.png',
+  is_active: true,
+  created_at: '2026-10-31T08:00:00.000Z',
+  modified_at: '2026-10-31T08:00:00.000Z',
+};
+
+const brandReadExample = {
+  ...brandExample,
+  logo_url: `https://files.example.com/${brandExample.logo_url}`,
+};
+
 export function BrandsDocs() {
   return applyDecorators(
     ApiTags('Brands'),
@@ -33,7 +49,9 @@ export function CreateBrandDocs() {
     }),
     ApiResponse({
       status: 201,
-      description: 'Created brand, including its supplied code.',
+      description:
+        'Created brand, including its supplied code. logo_url contains the stored upload key, supplied URL, or null.',
+      content: { 'application/json': { example: brandExample } },
     }),
     ApiResponse({
       status: 409,
@@ -45,14 +63,34 @@ export function CreateBrandDocs() {
 export function FindAllBrandsDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'List all brands (superadmin).',
+      summary: 'List all brands (authenticated).',
       description:
         'Returns all brands. Supports page, limit, and activeOnly. activeOnly defaults to true; false includes both active and inactive brands.',
     }),
     ApiResponse({
       status: 200,
       description:
-        'Paginated brands in data, with page, limit, total, and totalPages in meta.',
+        'Paginated brands in data, with page, limit, total, and totalPages in meta. Uploaded logo keys are resolved to display URLs; null logos remain null.',
+      content: {
+        'application/json': {
+          examples: {
+            populated: {
+              summary: 'One matching brand',
+              value: {
+                data: [brandReadExample],
+                meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+              },
+            },
+            empty: {
+              summary: 'No matching brands',
+              value: {
+                data: [],
+                meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+              },
+            },
+          },
+        },
+      },
     }),
   );
 }
@@ -62,14 +100,19 @@ export function FindOneBrandDocs() {
     ApiOperation({
       summary: 'Get an active brand.',
       description:
-        'Any authenticated user can read their assigned brand. Superadmins can read any active brand. This endpoint does not return inactive brands.',
+        'Any authenticated user can read any active brand. This endpoint does not return inactive brands.',
     }),
     ApiParam({
       name: 'brandId',
       schema: { type: 'string', format: 'uuid' },
       description: 'Brand ID.',
     }),
-    ApiResponse({ status: 200, description: 'Active brand.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Active brand. Uploaded logo keys are resolved to display URLs; null logos remain null.',
+      content: { 'application/json': { example: brandReadExample } },
+    }),
     ApiResponse({ status: 404, description: 'Brand not found or inactive.' }),
   );
 }
@@ -107,7 +150,33 @@ export function UpdateBrandDocs() {
       schema: { type: 'string', format: 'uuid' },
       description: 'Brand ID.',
     }),
-    ApiResponse({ status: 200, description: 'Updated brand.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Updated brand with its original creation timestamp. Uploaded logos are returned as stored keys; clearing the logo returns null.',
+      content: {
+        'application/json': {
+          examples: {
+            updated: {
+              summary: 'Updated brand with an uploaded logo',
+              value: {
+                ...brandExample,
+                name: 'Updated King Kungs Kafe',
+                modified_at: '2026-10-31T09:00:00.000Z',
+              },
+            },
+            clearedLogo: {
+              summary: 'Logo cleared with logo_url set to null',
+              value: {
+                ...brandExample,
+                logo_url: null,
+                modified_at: '2026-10-31T09:00:00.000Z',
+              },
+            },
+          },
+        },
+      },
+    }),
     ApiResponse({ status: 409, description: 'Brand code is already taken.' }),
     ApiResponse({ status: 404, description: 'Brand not found or inactive.' }),
     ApiResponse({
@@ -133,14 +202,27 @@ export function DeleteBrandDocs() {
     ApiOperation({
       summary: 'Deactivate a brand (superadmin).',
       description:
-        'Superadmins can deactivate any active brand. The brand and its active users are deactivated in one transaction. Records are preserved, and affected users can no longer authenticate.',
+        'Superadmins can deactivate any active brand. The brand is deactivated without changing employee accounts. Records are preserved.',
     }),
     ApiParam({
       name: 'brandId',
       schema: { type: 'string', format: 'uuid' },
       description: 'Brand ID.',
     }),
-    ApiResponse({ status: 200, description: 'Deactivated brand.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Preserved brand with is_active set to false and the stored logo value unchanged. Employee accounts are unaffected.',
+      content: {
+        'application/json': {
+          example: {
+            ...brandExample,
+            is_active: false,
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
+    }),
     ApiResponse({
       status: 404,
       description: 'Brand not found or already inactive.',

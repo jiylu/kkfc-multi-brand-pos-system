@@ -3,7 +3,6 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Authenticated } from '../../../auth/auth.guard';
-import { BrandsGuard } from '../../../../shared/guards/brands.guard';
 import { RolesGuard } from '../../../../shared/guards/roles.guard';
 import { MenuChannelsController } from '../menu-channels.controller';
 import { MenuChannelsService } from '../menu-channels.service';
@@ -36,8 +35,6 @@ describe('Menu channels HTTP endpoints', () => {
       .overrideGuard(Authenticated)
       .useValue({ canActivate: () => true })
       .overrideGuard(RolesGuard)
-      .useValue({ canActivate: () => true })
-      .overrideGuard(BrandsGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(PinGuard)
       .useValue({ canActivate: () => true })
@@ -78,7 +75,7 @@ describe('Menu channels HTTP endpoints', () => {
       document.paths['/api/menu-channels/{id}'].delete,
       document.paths['/api/menu-channels/reactivate/{id}'].patch,
     ];
-    for (const operation of operations) {
+    for (const [index, operation] of operations.entries()) {
       expect(typeof operation?.summary).toBe('string');
       expect(typeof operation?.description).toBe('string');
       expect(operation).toMatchObject({
@@ -88,7 +85,58 @@ describe('Menu channels HTTP endpoints', () => {
       expect(operation?.responses).toHaveProperty('400.description');
       expect(operation?.responses).toHaveProperty('401.description');
       expect(operation?.responses).toHaveProperty('403.description');
+      expect(operation?.responses[index === 0 ? '201' : '200']).toHaveProperty(
+        'content.application/json',
+      );
     }
+    expect(operations[0]?.responses['201']).toHaveProperty(
+      'content.application/json.example.menu_item_channel_id',
+      channelId,
+    );
+    expect(operations[3]?.responses['200']).toHaveProperty(
+      'content.application/json.example',
+      {
+        menu_item_channel_id: channelId,
+        menu_item_id: menuItemId,
+        order_channel: 'GRABFOOD',
+        price: '120',
+        is_available: true,
+        created_at: '2026-10-31T08:00:00.000Z',
+        modified_at: '2026-10-31T08:00:00.000Z',
+      },
+    );
+    expect(operations[1]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.populated.value.data.0.price',
+      '120',
+    );
+    expect(operations[1]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.populated.value.meta',
+      { page: 1, limit: 10, total: 1, totalPages: 1 },
+    );
+    expect(operations[1]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.empty.value',
+      { data: [], meta: { page: 1, limit: 10, total: 0, totalPages: 0 } },
+    );
+    expect(operations[2]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.populated.value.0.menu_item_channel_id',
+      channelId,
+    );
+    expect(operations[2]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.empty.value',
+      [],
+    );
+    expect(operations[4]?.responses['200']).toHaveProperty(
+      'content.application/json.example.price',
+      '150',
+    );
+    expect(operations[5]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_available',
+      false,
+    );
+    expect(operations[6]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_available',
+      true,
+    );
     expect(document.components?.schemas?.CreateMenuChannelDTO).toMatchObject({
       required: ['menu_item_id', 'order_channel', 'price'],
       properties: {

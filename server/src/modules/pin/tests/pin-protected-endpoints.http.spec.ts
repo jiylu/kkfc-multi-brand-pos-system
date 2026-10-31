@@ -191,16 +191,16 @@ describe('PIN protection on business endpoints', () => {
     },
   );
 
-  it('rejects another-brand access before checking the PIN', async () => {
+  it('checks the PIN for actions across brands', async () => {
     role = UserRole.MANAGER;
     callerBrandId = '00000000-0000-4000-8000-000000000099';
     await request(app.getHttpServer())
       .delete(`/api/menu-items/${id}`)
       .auth('session', { type: 'bearer' })
       .set('X-Action-Pin', '0123')
-      .expect(403);
-    expect(pin.verifyPin).not.toHaveBeenCalled();
-    expect(action).not.toHaveBeenCalled();
+      .expect(200);
+    expect(pin.verifyPin).toHaveBeenCalled();
+    expect(action).toHaveBeenCalled();
   });
 
   it('rejects multipart writes before uploading a file', async () => {

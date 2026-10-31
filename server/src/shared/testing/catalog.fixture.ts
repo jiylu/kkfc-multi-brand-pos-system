@@ -28,7 +28,7 @@ export async function createCatalogFixture(prisma: PrismaService) {
   const [brand, otherBrand] = brands;
   const users = await Promise.all(
     (['MANAGER', 'CASHIER_STAFF', 'SUPERADMIN', 'MANAGER'] as const).map(
-      (role, index) =>
+      (role) =>
         prisma.user.create({
           data: {
             username: randomUUID().replaceAll('-', '').slice(0, 16),
@@ -36,7 +36,6 @@ export async function createCatalogFixture(prisma: PrismaService) {
             last_name: 'Tester',
             password_hash: 'not-used-for-session-fixtures',
             role,
-            brand_id: index === 3 ? otherBrand.brand_id : brand.brand_id,
           },
         }),
     ),
@@ -136,10 +135,7 @@ export async function cleanupCatalogFixture(
   });
   const users = await prisma.user.findMany({
     where: {
-      OR: [
-        { brand_id: { in: brandIds } },
-        { user_id: { in: fixture.users.map((user) => user.user_id) } },
-      ],
+      user_id: { in: fixture.users.map((user) => user.user_id) },
     },
     select: { user_id: true },
   });

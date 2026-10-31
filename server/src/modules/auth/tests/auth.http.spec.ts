@@ -25,7 +25,6 @@ describe('Auth HTTP endpoints', () => {
     is_active: true,
     created_at: new Date(),
     modified_at: new Date(),
-    brand_id: randomUUID() as string | null,
   };
   const staff = {
     ...admin,
@@ -50,15 +49,10 @@ describe('Auth HTTP endpoints', () => {
 
   beforeAll(async () => {
     passwordHash = await argon2.hash('correct-password');
-    const matchingUsers = (where: {
-      is_active?: boolean;
-      brand_id?: string | null;
-    }) =>
+    const matchingUsers = (where: { is_active?: boolean }) =>
       [...users.values()].filter((user) => {
         return (
-          (where.is_active === undefined ||
-            user.is_active === where.is_active) &&
-          (where.brand_id === undefined || user.brand_id === where.brand_id)
+          where.is_active === undefined || user.is_active === where.is_active
         );
       });
     const listingRepository = new UsersRepository({
@@ -68,15 +62,12 @@ describe('Auth HTTP endpoints', () => {
           skip,
           take,
         }: {
-          where: { is_active?: boolean; brand_id?: string | null };
+          where: { is_active?: boolean };
           skip: number;
           take: number;
         }) => Promise.resolve(matchingUsers(where).slice(skip, skip + take)),
-        count: ({
-          where,
-        }: {
-          where: { is_active?: boolean; brand_id?: string | null };
-        }) => Promise.resolve(matchingUsers(where).length),
+        count: ({ where }: { where: { is_active?: boolean } }) =>
+          Promise.resolve(matchingUsers(where).length),
       },
       $transaction: (queries: Promise<unknown>[]) => Promise.all(queries),
     } as unknown as PrismaService);
@@ -208,7 +199,6 @@ describe('Auth HTTP endpoints', () => {
       ...staff,
       user_id: randomUUID(),
       username: 'unrelated',
-      brand_id: randomUUID(),
     };
     users.set(unrelated.user_id, unrelated);
     const { token } = await login();
@@ -231,40 +221,6 @@ describe('Auth HTTP endpoints', () => {
     expect(lookup.status).toBe(200);
   });
 
-  it('IT-AUTH-015: blocks managers from editing or deactivating users in another brand', async () => {
-    users.set(admin.user_id, { ...admin, role: UserRole.MANAGER });
-    const otherAdmin = {
-      ...admin,
-      user_id: randomUUID(),
-      username: 'other-admin',
-      brand_id: randomUUID(),
-    };
-    users.set(otherAdmin.user_id, otherAdmin);
-    users.set(staff.user_id, { ...staff, brand_id: randomUUID() });
-    const { token } = await login();
-    const headers = {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-    const adminUpdate = await fetch(`${url}/api/users/${otherAdmin.user_id}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ first_name: 'Changed' }),
-    });
-    expect(adminUpdate.status).toBe(403);
-    const passwordReset = await fetch(`${url}/api/users/${staff.user_id}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ password: 'new-password' }),
-    });
-    expect(passwordReset.status).toBe(403);
-    const deletion = await fetch(`${url}/api/users/${staff.user_id}`, {
-      method: 'DELETE',
-      headers,
-    });
-    expect(deletion.status).toBe(403);
-  });
-
   it('IT-AUTH-001: issues a random token, persists its hash, and returns a safe profile', async () => {
     const body = await login();
     expect(body.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
@@ -277,7 +233,6 @@ describe('Auth HTTP endpoints', () => {
       first_name: 'Test',
       last_name: 'Admin',
       role: UserRole.SUPERADMIN,
-      brand_id: admin.brand_id,
       is_active: admin.is_active,
       created_at: admin.created_at.toISOString(),
       modified_at: admin.modified_at.toISOString(),
@@ -343,10 +298,9 @@ describe('Auth HTTP endpoints', () => {
     expect(await response.json()).toEqual(user);
   });
 
-  it('IT-AUTH-006: returns a null brand when no brand is assigned', async () => {
-    users.set(admin.user_id, { ...admin, brand_id: null });
+  it('IT-AUTH-006: returns a profile without brand assignments', async () => {
     const { token, user } = await login();
-    expect(user.brand_id).toBeNull();
+    expect(user).not.toHaveProperty('brand_id');
     const response = await fetch(`${url}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });

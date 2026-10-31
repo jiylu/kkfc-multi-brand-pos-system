@@ -15,12 +15,42 @@ import {
 import { UpdateMenuItemDTO } from '../dto/update-menu-item.dto';
 import { UpdateMenuItemAvailabilityDTO } from '../dto/update-menu-item-availability.dto';
 
+const menuItemExample = {
+  menu_item_id: '00000000-0000-4000-8000-000000000003',
+  brand_id: '00000000-0000-4000-8000-000000000001',
+  recipe_id: '00000000-0000-4000-8000-000000000004',
+  img_url: 'https://example.com/rice.jpg',
+  code: 'GC-KIMCHI-RICE',
+  name: 'Kimchi Rice',
+  description: 'Kimchi fried rice topped with an egg.',
+  serving_description: 'One bowl',
+  base_price: '189.5',
+  is_available: true,
+  is_active: true,
+  created_at: '2026-10-31T08:00:00.000Z',
+  modified_at: '2026-10-31T08:00:00.000Z',
+};
+
+const menuItemsPageExamples = {
+  populated: {
+    summary: 'One matching menu item',
+    value: {
+      data: [menuItemExample],
+      meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+    },
+  },
+  empty: {
+    summary: 'No matching menu items',
+    value: { data: [], meta: { page: 1, limit: 10, total: 0, totalPages: 0 } },
+  },
+};
+
 export function UpdateMenuItemAvailabilityDocs() {
   return applyDecorators(
     ApiOperation({
       summary: 'Set menu item availability.',
       description:
-        'Available to SUPERADMIN, MANAGER, RECIPE_MANAGER, SUPERVISOR, KITCHEN_HEAD, KITCHEN_STAFF, and INVENTORY_STAFF; CASHIER_STAFF cannot change availability. Superadmins and recipe managers can access any brand; other allowed callers must belong to the item brand. Supply an active menu item UUID and a JSON object with a required boolean availability. Sets is_available without changing is_active or channel overrides. The item brand must be active. An unavailable item cannot be used for new orders, even when its channel override is available. Setting the current value returns 409.',
+        'Available to SUPERADMIN, MANAGER, RECIPE_MANAGER, SUPERVISOR, KITCHEN_HEAD, KITCHEN_STAFF, and INVENTORY_STAFF; CASHIER_STAFF cannot change availability. All allowed roles can operate across brands. Supply an active menu item UUID and a JSON object with a required boolean availability. Sets is_available without changing is_active or channel overrides. The item brand must be active. An unavailable item cannot be used for new orders, even when its channel override is available. Setting the current value returns 409.',
     }),
     ApiParam({
       name: 'id',
@@ -30,7 +60,13 @@ export function UpdateMenuItemAvailabilityDocs() {
     ApiBody({ type: UpdateMenuItemAvailabilityDTO }),
     ApiResponse({
       status: 200,
-      description: 'Updated menu item, including is_available.',
+      description:
+        'Updated item with is_available set to the requested value; is_active is unchanged.',
+      content: {
+        'application/json': {
+          example: { ...menuItemExample, is_available: false },
+        },
+      },
     }),
     ApiResponse({
       status: 404,
@@ -59,8 +95,7 @@ export function MenuItemsDocs() {
     }),
     ApiResponse({
       status: 403,
-      description:
-        'Role or brand access denied. Superadmins may access any brand; other callers must belong to the requested brand.',
+      description: 'Role access denied. Employees operate across all brands.',
     }),
   );
 }
@@ -71,9 +106,14 @@ export function CreateMenuItemDocs() {
     ApiOperation({
       summary: 'Create a menu item (manager or superadmin).',
       description:
-        'Managers can create menu items in their assigned brand; superadmins can create them in any active brand. Supply brand_id, recipe_id, img_url, a unique code, name, and base_price. Description and serving_description are optional and nullable. The item starts active and available.',
+        'Managers and superadmins can create menu items in any active brand. Supply brand_id, recipe_id, img_url, a unique code, name, and base_price. Description and serving_description are optional and nullable. The item starts active and available.',
     }),
-    ApiResponse({ status: 201, description: 'Created menu item.' }),
+    ApiResponse({
+      status: 201,
+      description:
+        'Created menu item. Decimal prices are serialized as strings; confidential recipe details are excluded.',
+      content: { 'application/json': { example: menuItemExample } },
+    }),
     ApiResponse({ status: 404, description: 'Brand not found or inactive.' }),
     ApiResponse({
       status: 409,
@@ -87,7 +127,7 @@ export function FindOneMenuItemDocs() {
     ApiOperation({
       summary: 'Get a menu item by code or UUID.',
       description:
-        'Available to any authenticated user in the item brand, and to superadmins across brands. UUID-shaped identifiers are treated as menu item IDs; other identifiers are codes. The item brand must be active. activeOnly defaults to true; false also permits inactive items.',
+        'Available to any authenticated user across brands. UUID-shaped identifiers are treated as menu item IDs; other identifiers are codes. The item brand must be active. activeOnly defaults to true; false also permits inactive items.',
     }),
     ApiParam({
       name: 'id',
@@ -101,7 +141,12 @@ export function FindOneMenuItemDocs() {
       schema: { default: true },
       description: 'False permits both active and inactive menu items.',
     }),
-    ApiResponse({ status: 200, description: 'Menu item.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Menu item record with its recipe ID, without confidential recipe details.',
+      content: { 'application/json': { example: menuItemExample } },
+    }),
     ApiResponse({
       status: 404,
       description:
@@ -119,7 +164,9 @@ export function FindAllMenuItemsDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'Paginated menu items across brands.',
+      description:
+        'Paginated menu item records across brands, without nested channels, modifiers, or recipe details.',
+      content: { 'application/json': { examples: menuItemsPageExamples } },
     }),
   );
 }
@@ -129,7 +176,7 @@ export function FindMenuItemsByBrandDocs() {
     ApiOperation({
       summary: 'List menu items in an active brand.',
       description:
-        'Available to any authenticated user in the requested brand, and to superadmins across brands. Supports page, limit, and activeOnly. activeOnly defaults to true; false includes inactive items. Returns data and pagination meta.',
+        'Available to any authenticated user across brands. Supports page, limit, and activeOnly. activeOnly defaults to true; false includes inactive items. Returns data and pagination meta.',
     }),
     ApiParam({
       name: 'brandId',
@@ -138,7 +185,9 @@ export function FindMenuItemsByBrandDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'Paginated menu items in the requested brand.',
+      description:
+        'Paginated menu item records in the requested brand, without nested channels, modifiers, or recipe details.',
+      content: { 'application/json': { examples: menuItemsPageExamples } },
     }),
     ApiResponse({ status: 404, description: 'Brand not found or inactive.' }),
   );
@@ -163,10 +212,24 @@ export function UpdateMenuItemDocs() {
     ApiOperation({
       summary: 'Update an active menu item (manager or superadmin).',
       description:
-        'Managers can update items in their assigned brand; superadmins can update items across brands. Accepts a menu item UUID, not a code. Supports recipe_id, img_url, code, name, description, serving_description, and base_price. Optionally send file as multipart/form-data to replace the image with an uploaded JPG/PNG (maximum 5 MiB, 20 megapixels); the uploaded asset key overrides img_url. Omitted fields are unchanged. Null clears description or serving_description; other fields reject null. brand_id and is_active are not accepted.',
+        'Managers and superadmins can update items across brands. Accepts a menu item UUID, not a code. Supports recipe_id, img_url, code, name, description, serving_description, and base_price. Optionally send file as multipart/form-data to replace the image with an uploaded JPG/PNG (maximum 5 MiB, 20 megapixels); the uploaded asset key overrides img_url. Omitted fields are unchanged. Null clears description or serving_description; other fields reject null. brand_id and is_active are not accepted.',
     }),
     ApiParam({ name: 'id', format: 'uuid', description: 'Menu item UUID.' }),
-    ApiResponse({ status: 200, description: 'Updated menu item.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Updated menu item with its original creation timestamp. An uploaded image is returned as the stored asset key in img_url.',
+      content: {
+        'application/json': {
+          example: {
+            ...menuItemExample,
+            name: 'Updated Kimchi Rice',
+            base_price: '199.5',
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
+    }),
     ApiResponse({
       status: 404,
       description: 'Menu item not found or inactive.',
@@ -184,14 +247,27 @@ export function ReactivateMenuItemDocs() {
     ApiOperation({
       summary: 'Reactivate a menu item (manager or superadmin).',
       description:
-        'Managers can reactivate items in their assigned brand; superadmins can reactivate items across brands. Accepts a menu item UUID and requires no request body. Reactivation sets is_active to true.',
+        'Managers and superadmins can reactivate items across brands. Accepts a menu item UUID and requires no request body. Reactivation sets is_active to true.',
     }),
     ApiParam({
       name: 'id',
       format: 'uuid',
       description: 'Inactive menu item UUID.',
     }),
-    ApiResponse({ status: 200, description: 'Reactivated menu item.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Reactivated menu item with is_active set to true; availability is preserved.',
+      content: {
+        'application/json': {
+          example: {
+            ...menuItemExample,
+            is_active: true,
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
+    }),
     ApiResponse({ status: 404, description: 'Menu item not found.' }),
     ApiResponse({
       status: 409,
@@ -206,14 +282,27 @@ export function DeleteMenuItemDocs() {
     ApiOperation({
       summary: 'Deactivate a menu item (manager or superadmin).',
       description:
-        'Managers can deactivate items in their assigned brand; superadmins can deactivate items across brands. Accepts a menu item UUID, not a code. Sets is_active to false and preserves the record and its historical references.',
+        'Managers and superadmins can deactivate items across brands. Accepts a menu item UUID, not a code. Sets is_active to false and preserves the record and its historical references.',
     }),
     ApiParam({
       name: 'id',
       format: 'uuid',
       description: 'Active menu item UUID.',
     }),
-    ApiResponse({ status: 200, description: 'Deactivated menu item.' }),
+    ApiResponse({
+      status: 200,
+      description:
+        'Preserved menu item with is_active set to false; availability is unchanged.',
+      content: {
+        'application/json': {
+          example: {
+            ...menuItemExample,
+            is_active: false,
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
+    }),
     ApiResponse({
       status: 404,
       description: 'Menu item not found or already inactive.',

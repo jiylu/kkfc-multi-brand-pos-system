@@ -139,7 +139,7 @@ describe('Modifiers HTTP endpoints', () => {
       document.paths['/api/modifiers/inventory-item/{inventoryItemId}']?.get,
       document.paths['/api/modifiers/reactivate/{id}']?.patch,
     ];
-    for (const operation of operations) {
+    for (const [index, operation] of operations.entries()) {
       expect(typeof operation?.summary).toBe('string');
       expect(typeof operation?.description).toBe('string');
       expect(operation?.tags).toEqual(['Modifiers']);
@@ -147,7 +147,52 @@ describe('Modifiers HTTP endpoints', () => {
       expect(operation?.responses).toHaveProperty('400.description');
       expect(operation?.responses).toHaveProperty('401.description');
       expect(operation?.responses).toHaveProperty('403.description');
+      expect(operation?.responses[index === 0 ? '201' : '200']).toHaveProperty(
+        'content.application/json',
+      );
     }
+    expect(operations[0]?.responses['201']).toHaveProperty(
+      'content.application/json.example.modifier_id',
+      modifierId,
+    );
+    expect(operations[2]?.responses['200']).toHaveProperty(
+      'content.application/json.example.code',
+      'MOD-EXTRA-RICE',
+    );
+    expect(operations[2]?.responses['200']).not.toHaveProperty(
+      'content.application/json.example.inventory_item_id',
+    );
+    expect(operations[2]?.responses['200']).not.toHaveProperty(
+      'content.application/json.example.quantity',
+    );
+    expect(operations[1]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.populated.value.meta',
+      { page: 1, limit: 10, total: 1, totalPages: 1 },
+    );
+    expect(operations[1]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.empty.value',
+      { data: [], meta: { page: 1, limit: 10, total: 0, totalPages: 0 } },
+    );
+    expect(operations[5]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.populated.value.0.modifier_id',
+      modifierId,
+    );
+    expect(operations[5]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.empty.value',
+      [],
+    );
+    expect(operations[3]?.responses['200']).toHaveProperty(
+      'content.application/json.example.name',
+      'Extra rice (large)',
+    );
+    expect(operations[4]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_active',
+      false,
+    );
+    expect(operations[6]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_active',
+      true,
+    );
     expect(document.components?.schemas?.CreateModifierDTO).toMatchObject({
       required: ['code', 'name'],
     });

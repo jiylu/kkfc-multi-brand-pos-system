@@ -11,13 +11,13 @@ operations listed below without changing their existing role permissions.
 Every request to these 22 operations requires the signed-in user's four-digit
 `X-Action-Pin` header in addition to the bearer session:
 
-| Resource | Protected operations |
-| --- | --- |
-| `/api/users` | Create, update, deactivate |
-| `/api/brands` | Create, update, deactivate |
-| `/api/menu-items` | Create, update, reactivate, deactivate |
-| `/api/menu-channels` | Create, update, reactivate, deactivate |
-| `/api/modifiers` | Create, update, reactivate, deactivate |
+| Resource                   | Protected operations                   |
+| -------------------------- | -------------------------------------- |
+| `/api/users`               | Create, update, deactivate             |
+| `/api/brands`              | Create, update, deactivate             |
+| `/api/menu-items`          | Create, update, reactivate, deactivate |
+| `/api/menu-channels`       | Create, update, reactivate, deactivate |
+| `/api/modifiers`           | Create, update, reactivate, deactivate |
 | `/api/menu-item-modifiers` | Create, update, reactivate, deactivate |
 
 GET endpoints, order operations, asset uploads, menu availability changes, and
@@ -31,11 +31,11 @@ same per-user counter across all protected routes.
 All endpoints require a bearer session and one of the five roles above. The user
 ID always comes from the session; callers cannot select another user.
 
-| Endpoint | Body | Behavior |
-| --- | --- | --- |
-| `POST /api/pin` | `{ "pin": "0123" }` | Creates the user's initial PIN; returns 409 if already configured. |
-| `GET /api/pin` | None | Reads credential metadata without the hash; returns an empty response if unconfigured. |
-| `PATCH /api/pin` | `{ "pin": "0456", "password": "current account password" }` | Changes the PIN after checking the account password. Resets are unlimited. |
+| Endpoint         | Body                                                        | Behavior                                                                               |
+| ---------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `POST /api/pin`  | `{ "pin": "0123" }`                                         | Creates the user's initial PIN; returns 409 if already configured.                     |
+| `GET /api/pin`   | None                                                        | Reads credential metadata without the hash; returns an empty response if unconfigured. |
+| `PATCH /api/pin` | `{ "pin": "0456", "password": "current account password" }` | Changes the PIN after checking the account password. Resets are unlimited.             |
 
 Setup, lookup, and reset do not require `X-Action-Pin`. Responses use
 `Cache-Control: no-store`. There is no standalone PIN verification endpoint.
@@ -135,15 +135,14 @@ add the PIN guard after the brand guard on selected mutation methods:
 ```ts
 @Delete(':id')
 @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-@UseGuards(BrandsGuard, PinGuard)
-@BrandResource(BrandResourceType.MENU_ITEM, 'id')
+@UseGuards(PinGuard)
 async delete(@Param('id', ParseUUIDPipe) id: string) {
   return this.menuItemsService.deleteMenuItem(id);
 }
 ```
 
 The client sends its bearer session and `X-Action-Pin` header over HTTPS for
-each protected request. PIN verification supplements role and brand access.
+each protected request. PIN verification supplements role access.
 
 ## 6. Test the behavior
 

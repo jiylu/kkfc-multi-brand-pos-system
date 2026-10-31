@@ -13,17 +13,13 @@ export class UsersRepository {
     dto: CreateUserDTO,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
-    const { password, brand_id, ...userData } = dto;
+    const { password, ...userData } = dto;
     const passwordHash = await argon2.hash(password);
 
     return tx.user.create({
       data: {
         ...userData,
         password_hash: passwordHash,
-        brand:
-          brand_id == null
-            ? undefined
-            : { connect: { brand_id, is_active: true } },
       },
       omit: {
         password_hash: true,
@@ -39,37 +35,6 @@ export class UsersRepository {
   ) {
     const where: Prisma.UserWhereInput = {
       is_active: activeOnly ? true : undefined,
-    };
-
-    const usersQuery = tx.user.findMany({
-      where,
-      skip,
-      take,
-      orderBy: [{ created_at: 'desc' }, { user_id: 'asc' }],
-      omit: { password_hash: true },
-    });
-    const totalQuery = tx.user.count({ where });
-
-    const [users, total] =
-      '$transaction' in tx
-        ? await tx.$transaction([usersQuery, totalQuery], {
-            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
-          })
-        : await Promise.all([usersQuery, totalQuery]);
-
-    return { users, total };
-  }
-
-  async findAllByBrand(
-    skip: number,
-    take: number,
-    activeOnly = true,
-    brandId: string,
-    tx: Prisma.TransactionClient | PrismaService = this.prisma,
-  ) {
-    const where: Prisma.UserWhereInput = {
-      is_active: activeOnly ? true : undefined,
-      brand_id: brandId,
     };
 
     const usersQuery = tx.user.findMany({

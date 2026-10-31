@@ -23,11 +23,6 @@ import { Authenticated } from '../../auth/auth.guard';
 import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
-import { BrandsGuard } from '../../../shared/guards/brands.guard';
-import {
-  BrandResource,
-  BrandResourceType,
-} from '../../../shared/decorators/brand-resource.decorator';
 import {
   MenuChannelsDocs,
   CreateMenuChannelDocs,
@@ -49,8 +44,7 @@ export class MenuChannelsController {
   @Post()
   @CreateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(BrandsGuard, PinGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM, 'menu_item_id', 'body')
+  @UseGuards(PinGuard)
   async create(@Body() dto: CreateMenuChannelDTO) {
     return this.menuChannelsService.create(dto);
   }
@@ -64,8 +58,6 @@ export class MenuChannelsController {
 
   @Get('menu-item/:menuItemId')
   @FindMenuChannelsByMenuItemDocs()
-  @UseGuards(BrandsGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM, 'menuItemId')
   async findManyByMenuItem(
     @Param('menuItemId', ParseUUIDPipe) menuItemId: string,
     @Query() query: FindMenuItemChannelsDTO,
@@ -75,8 +67,6 @@ export class MenuChannelsController {
 
   @Get(':id')
   @FindOneMenuChannelDocs()
-  @UseGuards(BrandsGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM_CHANNEL, 'id')
   async findOne(
     @Param('id', ParseUUIDPipe) menuItemChannelId: string,
     @Query() query: FindMenuChannelDTO,
@@ -90,8 +80,7 @@ export class MenuChannelsController {
   @Patch(':id')
   @UpdateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(BrandsGuard, PinGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM_CHANNEL, 'id')
+  @UseGuards(PinGuard)
   async update(
     @Param('id', ParseUUIDPipe) menuItemChannelId: string,
     @Body() dto: UpdateMenuItemChannelDTO,
@@ -102,8 +91,7 @@ export class MenuChannelsController {
   @Patch('reactivate/:id')
   @ReactivateMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(BrandsGuard, PinGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM_CHANNEL, 'id')
+  @UseGuards(PinGuard)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemChannelId: string) {
     return this.menuChannelsService.reactivate(menuItemChannelId);
   }
@@ -111,8 +99,7 @@ export class MenuChannelsController {
   @Delete(':id')
   @DeleteMenuChannelDocs()
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
-  @UseGuards(BrandsGuard, PinGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM_CHANNEL, 'id')
+  @UseGuards(PinGuard)
   async delete(@Param('id', ParseUUIDPipe) menuItemChannelId: string) {
     return this.menuChannelsService.delete(menuItemChannelId);
   }

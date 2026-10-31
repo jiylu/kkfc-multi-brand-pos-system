@@ -7,12 +7,11 @@ import {
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { Authenticated } from '../../../auth/auth.guard';
 import { AuthService } from '../../../auth/auth.service';
 import { RolesGuard } from '../../../../shared/guards/roles.guard';
-import { BrandsGuard } from '../../../../shared/guards/brands.guard';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
 import { MenuItemModifiersController } from '../menu-item-modifiers.controller';
 import { MenuItemModifiersService } from '../menu-item-modifiers.service';
@@ -120,7 +119,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
       providers: [
         Authenticated,
         RolesGuard,
-        BrandsGuard,
+
         { provide: PrismaService, useValue: prisma },
         { provide: AuthService, useValue: auth },
         { provide: MenuItemModifiersService, useValue: service },
@@ -180,7 +179,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
       document.paths['/api/menu-item-modifiers/menu-item/{menuItemId}']?.get,
       document.paths['/api/menu-item-modifiers/reactivate/{id}']?.patch,
     ];
-    for (const operation of operations) {
+    for (const [index, operation] of operations.entries()) {
       expect(typeof operation?.summary).toBe('string');
       expect(typeof operation?.description).toBe('string');
       expect(operation?.tags).toEqual(['Menu item modifiers']);
@@ -188,7 +187,37 @@ describe('Menu item modifiers HTTP endpoints', () => {
       expect(operation?.responses).toHaveProperty('400.description');
       expect(operation?.responses).toHaveProperty('401.description');
       expect(operation?.responses).toHaveProperty('403.description');
+      expect(operation?.responses[index === 0 ? '201' : '200']).toHaveProperty(
+        'content.application/json',
+      );
     }
+    expect(operations[2]?.responses['200']).toHaveProperty(
+      'content.application/json.example.menuItemModifier.additional_price',
+      '20',
+    );
+    expect(operations[2]?.responses['200']).toHaveProperty(
+      'content.application/json.example.modifierDetails.name',
+      'Extra Cheese',
+    );
+    expect(operations[1]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.empty.value',
+      {
+        data: [],
+        meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+      },
+    );
+    expect(operations[5]?.responses['200']).toHaveProperty(
+      'content.application/json.examples.empty.value',
+      [],
+    );
+    expect(operations[4]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_available',
+      false,
+    );
+    expect(operations[6]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_available',
+      true,
+    );
     expect(
       document.components?.schemas?.CreateMenuItemModifierDTO,
     ).toMatchObject({
@@ -206,6 +235,49 @@ describe('Menu item modifiers HTTP endpoints', () => {
     expect(update).not.toHaveProperty('required');
   });
 
+  it('returns assignment and modifier details while excluding confidential nested fields', async () => {
+    const timestamp = '2026-10-31T08:00:00.000Z';
+    const payload = {
+      menuItemModifier: {
+        menu_item_modifier_id: assignmentId,
+        ...create,
+        additional_price: '20',
+        is_available: true,
+        created_at: timestamp,
+        modified_at: timestamp,
+      },
+      modifierDetails: {
+        modifier_id: modifierId,
+        code: 'EXTRA-CHEESE',
+        name: 'Extra Cheese',
+        description: null,
+        is_active: true,
+        created_at: timestamp,
+        modified_at: timestamp,
+      },
+    };
+    service.findOne.mockResolvedValue({
+      menuItemModifier: {
+        ...payload.menuItemModifier,
+        additional_price: new Prisma.Decimal('20'),
+        created_at: new Date(timestamp),
+        modified_at: new Date(timestamp),
+        recipe: { instructions: 'Restricted recipe' },
+        instructions: 'Restricted instructions',
+      },
+      modifierDetails: {
+        ...payload.modifierDetails,
+        inventory_item_id: 'private-ingredient',
+        quantity: new Prisma.Decimal('10'),
+        recipe_snapshot: { instructions: 'Restricted recipe' },
+        future_secret: 'Private data',
+      },
+    });
+    const response = await fetch(`${url}/${assignmentId}`, { headers });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(payload);
+  });
+
   it.each(assignmentRoutes)(
     '$method $path allows managers in the assignment menu item brand',
     async (route) => {
@@ -217,16 +289,12 @@ describe('Menu item modifiers HTTP endpoints', () => {
         body: JSON.stringify(route.body),
       });
       expect(response.status).toBe(200);
-      expect(prisma.menuItemModifier.findUnique).toHaveBeenCalledWith({
-        where: { menu_item_modifier_id: assignmentId },
-        select: { menu_item: { select: { brand_id: true } } },
-      });
       expect(service[route.handler]).toHaveBeenCalledTimes(1);
     },
   );
 
   it.each(assignmentRoutes)(
-    '$method $path denies managers from another brand',
+    '$method $path allows managers across brands',
     async (route) => {
       role = UserRole.MANAGER;
       callerBrand = otherBrandId;
@@ -235,14 +303,13 @@ describe('Menu item modifiers HTTP endpoints', () => {
         headers,
         body: JSON.stringify(route.body),
       });
-      expect(response.status).toBe(403);
-      expect(await response.json()).toMatchObject({ code: 'ACCESS_DENIED' });
-      expect(service[route.handler]).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(service[route.handler]).toHaveBeenCalled();
     },
   );
 
   it.each(assignmentRoutes)(
-    '$method $path denies managers without an assigned brand',
+    '$method $path allows managers across brands',
     async (route) => {
       role = UserRole.MANAGER;
       const response = await fetch(url + route.path, {
@@ -250,8 +317,8 @@ describe('Menu item modifiers HTTP endpoints', () => {
         headers,
         body: JSON.stringify(route.body),
       });
-      expect(response.status).toBe(403);
-      expect(service[route.handler]).not.toHaveBeenCalled();
+      expect(response.status).toBe(200);
+      expect(service[route.handler]).toHaveBeenCalled();
     },
   );
 
@@ -270,9 +337,11 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it.each(assignmentRoutes)(
-    '$method $path returns 404 for a missing assignment before calling the service',
+    '$method $path returns 404 for a missing assignment from the service',
     async (route) => {
-      prisma.menuItemModifier.findUnique.mockResolvedValue(null);
+      service[route.handler].mockRejectedValueOnce(
+        new NotFoundException({ code: 'MENU_ITEM_MODIFIER_NOT_FOUND' }),
+      );
       const response = await fetch(url + route.path, {
         method: route.method,
         headers,
@@ -282,7 +351,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
       expect(await response.json()).toMatchObject({
         code: 'MENU_ITEM_MODIFIER_NOT_FOUND',
       });
-      expect(service[route.handler]).not.toHaveBeenCalled();
+      expect(service[route.handler]).toHaveBeenCalled();
     },
   );
 
@@ -304,7 +373,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   it.each(assignmentRoutes)(
     '$method $path preserves assignment lookup failures',
     async (route) => {
-      prisma.menuItemModifier.findUnique.mockRejectedValueOnce(
+      service[route.handler].mockRejectedValueOnce(
         new Error('Database unavailable'),
       );
       const response = await fetch(url + route.path, {
@@ -313,7 +382,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
         body: JSON.stringify(route.body),
       });
       expect(response.status).toBe(500);
-      expect(service[route.handler]).not.toHaveBeenCalled();
+      expect(service[route.handler]).toHaveBeenCalled();
     },
   );
 
@@ -329,10 +398,6 @@ describe('Menu item modifiers HTTP endpoints', () => {
       headers,
     });
     expect(response.status).toBe(200);
-    expect(prisma.menuItemModifier.findUnique).toHaveBeenCalledWith({
-      where: { menu_item_modifier_id: assignmentId },
-      select: { menu_item: { select: { brand_id: true } } },
-    });
     expect(service.reactivate).toHaveBeenCalledWith(assignmentId);
   });
 
@@ -345,13 +410,11 @@ describe('Menu item modifiers HTTP endpoints', () => {
       body: JSON.stringify({ additional_price: 20, brand_id: otherBrandId }),
     });
     expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({
-      code: 'BRAND_ID_MUST_MATCH_RESOURCE_BRAND',
-    });
+    expect(await response.json()).toHaveProperty('message');
     expect(service.update).not.toHaveBeenCalled();
   });
 
-  it('cannot bypass ownership by supplying another menu item in the update body', async () => {
+  it('rejects changing the parent menu item in the update body', async () => {
     role = UserRole.MANAGER;
     callerBrand = otherBrandId;
     const response = await fetch(`${url}/${assignmentId}`, {
@@ -359,7 +422,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
       headers,
       body: JSON.stringify({ menu_item_id: menuItemId, additional_price: 20 }),
     });
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(400);
     expect(service.update).not.toHaveBeenCalled();
   });
 

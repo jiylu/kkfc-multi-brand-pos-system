@@ -307,25 +307,6 @@ describe('Brands HTTP endpoints', () => {
     },
   );
 
-  it.each(['GET', 'PATCH', 'DELETE'])(
-    'blocks managers from another brand: %s',
-    async (method) => {
-      currentRole = UserRole.MANAGER;
-      expect((await fetch(url + '/' + otherBrandId, { method })).status).toBe(
-        403,
-      );
-      for (const handler of Object.values(service))
-        expect(handler).not.toHaveBeenCalled();
-    },
-  );
-
-  it('blocks users without a brand', async () => {
-    currentRole = UserRole.MANAGER;
-    currentBrandId = null;
-    expect((await fetch(url + '/' + brandId)).status).toBe(403);
-    expect(service.findOne).not.toHaveBeenCalled();
-  });
-
   it.each(
     Object.values(UserRole)
       .filter(
@@ -343,16 +324,6 @@ describe('Brands HTTP endpoints', () => {
         expect(handler).not.toHaveBeenCalled();
     },
   );
-
-  it('rejects conflicting brand IDs', async () => {
-    const response = await fetch(url + '/' + brandId, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ brand_id: otherBrandId }),
-    });
-    expect(response.status).toBe(400);
-    expect(service.delete).not.toHaveBeenCalled();
-  });
 
   it.each([
     { name: 'King Kungs Kafé', code: 'KKFC', logo_url: null },
@@ -414,10 +385,10 @@ describe('Brands HTTP endpoints', () => {
 
   it.each(
     Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
-  )('keeps the all-brands listing restricted from %s', async (role) => {
+  )('allows %s to list all brands', async (role) => {
     currentRole = role;
-    expect((await fetch(url)).status).toBe(403);
-    expect(service.findAll).not.toHaveBeenCalled();
+    expect((await fetch(url)).status).toBe(200);
+    expect(service.findAll).toHaveBeenCalled();
   });
 
   it.each(

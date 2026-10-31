@@ -27,11 +27,6 @@ import { RolesGuard } from '../../../shared/guards/roles.guard';
 import { CreateMenuItemDTO } from './dto/create-menu-item.dto';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../../../shared/decorators/roles.decorator';
-import { BrandsGuard } from '../../../shared/guards/brands.guard';
-import {
-  BrandResource,
-  BrandResourceType,
-} from '../../../shared/decorators/brand-resource.decorator';
 import { FindAllMenuItemsDTO } from './dto/find-all-menu-items.dto';
 import { UpdateMenuItemDTO } from './dto/update-menu-item.dto';
 import {
@@ -71,7 +66,7 @@ export class MenuItemsController {
       limits: { fileSize: MAX_ASSET_BYTES, files: 1 },
     }),
   )
-  @UseGuards(BrandsGuard, PinGuard)
+  @UseGuards(PinGuard)
   async create(
     @Body() dto: CreateMenuItemDTO,
     @UploadedFile() file: AssetUpload,
@@ -91,8 +86,6 @@ export class MenuItemsController {
 
   @Get(':id')
   @FindOneMenuItemDocs()
-  @UseGuards(BrandsGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM, 'id')
   async findOne(
     @Param('id') codeOrMenuId: string,
     @Query('activeOnly', new DefaultValuePipe(true), ParseBoolPipe)
@@ -110,9 +103,8 @@ export class MenuItemsController {
 
   @Get('brand/:brandId')
   @FindMenuItemsByBrandDocs()
-  @UseGuards(BrandsGuard)
   async findAllByBrand(
-    @Param('brandId') brandId: string,
+    @Param('brandId', ParseUUIDPipe) brandId: string,
     @Query() query: FindAllMenuItemsDTO,
   ) {
     return this.menuItemsService.findAllByBrand(query, brandId);
@@ -120,8 +112,7 @@ export class MenuItemsController {
 
   @Patch(':id')
   @UpdateMenuItemDocs()
-  @UseGuards(BrandsGuard, PinGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM, 'id')
+  @UseGuards(PinGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -147,8 +138,6 @@ export class MenuItemsController {
 
   @Patch('availability/:id')
   @UpdateMenuItemAvailabilityDocs()
-  @UseGuards(BrandsGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM, 'id')
   @Roles(
     UserRole.SUPERADMIN,
     UserRole.MANAGER,
@@ -167,8 +156,7 @@ export class MenuItemsController {
 
   @Patch('reactivate/:id')
   @ReactivateMenuItemDocs()
-  @UseGuards(BrandsGuard, PinGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM, 'id')
+  @UseGuards(PinGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async reactivate(@Param('id', ParseUUIDPipe) menuItemId: string) {
     return this.menuItemsService.reactivateMenuItem(menuItemId);
@@ -176,8 +164,7 @@ export class MenuItemsController {
 
   @Delete(':id')
   @DeleteMenuItemDocs()
-  @UseGuards(BrandsGuard, PinGuard)
-  @BrandResource(BrandResourceType.MENU_ITEM, 'id')
+  @UseGuards(PinGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.MANAGER)
   async delete(@Param('id', ParseUUIDPipe) menuItemId: string) {
     return this.menuItemsService.deleteMenuItem(menuItemId);

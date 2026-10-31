@@ -4,7 +4,6 @@ import { CreateUserDTO } from '../dto/create-user.dto';
 import { FindUsersDTO } from '../dto/find-users.dto';
 import { UsersRepository } from '../users.repository';
 import { UsersService } from '../users.service';
-import { BrandsRepository } from '../../brands/brands.repository';
 
 describe('UsersService', () => {
   const user = {
@@ -16,7 +15,6 @@ describe('UsersService', () => {
     is_active: true,
     created_at: new Date('2030-01-01T00:00:00Z'),
     modified_at: new Date('2030-01-01T00:00:00Z'),
-    brand_id: 'brand',
   };
   const createDTO: CreateUserDTO = {
     username: user.username,
@@ -24,14 +22,12 @@ describe('UsersService', () => {
     last_name: user.last_name,
     role: user.role,
     password: 'test-password',
-    brand_id: user.brand_id,
   };
   let repository: jest.Mocked<
     Pick<
       UsersRepository,
       | 'create'
       | 'findAll'
-      | 'findAllByBrand'
       | 'findOne'
       | 'findByUsername'
       | 'safeFindByUsername'
@@ -39,7 +35,6 @@ describe('UsersService', () => {
       | 'delete'
     >
   >;
-  const brandsRepository = { findOneBrand: jest.fn() };
   let service: UsersService;
   let log: jest.SpyInstance;
 
@@ -49,67 +44,58 @@ describe('UsersService', () => {
     repository = {
       create: jest.fn().mockResolvedValue(user),
       findAll: jest.fn().mockResolvedValue({ users: [user], total: 21 }),
-      findAllByBrand: jest.fn().mockResolvedValue({ users: [user], total: 21 }),
       findOne: jest.fn().mockResolvedValue(user),
       findByUsername: jest.fn().mockResolvedValue(null),
       safeFindByUsername: jest.fn().mockResolvedValue(null),
       update: jest.fn().mockResolvedValue({ ...user, first_name: 'Updated' }),
       delete: jest.fn().mockResolvedValue({ ...user, is_active: false }),
     };
-    brandsRepository.findOneBrand
-      .mockReset()
-      .mockResolvedValue({ brand_id: 'brand' });
-    service = new UsersService(
-      repository as unknown as UsersRepository,
-      brandsRepository as unknown as BrandsRepository,
-    );
+    service = new UsersService(repository as unknown as UsersRepository);
   });
 
   afterEach(() => jest.restoreAllMocks());
 
-  describe('brand listing', () => {
-    it.each([true, false])(
-      'paginates a brand with activeOnly=%s',
-      async (activeOnly) => {
-        await expect(
-          service.findAllUsersByBrand(
-            { page: 3, limit: 10, activeOnly },
-            'brand',
-          ),
-        ).resolves.toEqual({
-          data: [user],
-          meta: { page: 3, limit: 10, total: 21, totalPages: 3 },
-        });
-        expect(brandsRepository.findOneBrand).toHaveBeenCalledWith('brand');
-        expect(repository.findAllByBrand).toHaveBeenCalledWith(
-          20,
-          10,
-          activeOnly,
-          'brand',
-        );
-        expect(repository.findAll).not.toHaveBeenCalled();
-      },
-    );
-
-    it('rejects a missing brand before listing users', async () => {
-      brandsRepository.findOneBrand.mockResolvedValue(null);
-      await expect(
-        service.findAllUsersByBrand(new FindUsersDTO(), 'missing'),
-      ).rejects.toMatchObject({ status: 404 });
-      expect(repository.findAllByBrand).not.toHaveBeenCalled();
-    });
-
-    it('rejects unsupported offsets before listing brand users', async () => {
-      await expect(
-        service.findAllUsersByBrand(
-          { page: 2_147_483_647, limit: 2, activeOnly: true },
-          'brand',
-        ),
-      ).rejects.toMatchObject({ status: 400 });
-      expect(repository.findAllByBrand).not.toHaveBeenCalled();
-    });
+  it.each(Object.values(UserRole))(
+    'creates %s without an assignment',
+    async (role) => {
+      const dto = { ...createDTO, role };
+      await service.createUser(dto, true);
+      expect(repository.create).toHaveBeenCalledWith(dto);
+    },
+  );
+  it('blocks managers from creating superadmins', async () => {
+    await expect(
+      service.createUser({ ...createDTO, role: UserRole.SUPERADMIN }),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(repository.create).not.toHaveBeenCalled();
   });
-
+  it.each([false, true])(
+    'protects superadmin updates and deletion, caller superadmin=%s',
+    async (isSuperAdmin) => {
+      repository.findOne.mockResolvedValue({
+        ...user,
+        role: UserRole.SUPERADMIN,
+      });
+      const update = service.updateUser(
+        user.user_id,
+        { password: 'Password123!' },
+        isSuperAdmin,
+      );
+      if (isSuperAdmin) await expect(update).resolves.toBeDefined();
+      else await expect(update).rejects.toMatchObject({ status: 403 });
+      const deletion = service.deleteUser(user.user_id, isSuperAdmin);
+      if (isSuperAdmin) await expect(deletion).resolves.toBeDefined();
+      else {
+        await expect(deletion).rejects.toMatchObject({ status: 403 });
+        expect(repository.update).not.toHaveBeenCalled();
+        expect(repository.delete).not.toHaveBeenCalled();
+      }
+    },
+  );
+  it('allows managers to create staff without assignments', async () => {
+    await service.createUser(createDTO);
+    expect(repository.create).toHaveBeenCalledWith(createDTO);
+  });
   it('looks up a username and forwards activeOnly', async () => {
     repository.safeFindByUsername.mockResolvedValue(user);
     await expect(service.findOneUser(user.username, false)).resolves.toEqual(
@@ -120,105 +106,6 @@ describe('UsersService', () => {
       false,
     );
     expect(repository.findOne).not.toHaveBeenCalled();
-  });
-
-  describe('creation permissions', () => {
-    it.each(
-      [
-        UserRole.SUPERADMIN,
-        UserRole.INVENTORY_STAFF,
-        UserRole.RECIPE_MANAGER,
-      ].flatMap((role) =>
-        [undefined, null].map((brand_id) => ({ role, brand_id })),
-      ),
-    )(
-      'allows superadmins to create $role accounts with brand_id=$brand_id',
-      async ({ role, brand_id }) => {
-        const dto = { ...createDTO, role, brand_id };
-        await service.createUser(dto, true);
-        expect(repository.create).toHaveBeenCalledWith(dto);
-      },
-    );
-
-    it('blocks non-superadmins from creating superadmin accounts', async () => {
-      await expect(
-        service.createUser(
-          { ...createDTO, role: UserRole.SUPERADMIN },
-          false,
-          'brand',
-        ),
-      ).rejects.toMatchObject({ status: 403 });
-      expect(repository.create).not.toHaveBeenCalled();
-    });
-
-    it.each(
-      Object.values(UserRole)
-        .filter(
-          (role) =>
-            role !== UserRole.SUPERADMIN &&
-            role !== UserRole.INVENTORY_STAFF &&
-            role !== UserRole.RECIPE_MANAGER,
-        )
-        .flatMap((role) =>
-          [undefined, null].map((brand_id) => ({ role, brand_id })),
-        ),
-    )(
-      'requires a brand for $role even for superadmins: $brand_id',
-      async ({ role, brand_id }) => {
-        await expect(
-          service.createUser({ ...createDTO, role, brand_id }, true),
-        ).rejects.toMatchObject({ status: 400 });
-        expect(repository.create).not.toHaveBeenCalled();
-      },
-    );
-
-    it.each(['other-brand', null])(
-      'blocks managers with a different or missing caller brand: %s',
-      async (callerBrandId) => {
-        await expect(
-          service.createUser(
-            { ...createDTO, role: UserRole.CASHIER_STAFF, brand_id: 'brand' },
-            false,
-            callerBrandId,
-          ),
-        ).rejects.toMatchObject({ status: 403 });
-        expect(repository.create).not.toHaveBeenCalled();
-      },
-    );
-
-    it.each(
-      [UserRole.INVENTORY_STAFF, UserRole.RECIPE_MANAGER].flatMap((role) =>
-        [undefined, null].map((brand_id) => ({ role, brand_id })),
-      ),
-    )(
-      'blocks managers from creating unassigned $role accounts ($brand_id)',
-      async ({ role, brand_id }) => {
-        await expect(
-          service.createUser({ ...createDTO, role, brand_id }, false, 'brand'),
-        ).rejects.toMatchObject({ status: 403 });
-        expect(repository.create).not.toHaveBeenCalled();
-      },
-    );
-
-    it('allows managers to create staff in their own brand', async () => {
-      const dto = {
-        ...createDTO,
-        role: UserRole.CASHIER_STAFF,
-        brand_id: 'brand',
-      };
-      await service.createUser(dto, false, 'brand');
-      expect(repository.create).toHaveBeenCalledWith(dto);
-    });
-
-    it('allows superadmins to create staff in another brand', async () => {
-      const dto = {
-        ...createDTO,
-        role: UserRole.CASHIER_STAFF,
-        brand_id: 'brand',
-      };
-      await service.createUser(dto, true);
-      expect(repository.create).toHaveBeenCalledWith(dto);
-    });
   });
 
   it('UT-USER-001: creates a user with the supplied fields', async () => {

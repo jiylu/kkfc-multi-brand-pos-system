@@ -88,7 +88,7 @@ async function main() {
               first_name: 'Order',
               last_name: 'Tester',
               role: 'MANAGER',
-              brand_id: brand.brand_id,
+
               password_hash: passwordHash,
             },
           })
@@ -99,7 +99,7 @@ async function main() {
           first_name: 'POS',
           last_name: 'Tester',
           role: 'CASHIER_STAFF',
-          brand_id: brand.brand_id,
+
           password_hash: passwordHash,
         },
       });

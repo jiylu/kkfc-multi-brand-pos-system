@@ -13,7 +13,6 @@ import { Authenticated } from '../../../auth/auth.guard';
 import { AuthService } from '../../../auth/auth.service';
 import { AllExceptionsFilter } from '../../../../shared/filters/all-exceptions.filter';
 import { PrismaExceptionFilter } from '../../../../shared/filters/prisma-exception.filter';
-import { BrandsGuard } from '../../../../shared/guards/brands.guard';
 import { RolesGuard } from '../../../../shared/guards/roles.guard';
 import { PrismaService } from '../../../../shared/prisma/prisma.service';
 import { MenuItemsController } from '../menu-items.controller';
@@ -107,7 +106,7 @@ describe('Menu items HTTP endpoints', () => {
       providers: [
         Authenticated,
         RolesGuard,
-        BrandsGuard,
+
         { provide: AuthService, useValue: auth },
         { provide: PrismaService, useValue: prisma },
         { provide: MenuItemsService, useValue: service },
@@ -198,7 +197,7 @@ describe('Menu items HTTP endpoints', () => {
       document.paths['/api/menu-items/reactivate/{id}'].patch,
       document.paths['/api/menu-items/availability/{id}'].patch,
     ];
-    for (const operation of operations) {
+    for (const [index, operation] of operations.entries()) {
       expect(typeof operation?.summary).toBe('string');
       expect(typeof operation?.description).toBe('string');
       expect(operation).toMatchObject({
@@ -208,7 +207,63 @@ describe('Menu items HTTP endpoints', () => {
       expect(operation?.responses).toHaveProperty('400.description');
       expect(operation?.responses).toHaveProperty('401.description');
       expect(operation?.responses).toHaveProperty('403.description');
+      expect(operation?.responses[index === 0 ? '201' : '200']).toHaveProperty(
+        'content.application/json',
+      );
     }
+    expect(operations[0]?.responses['201']).toHaveProperty(
+      'content.application/json.example.menu_item_id',
+      menuId,
+    );
+    expect(operations[2]?.responses['200']).toHaveProperty(
+      'content.application/json.example.recipe_id',
+      recipeId,
+    );
+    expect(operations[2]?.responses['200']).toHaveProperty(
+      'content.application/json.example.base_price',
+      '189.5',
+    );
+    expect(operations[2]?.responses['200']).not.toHaveProperty(
+      'content.application/json.example.recipe',
+    );
+    for (const operation of [operations[1], operations[5]]) {
+      expect(operation?.responses['200']).toHaveProperty(
+        'content.application/json.examples.populated.value.data.0.brand_id',
+        brandId,
+      );
+      expect(operation?.responses['200']).toHaveProperty(
+        'content.application/json.examples.populated.value.meta',
+        { page: 1, limit: 10, total: 1, totalPages: 1 },
+      );
+      expect(operation?.responses['200']).toHaveProperty(
+        'content.application/json.examples.empty.value',
+        { data: [], meta: { page: 1, limit: 10, total: 0, totalPages: 0 } },
+      );
+    }
+    expect(operations[3]?.responses['200']).toHaveProperty(
+      'content.application/json.example.base_price',
+      '199.5',
+    );
+    expect(operations[4]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_active',
+      false,
+    );
+    expect(operations[4]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_available',
+      true,
+    );
+    expect(operations[6]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_active',
+      true,
+    );
+    expect(operations[7]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_available',
+      false,
+    );
+    expect(operations[7]?.responses['200']).toHaveProperty(
+      'content.application/json.example.is_active',
+      true,
+    );
     expect(document.components?.schemas?.CreateMenuItemDTO).toMatchObject({
       required: [
         'brand_id',
@@ -306,7 +361,7 @@ describe('Menu items HTTP endpoints', () => {
   );
 
   it.each([...mutations, ...reads])(
-    'blocks other-brand and unassigned managers for $verb $path',
+    'allows shared-access managers for $verb $path',
     async ({ verb, path, handler, body }) => {
       for (const brand of [otherBrandId, null]) {
         callerBrand = brand;
@@ -318,9 +373,9 @@ describe('Menu items HTTP endpoints', () => {
               body: JSON.stringify(body),
             })
           ).status,
-        ).toBe(403);
+        ).toBe(verb === 'POST' ? 201 : 200);
       }
-      expect(service[handler]).not.toHaveBeenCalled();
+      expect(service[handler]).toHaveBeenCalled();
     },
   );
 
@@ -517,7 +572,7 @@ describe('Menu items HTTP endpoints', () => {
     },
   );
 
-  it('returns 404 for a missing resource before invoking the service', async () => {
+  it('rejects a non-UUID mutation identifier', async () => {
     expect(
       (
         await fetch(`${url}/unknown-menu`, {
@@ -526,7 +581,7 @@ describe('Menu items HTTP endpoints', () => {
           body: JSON.stringify({ name: 'Updated' }),
         })
       ).status,
-    ).toBe(404);
+    ).toBe(400);
     expect(service.updateMenuItem).not.toHaveBeenCalled();
   });
 
@@ -655,13 +710,13 @@ describe('Menu items HTTP endpoints', () => {
       UserRole.KITCHEN_HEAD,
       UserRole.KITCHEN_STAFF,
       UserRole.INVENTORY_STAFF,
-    ])('denies other-brand and unassigned %s', async (deniedRole) => {
+    ])('allows shared-access %s', async (deniedRole) => {
       role = deniedRole;
       for (const brand of [otherBrandId, null]) {
         callerBrand = brand;
-        expect((await request()).status).toBe(403);
+        expect((await request()).status).toBe(200);
       }
-      expect(service.updateAvailability).not.toHaveBeenCalled();
+      expect(service.updateAvailability).toHaveBeenCalled();
     });
 
     it.each([
@@ -687,8 +742,9 @@ describe('Menu items HTTP endpoints', () => {
     });
 
     it('rejects a missing item before invoking the service', async () => {
+      service.updateAvailability.mockRejectedValueOnce(new NotFoundException());
       expect((await request(body, true, recipeId)).status).toBe(404);
-      expect(service.updateAvailability).not.toHaveBeenCalled();
+      expect(service.updateAvailability).toHaveBeenCalled();
     });
 
     it('returns the availability conflict code', async () => {

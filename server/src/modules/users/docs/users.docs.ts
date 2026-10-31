@@ -9,6 +9,17 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+const userExample = {
+  user_id: '00000000-0000-4000-8000-000000000001',
+  username: 'manager',
+  first_name: 'Maria',
+  last_name: 'Santos',
+  role: 'MANAGER',
+  is_active: true,
+  created_at: '2026-10-31T08:00:00.000Z',
+  modified_at: '2026-10-31T08:00:00.000Z',
+};
+
 export function UsersDocs() {
   return applyDecorators(
     ApiTags('Users'),
@@ -25,15 +36,12 @@ export function CreateUserDocs() {
     ApiOperation({
       summary: 'Create a user.',
       description:
-        'Only managers and superadmins can create users. Managers can create non-superadmin accounts only in their assigned brand and must supply its brand_id. Superadmins can create any role across brands and may omit brand_id or use null for SUPERADMIN, INVENTORY_STAFF, and RECIPE_MANAGER accounts. Other roles require a brand. Any supplied brand must exist and be active. Responses omit password_hash.',
+        'Managers can create non-superadmin accounts; superadmins can create any role. Users have no brand assignment. Responses omit password_hash.',
     }),
     ApiResponse({
       status: 201,
-      description: 'Created user with nullable brand_id and no password hash.',
-    }),
-    ApiResponse({
-      status: 404,
-      description: 'The supplied brand does not exist or is inactive.',
+      description: 'Created user without a brand assignment or password hash.',
+      content: { 'application/json': { example: userExample } },
     }),
     ApiResponse({
       status: 409,
@@ -49,7 +57,7 @@ export function UpdateUserDocs() {
     ApiOperation({
       summary: 'Update a user (manager or superadmin).',
       description:
-        'Accepts a user UUID, not a username. Managers can edit active users in their assigned brand, including other managers, and reset their passwords. There is no additional restriction on the target user role. Superadmins can edit active users across brands. Supports username, first_name, last_name, and password; role and brand_id cannot be changed here. Omitted fields are unchanged; null is invalid.',
+        'Accepts a user UUID, not a username. Managers can edit active non-superadmin users and reset their passwords. Only superadmins can edit superadmins. Supports username, first_name, last_name, and password. Omitted fields are unchanged; null is invalid.',
     }),
     ApiParam({
       name: 'id',
@@ -58,7 +66,17 @@ export function UpdateUserDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'Updated user without password_hash.',
+      description:
+        'Updated user without password_hash. Password resets return the same profile fields without exposing the new password.',
+      content: {
+        'application/json': {
+          example: {
+            ...userExample,
+            first_name: 'Ana',
+            modified_at: '2026-10-31T09:00:00.000Z',
+          },
+        },
+      },
     }),
     ApiResponse({ status: 409, description: 'Username is already taken.' }),
     ApiResponse({ status: 404, description: 'User not found or inactive.' }),
@@ -68,14 +86,34 @@ export function UpdateUserDocs() {
 export function FindAllUsersDocs() {
   return applyDecorators(
     ApiOperation({
-      summary: 'List all users (superadmin).',
+      summary: 'List all users (manager or superadmin).',
       description:
-        'Superadmins receive users across all brands, including unassigned users. Managers must use GET /users/brand/:brandId to list users in their assigned brand. That brand listing is also available to superadmins. activeOnly defaults to true; false includes active and inactive users. Responses omit password_hash.',
+        'Managers and superadmins can list all users. activeOnly defaults to true; false includes inactive users. Responses omit password_hash.',
     }),
     ApiResponse({
       status: 200,
       description:
-        'Paginated users in data, with page, limit, total, and totalPages in meta.',
+        'Paginated users in data, with page, limit, total, and totalPages in meta. Password hashes and brand assignments are excluded.',
+      content: {
+        'application/json': {
+          examples: {
+            populated: {
+              summary: 'One matching user',
+              value: {
+                data: [userExample],
+                meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+              },
+            },
+            empty: {
+              summary: 'No matching users',
+              value: {
+                data: [],
+                meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+              },
+            },
+          },
+        },
+      },
     }),
   );
 }
@@ -85,7 +123,7 @@ export function FindOneUserDocs() {
     ApiOperation({
       summary: 'Get a user by username or user ID.',
       description:
-        'Any authenticated user can access users in their assigned brand. Superadmins can access users across brands, including unassigned users. UUID-shaped identifiers are treated as user IDs; other identifiers are usernames. activeOnly defaults to true; false also permits inactive users. Responses omit password_hash.',
+        'Any authenticated user can look up a user by UUID or username. activeOnly defaults to true; false includes inactive users. Responses omit password_hash.',
     }),
     ApiParam({
       name: 'id',
@@ -94,7 +132,8 @@ export function FindOneUserDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'User with nullable brand_id and no password hash.',
+      description: 'User without a brand assignment or password hash.',
+      content: { 'application/json': { example: userExample } },
     }),
     ApiQuery({
       name: 'activeOnly',
@@ -117,7 +156,7 @@ export function DeleteUserDocs() {
     ApiOperation({
       summary: 'Deactivate a user (manager or superadmin).',
       description:
-        'Accepts a user UUID, not a username. Managers can deactivate active users in their assigned brand. Superadmins can deactivate active users across brands. There is no additional restriction on the target user role. The record is preserved, and the user can no longer authenticate.',
+        'Accepts a user UUID. Managers can deactivate active non-superadmin users; only superadmins can deactivate superadmins. The record is preserved and the account can no longer authenticate.',
     }),
     ApiParam({
       name: 'id',
@@ -126,7 +165,11 @@ export function DeleteUserDocs() {
     }),
     ApiResponse({
       status: 200,
-      description: 'Deactivated user without password_hash.',
+      description:
+        'Preserved user with is_active set to false, without password_hash.',
+      content: {
+        'application/json': { example: { ...userExample, is_active: false } },
+      },
     }),
     ApiResponse({
       status: 404,
