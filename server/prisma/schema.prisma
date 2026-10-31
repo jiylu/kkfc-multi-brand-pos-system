@@ -36,6 +36,20 @@ enum KitchenTicketStatus {
   @@map("kitchen_ticket_statuses")
 }
 
+enum KitchenTicketQcStatus {
+  IN_PROGRESS
+  PASSED
+  FAILED
+
+  @@map("kitchen_ticket_qc_statuses")
+}
+
+enum QcRejectionReason {
+  INCOMPLETE
+
+  @@map("qc_rejection_reasons")
+}
+
 enum OrderChannel {
   DINE_IN
   TAKEAWAY
@@ -166,27 +180,28 @@ model User {
   created_at    DateTime @default(now()) @db.Timestamp(6)
   modified_at   DateTime @default(now()) @db.Timestamp(6)
 
-  user_sessions_user                UserSession[]          @relation("UserSessionUser")
-  user_pin_credential               UserPinCredential?     @relation("UserPinCredentialUser")
-  orders_created_by                 Order[]                @relation("OrderCreatedBy")
-  orders_cancelled_by               Order[]                @relation("OrderCancelledBy")
-  goods_receipts_created_by         GoodsReceipt[]         @relation("GoodsReceiptCreatedBy")
-  goods_receipts_accepted_by        GoodsReceipt[]         @relation("GoodsReceiptAcceptedBy")
-  stock_counts_created_by           StockCount[]           @relation("StockCountCreatedBy")
-  stock_counts_reviewed_by          StockCount[]           @relation("StockCountReviewedBy")
-  stock_count_items_counted_by      StockCountItem[]       @relation("StockCountItemCountedBy")
-  stock_adjustments_requested_by    StockAdjustment[]      @relation("StockAdjustmentRequestedBy")
-  stock_adjustments_reviewed_by     StockAdjustment[]      @relation("StockAdjustmentReviewedBy")
-  stock_movements_created_by        StockMovement[]        @relation("StockMovementCreatedBy")
-  production_batches_created_by     ProductionBatch[]      @relation("ProductionBatchCreatedBy")
-  production_batches_preparer       ProductionBatch[]      @relation("ProductionBatchPreparer")
-  production_batches_checker        ProductionBatch[]      @relation("ProductionBatchChecker")
-  production_batches_approved_by    ProductionBatch[]      @relation("ProductionBatchApprovedBy")
-  production_batch_inputs_issued_by ProductionBatchInput[] @relation("ProductionBatchInputIssuedBy")
-  kitchen_tickets_preparer          KitchenTicket[]        @relation("KitchenTicketPreparer")
-  kitchen_tickets_checker           KitchenTicket[]        @relation("KitchenTicketChecker")
-  kitchen_tickets_created_by        KitchenTicket[]        @relation("KitchenTicketCreatedBy")
-  audit_logs_actor                  AuditLog[]             @relation("AuditLogActor")
+  user_sessions_user                 UserSession[]            @relation("UserSessionUser")
+  user_pin_credential                UserPinCredential?       @relation("UserPinCredentialUser")
+  orders_created_by                  Order[]                  @relation("OrderCreatedBy")
+  orders_cancelled_by                Order[]                  @relation("OrderCancelledBy")
+  goods_receipts_created_by          GoodsReceipt[]           @relation("GoodsReceiptCreatedBy")
+  goods_receipts_accepted_by         GoodsReceipt[]           @relation("GoodsReceiptAcceptedBy")
+  stock_counts_created_by            StockCount[]             @relation("StockCountCreatedBy")
+  stock_counts_reviewed_by           StockCount[]             @relation("StockCountReviewedBy")
+  stock_count_items_counted_by       StockCountItem[]         @relation("StockCountItemCountedBy")
+  stock_adjustments_requested_by     StockAdjustment[]        @relation("StockAdjustmentRequestedBy")
+  stock_adjustments_reviewed_by      StockAdjustment[]        @relation("StockAdjustmentReviewedBy")
+  stock_movements_created_by         StockMovement[]          @relation("StockMovementCreatedBy")
+  production_batches_created_by      ProductionBatch[]        @relation("ProductionBatchCreatedBy")
+  production_batches_preparer        ProductionBatch[]        @relation("ProductionBatchPreparer")
+  production_batches_checker         ProductionBatch[]        @relation("ProductionBatchChecker")
+  production_batches_approved_by     ProductionBatch[]        @relation("ProductionBatchApprovedBy")
+  production_batch_inputs_issued_by  ProductionBatchInput[]   @relation("ProductionBatchInputIssuedBy")
+  kitchen_tickets_preparer           KitchenTicket[]          @relation("KitchenTicketPreparer")
+  kitchen_tickets_checker            KitchenTicket[]          @relation("KitchenTicketChecker")
+  kitchen_tickets_created_by         KitchenTicket[]          @relation("KitchenTicketCreatedBy")
+  kitchen_ticket_qc_attempts_checker KitchenTicketQcAttempt[] @relation("KitchenTicketQcAttemptChecker")
+  audit_logs_actor                   AuditLog[]               @relation("AuditLogActor")
 
   @@map("users")
 }
@@ -307,11 +322,12 @@ model OrderItem {
   unit_price        Decimal @db.Decimal(12, 2)
   notes             String? @db.VarChar(2000)
 
-  order                           Order               @relation("OrderItemOrder", fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction)
-  menu_item                       MenuItem            @relation("OrderItemMenuItem", fields: [menu_item_id], references: [menu_item_id], onDelete: NoAction, onUpdate: NoAction)
-  applied_recipe                  Recipe?             @relation("OrderItemAppliedRecipe", fields: [applied_recipe_id], references: [recipe_id], onDelete: NoAction, onUpdate: NoAction)
-  order_item_modifiers_order_item OrderItemModifier[] @relation("OrderItemModifierOrderItem")
-  stock_movements_order_item      StockMovement[]     @relation("StockMovementOrderItem")
+  order                           Order                  @relation("OrderItemOrder", fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction)
+  menu_item                       MenuItem               @relation("OrderItemMenuItem", fields: [menu_item_id], references: [menu_item_id], onDelete: NoAction, onUpdate: NoAction)
+  applied_recipe                  Recipe?                @relation("OrderItemAppliedRecipe", fields: [applied_recipe_id], references: [recipe_id], onDelete: NoAction, onUpdate: NoAction)
+  order_item_modifiers_order_item OrderItemModifier[]    @relation("OrderItemModifierOrderItem")
+  stock_movements_order_item      StockMovement[]        @relation("StockMovementOrderItem")
+  qc_rejections                   OrderItemQcRejection[] @relation("OrderItemQcRejectionOrderItem")
 
   @@index([order_id])
   @@map("order_items")
@@ -703,13 +719,51 @@ model KitchenTicket {
   created_at             DateTime            @default(now()) @db.Timestamp(6)
   modified_at            DateTime            @default(now()) @db.Timestamp(6)
 
-  order      Order @relation("KitchenTicketOrder", fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction)
-  preparer   User? @relation("KitchenTicketPreparer", fields: [preparer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  checker    User? @relation("KitchenTicketChecker", fields: [checker_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  created_by User  @relation("KitchenTicketCreatedBy", fields: [created_by_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  order       Order                    @relation("KitchenTicketOrder", fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction)
+  preparer    User?                    @relation("KitchenTicketPreparer", fields: [preparer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  checker     User?                    @relation("KitchenTicketChecker", fields: [checker_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  created_by  User                     @relation("KitchenTicketCreatedBy", fields: [created_by_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  qc_attempts KitchenTicketQcAttempt[] @relation("KitchenTicketQcAttemptKitchenTicket")
 
   @@index([status, created_at])
   @@map("kitchen_tickets")
+}
+
+/// Each recheck creates a new attempt; completing QC does not require rows for passed portions.
+model KitchenTicketQcAttempt {
+  qc_attempt_id     String                @id @default(uuid()) @db.Uuid
+  kitchen_ticket_id String                @db.Uuid
+  attempt_number    Int
+  status            KitchenTicketQcStatus @default(IN_PROGRESS)
+  checker_id        String                @db.Uuid
+  started_at        DateTime              @default(now()) @db.Timestamp(6)
+  completed_at      DateTime?             @db.Timestamp(6)
+
+  kitchen_ticket KitchenTicket          @relation("KitchenTicketQcAttemptKitchenTicket", fields: [kitchen_ticket_id], references: [kitchen_ticket_id], onDelete: NoAction, onUpdate: NoAction)
+  checker        User                   @relation("KitchenTicketQcAttemptChecker", fields: [checker_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  rejections     OrderItemQcRejection[] @relation("OrderItemQcRejectionQcAttempt")
+
+  @@unique([kitchen_ticket_id, attempt_number])
+  @@index([checker_id])
+  @@map("kitchen_ticket_qc_attempts")
+}
+
+/// Rejected portions only. Ticket membership and portion_number <= order item quantity require backend validation.
+model OrderItemQcRejection {
+  rejection_id     String            @id @default(uuid()) @db.Uuid
+  qc_attempt_id    String            @db.Uuid
+  order_item_id    String            @db.Uuid
+  portion_number   Int
+  rejection_reason QcRejectionReason
+  description      String            @db.VarChar(2000)
+  rejected_at      DateTime          @default(now()) @db.Timestamp(6)
+
+  qc_attempt KitchenTicketQcAttempt @relation("OrderItemQcRejectionQcAttempt", fields: [qc_attempt_id], references: [qc_attempt_id], onDelete: NoAction, onUpdate: NoAction)
+  order_item OrderItem              @relation("OrderItemQcRejectionOrderItem", fields: [order_item_id], references: [order_item_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([qc_attempt_id, order_item_id, portion_number])
+  @@index([order_item_id])
+  @@map("order_item_qc_rejections")
 }
 
 /// Append-only audit history. Actor may be null for system or unauthenticated actions. Exclude passwords, tokens and restricted recipe instructions from snapshots.

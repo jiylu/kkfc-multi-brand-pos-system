@@ -29,6 +29,16 @@ Enum order_channels {
   FOODPANDA
 }
 
+Enum kitchen_ticket_qc_statuses {
+  IN_PROGRESS
+  PASSED
+  FAILED
+}
+
+Enum qc_rejection_reasons {
+  INCOMPLETE
+}
+
 Enum order_statuses {
   DRAFT
   CONFIRMED
@@ -380,7 +390,37 @@ Table kitchen_tickets {
   indexes {
     (status, created_at)
   }
-  Note: 'Created when an order is confirmed. State transitions and QC failures are logged in audit_logs.'
+  Note: 'Created when an order is confirmed. QC attempts and rejected portions are stored separately; state transitions are logged in audit_logs.'
+}
+
+// Each recheck creates a new attempt. A completed passing attempt needs no rejection rows.
+Table kitchen_ticket_qc_attempts {
+  qc_attempt_id uuid [pk]
+  kitchen_ticket_id uuid [not null, ref: > kitchen_tickets.kitchen_ticket_id]
+  attempt_number integer [not null, note: 'Positive; unique within the kitchen ticket.']
+  status kitchen_ticket_qc_statuses [not null, default: 'IN_PROGRESS']
+  checker_id uuid [not null, ref: > users.user_id]
+  started_at timestamp [not null, default: `now()`]
+  completed_at timestamp
+  indexes {
+    (kitchen_ticket_id, attempt_number) [unique]
+    (checker_id)
+  }
+}
+
+// One row per rejected portion per attempt. Passing portions create no rows.
+Table order_item_qc_rejections {
+  rejection_id uuid [pk]
+  qc_attempt_id uuid [not null, ref: > kitchen_ticket_qc_attempts.qc_attempt_id]
+  order_item_id uuid [not null, ref: > order_items.order_item_id]
+  portion_number integer [not null, note: 'Positive; backend must validate the order item quantity bound and ticket membership.']
+  rejection_reason qc_rejection_reasons [not null]
+  description varchar(2000) [not null, note: 'Must contain non-whitespace text.']
+  rejected_at timestamp [not null, default: `now()`]
+  indexes {
+    (qc_attempt_id, order_item_id, portion_number) [unique]
+    (order_item_id)
+  }
 }
 
 // ==========================================

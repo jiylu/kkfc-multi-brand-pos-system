@@ -111,6 +111,12 @@ export async function cleanupCatalogFixture(
     ...extraBrandIds,
   ];
   const orderWhere = { brand_id: { in: brandIds } };
+  await prisma.orderItemQcRejection.deleteMany({
+    where: { qc_attempt: { kitchen_ticket: { order: orderWhere } } },
+  });
+  await prisma.kitchenTicketQcAttempt.deleteMany({
+    where: { kitchen_ticket: { order: orderWhere } },
+  });
   await prisma.orderItemModifier.deleteMany({
     where: { order_item: { order: orderWhere } },
   });

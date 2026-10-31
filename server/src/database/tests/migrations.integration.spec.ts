@@ -113,6 +113,138 @@ describe('Daily order code migration', () => {
   });
 });
 
+describe('Kitchen ticket QC migration', () => {
+  it('stores rejection-only portion history and enforces keys and required values', async () => {
+    requireTestDatabase();
+    const client = new Client({
+      connectionString: process.env.TEST_DATABASE_URL,
+    });
+    const schema = `ticket_qc_${randomUUID().replaceAll('-', '')}`;
+    const checkerId = randomUUID();
+    const ticketId = randomUUID();
+    const itemId = randomUUID();
+    const firstAttemptId = randomUUID();
+    const secondAttemptId = randomUUID();
+    const rejectionId = randomUUID();
+    await client.connect();
+    try {
+      await client.query(`CREATE SCHEMA "${schema}"`);
+      await client.query(`SET search_path TO "${schema}"`);
+      await client.query(`
+        CREATE TABLE users (user_id UUID PRIMARY KEY);
+        CREATE TABLE kitchen_tickets (kitchen_ticket_id UUID PRIMARY KEY);
+        CREATE TABLE order_items (order_item_id UUID PRIMARY KEY);
+      `);
+      await client.query('INSERT INTO users VALUES ($1)', [checkerId]);
+      await client.query('INSERT INTO kitchen_tickets VALUES ($1)', [ticketId]);
+      await client.query('INSERT INTO order_items VALUES ($1)', [itemId]);
+      await client.query(
+        await readFile(
+          join(
+            process.cwd(),
+            'prisma/migrations/20261031000200_kitchen_ticket_qc/migration.sql',
+          ),
+          'utf8',
+        ),
+      );
+      const insertAttempt = (id: string, number: number) =>
+        client.query<{ status: string; started_at: Date; completed_at: null }>(
+          `INSERT INTO kitchen_ticket_qc_attempts
+           (qc_attempt_id, kitchen_ticket_id, attempt_number, checker_id)
+           VALUES ($1, $2, $3, $4) RETURNING status, started_at, completed_at`,
+          [id, ticketId, number, checkerId],
+        );
+      const first = await insertAttempt(firstAttemptId, 1);
+      expect(first.rows[0]).toMatchObject({
+        status: 'IN_PROGRESS',
+        completed_at: null,
+      });
+      expect(first.rows[0].started_at).toBeInstanceOf(Date);
+      await expect(insertAttempt(randomUUID(), 1)).rejects.toMatchObject({
+        code: '23505',
+      });
+      await expect(insertAttempt(randomUUID(), 0)).rejects.toMatchObject({
+        code: '23514',
+      });
+      const insertRejection = (
+        id: string,
+        attemptId: string,
+        portion: number,
+        description = 'Missing onions.',
+        reason = 'INCOMPLETE',
+      ) =>
+        client.query<{ rejection_reason: string; rejected_at: Date }>(
+          `INSERT INTO order_item_qc_rejections
+           (rejection_id, qc_attempt_id, order_item_id, portion_number,
+            rejection_reason, description)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING rejection_reason, rejected_at`,
+          [id, attemptId, itemId, portion, reason, description],
+        );
+      const rejected = await insertRejection(rejectionId, firstAttemptId, 2);
+      expect(rejected.rows[0]).toMatchObject({
+        rejection_reason: 'INCOMPLETE',
+      });
+      expect(rejected.rows[0].rejected_at).toBeInstanceOf(Date);
+      await expect(
+        insertRejection(randomUUID(), firstAttemptId, 2),
+      ).rejects.toMatchObject({ code: '23505' });
+      await expect(
+        insertRejection(randomUUID(), firstAttemptId, 0),
+      ).rejects.toMatchObject({ code: '23514' });
+      await expect(
+        insertRejection(randomUUID(), firstAttemptId, 1, ' \t\n '),
+      ).rejects.toMatchObject({ code: '23514' });
+      await expect(
+        insertRejection(
+          randomUUID(),
+          firstAttemptId,
+          1,
+          'Missing onions.',
+          'OTHER',
+        ),
+      ).rejects.toMatchObject({ code: '22P02' });
+      await expect(
+        insertRejection(randomUUID(), randomUUID(), 1),
+      ).rejects.toMatchObject({ code: '23503' });
+      await client.query(
+        `UPDATE kitchen_ticket_qc_attempts SET status = 'FAILED',
+         completed_at = CURRENT_TIMESTAMP WHERE qc_attempt_id = $1`,
+        [firstAttemptId],
+      );
+      await insertAttempt(secondAttemptId, 2);
+      await insertRejection(randomUUID(), secondAttemptId, 2);
+      expect(
+        (
+          await client.query(
+            'SELECT COUNT(*)::int AS total FROM order_item_qc_rejections',
+          )
+        ).rows,
+      ).toEqual([{ total: 2 }]);
+      const passingAttemptId = randomUUID();
+      await insertAttempt(passingAttemptId, 3);
+      await client.query(
+        `UPDATE kitchen_ticket_qc_attempts SET status = 'PASSED',
+         completed_at = CURRENT_TIMESTAMP WHERE qc_attempt_id = $1`,
+        [passingAttemptId],
+      );
+      expect(
+        (
+          await client.query(
+            'SELECT COUNT(*)::int AS total FROM order_item_qc_rejections WHERE qc_attempt_id = $1',
+            [passingAttemptId],
+          )
+        ).rows,
+      ).toEqual([{ total: 0 }]);
+    } finally {
+      await client.query('ROLLBACK');
+      await client.query('SET search_path TO public');
+      await client.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+      await client.end();
+    }
+  });
+});
+
 describe('User brand removal migration', () => {
   it('drops assignments while preserving users, brands, and sessions', async () => {
     requireTestDatabase();
