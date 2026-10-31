@@ -363,7 +363,7 @@ transactions with unique constraints and bounded whole-transaction retries, rath
 than depending on the duplicate lookup alone. Ticket sequence values can be
 consumed by failed transactions, leaving gaps without duplicate persisted numbers.
 
-Backend regression coverage is in `catalog-orders.http.spec.ts` (IT-ORD-005/006
+Backend regression coverage is in `src/modules/orders/orders/tests/orders.http.spec.ts` (IT-ORD-005/006
 and IT-ORD-009 through IT-ORD-017), with a migrated isolated PostgreSQL test
 database required via `TEST_DATABASE_URL`. This provides implementation regression
 evidence; independently designed student QA and PO review remain separate. These

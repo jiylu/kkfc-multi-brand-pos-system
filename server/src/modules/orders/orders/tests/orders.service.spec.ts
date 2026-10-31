@@ -1,17 +1,23 @@
-import { OrderItemsService } from '../order-items/order-items.service';
-import { OrderItemsRepository } from '../order-items/order-items.repository';
+import { OrderItemsService } from '../../order-items/order-items.service';
+import { OrderItemsRepository } from '../../order-items/order-items.repository';
 import {
   BadRequestException,
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../../shared/prisma/prisma.service';
-import { OrdersRepository } from './orders.repository';
-import { OrdersService } from './orders.service';
-import { CreateOrderDTO } from './dto/order.dto';
+import { PrismaService } from '../../../../shared/prisma/prisma.service';
+import { OrdersRepository } from '../orders.repository';
+import { OrdersService } from '../orders.service';
+import { CreateOrderDTO } from '../dto/order.dto';
 
-describe('Order lifecycle', () => {
+function adapterError(originalCode: string, kind = 'TransactionWriteConflict') {
+  const error = new Error(kind, { cause: { kind, originalCode } });
+  error.name = 'DriverAdapterError';
+  return error;
+}
+
+describe('OrdersService', () => {
   const payment = { payment_method: 'CASH', payment_status: 'UNPAID' } as const;
   const request: CreateOrderDTO = {
     order_id: 'order',
@@ -767,6 +773,81 @@ describe('Order lifecycle', () => {
     });
     expect(tx.order.create).not.toHaveBeenCalled();
   });
+  describe('transaction conflict recovery', () => {
+    const conflicts = [
+      ...['P2034', 'P2002'].map((code) => ({
+        name: code,
+        error: new Prisma.PrismaClientKnownRequestError('conflict', {
+          code,
+          clientVersion: '7',
+        }),
+      })),
+      ...['40001', '40P01'].map((code) => ({
+        name: `pg adapter ${code}`,
+        error: adapterError(code),
+      })),
+    ];
+
+    it.each(conflicts)(
+      'retries confirmation after $name at commit',
+      async ({ error }) => {
+        prisma.$transaction.mockImplementationOnce(
+          async (
+            callback: (client: Prisma.TransactionClient) => Promise<unknown>,
+          ) => {
+            await callback(tx as unknown as Prisma.TransactionClient);
+            throw error;
+          },
+        );
+        await expect(
+          service.confirm('brand', 'order', 'actor', payment),
+        ).resolves.toMatchObject({ status: 'CONFIRMED' });
+        expect(tx.order.findFirst).toHaveBeenCalledTimes(2);
+        expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+      },
+    );
+
+    it.each(conflicts)(
+      'bounds $name retries and returns a stable recovery code',
+      async ({ error }) => {
+        prisma.$transaction.mockRejectedValue(error);
+        const result = await service
+          .confirm('brand', 'order', 'actor', payment)
+          .catch((error: unknown) => error);
+        expect(result).toBeInstanceOf(ConflictException);
+        expect((result as ConflictException).getResponse()).toEqual({
+          statusCode: 409,
+          error: 'Conflict',
+          code: 'ORDER_RETRY_REQUIRED',
+          message: 'Concurrent order request; retry using the same order ID.',
+        });
+        expect(prisma.$transaction).toHaveBeenCalledTimes(5);
+        expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      new Error('Connection lost; commit outcome unknown'),
+      adapterError('08006', 'ConnectionClosed'),
+      adapterError('23503', 'ForeignKeyConstraintViolation'),
+      adapterError('40001', 'UnexpectedError'),
+      new Prisma.PrismaClientKnownRequestError('not found', {
+        code: 'P2025',
+        clientVersion: '7',
+      }),
+    ])(
+      'propagates non-retryable errors without replaying confirmation (%s)',
+      async (error) => {
+        prisma.$transaction.mockRejectedValue(error);
+        await expect(
+          service.confirm('brand', 'order', 'actor', payment),
+        ).rejects.toBe(error);
+        expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+        expect(tx.kitchenTicket.create).not.toHaveBeenCalled();
+      },
+    );
+  });
+
   describe('cancellation', () => {
     const reason = { cancellation_reason: '  Customer changed their mind.  ' };
     beforeEach(() => {

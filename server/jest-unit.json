@@ -2,7 +2,10 @@
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": "src",
   "testRegex": ".*\\.spec\\.ts$",
-  "testPathIgnorePatterns": ["/node_modules/", "\\.http\\.spec\\.ts$"],
+  "testPathIgnorePatterns": [
+    "/node_modules/",
+    "\\.(http|integration)\\.spec\\.ts$"
+  ],
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },

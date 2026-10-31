@@ -1,7 +1,7 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": "src",
-  "testRegex": ".*\\.http\\.spec\\.ts$",
+  "testRegex": ".*\\.(http|integration)\\.spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
