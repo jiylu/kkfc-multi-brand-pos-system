@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service';
-import { CreateKitchenQcDTO } from './dto/create-kitchen-qc.dto';
 import { KitchenTicketQcStatus, Prisma } from '@prisma/client';
 
 @Injectable()
@@ -8,14 +7,16 @@ export class KitchenQcRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(
-    dto: CreateKitchenQcDTO,
+    checkerId: string,
     kitchenTicketId: string,
+    attemptNumber: number,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     return tx.kitchenTicketQcAttempt.create({
       data: {
         kitchen_ticket_id: kitchenTicketId,
-        ...dto,
+        attempt_number: attemptNumber,
+        checker_id: checkerId,
       },
     });
   }
