@@ -20,6 +20,7 @@ import { RecipesModule } from './modules/recipe/recipes/recipes.module';
 import { MenuItemModifiersModule } from './modules/menu/menu-item-modifiers/menu-item-modifiers.module';
 import { MenuCatalogModule } from './modules/menu/menu-catalog/menu-catalog.module';
 import { KitchenTicketModule } from './modules/kitchen/kitchen-ticket/kitchen-ticket.module';
+import { KitchenQcModule } from './modules/kitchen/kitchen-qc/kitchen-qc.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { KitchenTicketModule } from './modules/kitchen/kitchen-ticket/kitchen-ti
     MenuItemModifiersModule,
     MenuCatalogModule,
     KitchenTicketModule,
+    KitchenQcModule,
   ],
   controllers: [],
   providers: [
