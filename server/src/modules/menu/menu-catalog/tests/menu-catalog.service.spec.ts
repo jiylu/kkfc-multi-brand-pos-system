@@ -14,7 +14,7 @@ import { MenuCatalogRepository } from '../menu-catalog.repository';
 import { MenuCatalogService } from '../menu-catalog.service';
 
 describe('MenuCatalogService module wiring', () => {
-  it('resolves the service through the application module', async () => {
+  it('UT-MCAT-001: resolves the service through the application module', async () => {
     const module = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService)
       .useValue({})
@@ -81,7 +81,7 @@ describe('MenuCatalogService operations', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
-  it('checks every active modifier before creating the catalog entry', async () => {
+  it('UT-MCAT-002: checks every active modifier before creating the catalog entry', async () => {
     repository.create.mockImplementation(() => {
       expect(modifiers.findOneModifierByUID).toHaveBeenNthCalledWith(
         1,
@@ -99,7 +99,7 @@ describe('MenuCatalogService operations', () => {
     expect(repository.create).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects a missing or inactive later modifier without creating anything', async () => {
+  it('UT-MCAT-003: rejects a missing or inactive later modifier without creating anything', async () => {
     modifiers.findOneModifierByUID
       .mockResolvedValueOnce({ is_active: true })
       .mockResolvedValueOnce(null);
@@ -111,27 +111,27 @@ describe('MenuCatalogService operations', () => {
     expect(repository.create).not.toHaveBeenCalled();
   });
 
-  it('allows creation without modifier assignments', async () => {
+  it('UT-MCAT-004: allows creation without modifier assignments', async () => {
     const withoutModifiers = { ...dto, menu_item_modifier: [] };
     await expect(service.create(withoutModifiers)).resolves.toEqual(menuItem);
     expect(modifiers.findOneModifierByUID).not.toHaveBeenCalled();
     expect(repository.create).toHaveBeenCalledWith(withoutModifiers);
   });
 
-  it('preserves creation errors for the application exception filters', async () => {
+  it('UT-MCAT-005: preserves creation errors for the application exception filters', async () => {
     const error = new Error('Duplicate menu item');
     repository.create.mockRejectedValueOnce(error);
     await expect(service.create(dto)).rejects.toBe(error);
   });
 
-  it('does not create anything when a modifier lookup fails', async () => {
+  it('UT-MCAT-006: does not create anything when a modifier lookup fails', async () => {
     const error = new Error('Database unavailable');
     modifiers.findOneModifierByUID.mockRejectedValueOnce(error);
     await expect(service.create(dto)).rejects.toBe(error);
     expect(repository.create).not.toHaveBeenCalled();
   });
 
-  it('validates the active brand and paginates the mapped catalog', async () => {
+  it('UT-MCAT-007: validates the active brand and paginates the mapped catalog', async () => {
     await expect(
       service.findAll('brand-id', { page: 2, limit: 10 }),
     ).resolves.toEqual({
@@ -142,7 +142,7 @@ describe('MenuCatalogService operations', () => {
     expect(repository.findMany).toHaveBeenCalledWith('brand-id', 10, 10);
   });
 
-  it('rejects listing for a missing or inactive brand before querying the catalog', async () => {
+  it('UT-MCAT-008: rejects listing for a missing or inactive brand before querying the catalog', async () => {
     brands.findOneBrand.mockResolvedValue(null);
     await expect(
       service.findAll('brand-id', new PaginationDTO()),
@@ -153,7 +153,7 @@ describe('MenuCatalogService operations', () => {
     expect(repository.findMany).not.toHaveBeenCalled();
   });
 
-  it('returns an empty catalog with default pagination', async () => {
+  it('UT-MCAT-009: returns an empty catalog with default pagination', async () => {
     repository.findMany.mockResolvedValue({ menuItems: [], total: 0 });
     await expect(
       service.findAll('brand-id', new PaginationDTO()),
@@ -164,7 +164,7 @@ describe('MenuCatalogService operations', () => {
     expect(repository.findMany).toHaveBeenCalledWith('brand-id', 0, 10);
   });
 
-  it('rejects pagination overflow before querying the catalog', async () => {
+  it('UT-MCAT-010: rejects pagination overflow before querying the catalog', async () => {
     await expect(
       service.findAll('brand-id', { page: 2_147_483_647, limit: 2 }),
     ).rejects.toMatchObject({
@@ -174,7 +174,7 @@ describe('MenuCatalogService operations', () => {
     expect(repository.findMany).not.toHaveBeenCalled();
   });
 
-  it('preserves catalog lookup errors', async () => {
+  it('UT-MCAT-011: preserves catalog lookup errors', async () => {
     const error = new Error('Database unavailable');
     repository.findMany.mockRejectedValueOnce(error);
     await expect(service.findAll('brand-id', new PaginationDTO())).rejects.toBe(
@@ -202,7 +202,7 @@ describe('MenuCatalogService transactional creation', () => {
   };
 
   it.each([true, false])(
-    'returns the full created entry with children=%s',
+    'UT-MCAT-012: returns the full created entry with children=%s',
     async (withChildren) => {
       const input = withChildren
         ? dto

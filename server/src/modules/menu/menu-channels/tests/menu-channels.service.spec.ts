@@ -9,7 +9,7 @@ import { MenuChannelsRepository } from '../menu-channels.repository';
 import { MenuChannelsService } from '../menu-channels.service';
 
 describe('MenuChannelsService module wiring', () => {
-  it('resolves the service through the application module', async () => {
+  it('UT-MCH-007: resolves the service through the application module', async () => {
     const module = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService)
       .useValue({})
@@ -66,7 +66,7 @@ describe('MenuChannelsService listing and mutations', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it.each([true, false])(
-    'paginates channels with activeOnly=%s',
+    'UT-MCH-008: paginates channels with activeOnly=%s',
     async (activeOnly) => {
       await expect(
         service.findAll({
@@ -88,7 +88,7 @@ describe('MenuChannelsService listing and mutations', () => {
     },
   );
 
-  it('returns empty pagination results without a channel filter', async () => {
+  it('UT-MCH-009: returns empty pagination results without a channel filter', async () => {
     repository.findAll.mockResolvedValue({ menuItemChannels: [], total: 0 });
     await expect(
       service.findAll({ page: 1, limit: 10, activeOnly: true }),
@@ -99,7 +99,7 @@ describe('MenuChannelsService listing and mutations', () => {
     expect(repository.findAll).toHaveBeenCalledWith(0, 10, true, undefined);
   });
 
-  it('rejects pagination overflow before querying', async () => {
+  it('UT-MCH-010: rejects pagination overflow before querying', async () => {
     await expect(
       service.findAll({ page: 2_147_483_647, limit: 2, activeOnly: true }),
     ).rejects.toMatchObject({
@@ -109,7 +109,7 @@ describe('MenuChannelsService listing and mutations', () => {
     expect(repository.findAll).not.toHaveBeenCalled();
   });
 
-  it('updates an available channel and returns the updated record', async () => {
+  it('UT-MCH-011: updates an available channel and returns the updated record', async () => {
     await expect(service.update(channelId, dto)).resolves.toEqual({
       ...channel,
       price: new Prisma.Decimal(120),
@@ -118,14 +118,14 @@ describe('MenuChannelsService listing and mutations', () => {
     expect(repository.update).toHaveBeenCalledWith(channelId, dto);
   });
 
-  it('reactivates an unavailable channel', async () => {
+  it('UT-MCH-012: reactivates an unavailable channel', async () => {
     repository.findOne.mockResolvedValue({ ...channel, is_available: false });
     await expect(service.reactivate(channelId)).resolves.toEqual(channel);
     expect(repository.findOne).toHaveBeenCalledWith(channelId, false);
     expect(repository.reactivate).toHaveBeenCalledWith(channelId);
   });
 
-  it('rejects reactivating an already available channel', async () => {
+  it('UT-MCH-013: rejects reactivating an already available channel', async () => {
     await expect(service.reactivate(channelId)).rejects.toMatchObject({
       status: 409,
       response: { code: 'MENU_ITEM_CHANNEL_ALREADY_ACTIVE' },
@@ -133,7 +133,7 @@ describe('MenuChannelsService listing and mutations', () => {
     expect(repository.reactivate).not.toHaveBeenCalled();
   });
 
-  it('soft-deletes an available channel', async () => {
+  it('UT-MCH-014: soft-deletes an available channel', async () => {
     await expect(service.delete(channelId)).resolves.toEqual({
       ...channel,
       is_available: false,
@@ -149,7 +149,7 @@ describe('MenuChannelsService listing and mutations', () => {
   ] as const;
 
   it.each(mutations)(
-    '$name rejects missing channels without writing',
+    'UT-MCH-015: $name rejects missing channels without writing',
     async ({ run }) => {
       repository.findOne.mockResolvedValue(null);
       await expect(run()).rejects.toMatchObject({
@@ -163,7 +163,7 @@ describe('MenuChannelsService listing and mutations', () => {
   );
 
   it.each(mutations)(
-    '$name preserves repository failures',
+    'UT-MCH-016: $name preserves repository failures',
     async ({ name, run }) => {
       repository.findOne.mockResolvedValue({ ...channel, is_available: false });
       const error = new Prisma.PrismaClientKnownRequestError(

@@ -118,7 +118,7 @@ describe('Confidential recipes HTTP authorization', () => {
   });
 
   it.each(Object.values(UserRole).filter((role) => role !== 'SUPERADMIN'))(
-    'denies unapproved %s reads and writes with safe audit',
+    'IT-RCP-001: denies unapproved %s reads and writes with safe audit',
     async (role) => {
       user(role);
       for (const method of ['get', 'patch'] as const) {
@@ -162,7 +162,7 @@ describe('Confidential recipes HTTP authorization', () => {
   );
 
   it.each([UserRole.SUPERADMIN, UserRole.RECIPE_MANAGER])(
-    'allows approved %s read and write',
+    'IT-RCP-002: allows approved %s read and write',
     async (role) => {
       user(role);
       grant();
@@ -185,7 +185,7 @@ describe('Confidential recipes HTTP authorization', () => {
     { recipe_id: approverId },
     { user_id: approverId },
     { can_read: false, can_write: false },
-  ])('denies invalid or revoked delegation %j', async (invalid) => {
+  ])('IT-RCP-003: denies invalid or revoked delegation %j', async (invalid) => {
     grant(invalid);
     expect((await call('get')).status).toBe(403);
     expect(
@@ -200,15 +200,18 @@ describe('Confidential recipes HTTP authorization', () => {
   it.each([
     { role: 'MANAGER', is_active: true },
     { role: 'SUPERADMIN', is_active: false },
-  ])('denies when approver authority is revoked: %j', async (invalid) => {
-    grant();
-    approver = invalid;
-    expect((await call('get')).status).toBe(403);
-    expect((await call('patch')).status).toBe(403);
-    expect(db.recipe.update).not.toHaveBeenCalled();
-  });
+  ])(
+    'IT-RCP-004: denies when approver authority is revoked: %j',
+    async (invalid) => {
+      grant();
+      approver = invalid;
+      expect((await call('get')).status).toBe(403);
+      expect((await call('patch')).status).toBe(403);
+      expect(db.recipe.update).not.toHaveBeenCalled();
+    },
+  );
 
-  it('keeps read and write capabilities independent', async () => {
+  it('IT-RCP-005: keeps read and write capabilities independent', async () => {
     grant({ can_write: false });
     expect((await call('get')).status).toBe(200);
     expect((await call('patch')).status).toBe(403);
@@ -219,7 +222,7 @@ describe('Confidential recipes HTTP authorization', () => {
     });
   });
 
-  it('looks up the requested recipe scope, ignoring forged scope in the body', async () => {
+  it('IT-RCP-006: looks up the requested recipe scope, ignoring forged scope in the body', async () => {
     const response = await call('patch').send({
       role: 'SUPERADMIN',
       brand_id: brand,
@@ -231,14 +234,14 @@ describe('Confidential recipes HTTP authorization', () => {
     expect(db.recipe.findUnique).not.toHaveBeenCalled();
   });
 
-  it('denies malformed IDs before validation and does not audit untrusted ID text', async () => {
+  it('IT-RCP-007: denies malformed IDs before validation and does not audit untrusted ID text', async () => {
     expect((await call('get', 'secret-text')).status).toBe(403);
     expect((db.auditLog.create.mock.calls as unknown[][])[0][0]).toMatchObject({
       data: { entity_id: null },
     });
   });
 
-  it('rejects expired or inactive authority', async () => {
+  it('IT-RCP-008: rejects expired or inactive authority', async () => {
     db.user.findUnique.mockResolvedValue({
       user_id: userId,
       role: 'SUPERADMIN',
@@ -247,7 +250,7 @@ describe('Confidential recipes HTTP authorization', () => {
     expect((await call('get')).status).toBe(403);
   });
 
-  it('still denies when audit storage fails', async () => {
+  it('IT-RCP-009: still denies when audit storage fails', async () => {
     db.auditLog.create.mockRejectedValue(new Error('private database details'));
     expect((await call('get')).body).toEqual({
       code: 'RECIPE_ACCESS_DENIED',
@@ -255,13 +258,13 @@ describe('Confidential recipes HTTP authorization', () => {
     });
   });
 
-  it('requires authentication', async () => {
+  it('IT-RCP-010: requires authentication', async () => {
     expect(
       (await request(app.getHttpServer()).get(`/recipes/${id}`)).status,
     ).toBe(401);
   });
 
-  it('checks service callers as well as HTTP callers', async () => {
+  it('IT-RCP-011: checks service callers as well as HTTP callers', async () => {
     const service = app.get(RecipesService);
     await expect(service.findOne(userId, id)).rejects.toThrow(
       'Recipe access denied.',

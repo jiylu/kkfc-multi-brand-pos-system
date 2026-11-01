@@ -126,7 +126,7 @@ describe('PIN HTTP endpoints and guard', () => {
   afterAll(async () => app?.close());
 
   it.each(allowedRoles)(
-    'allows %s to set up, read, and reset their PIN',
+    'IT-PIN-008: allows %s to set up, read, and reset their PIN',
     async (role) => {
       const created = await request(app.getHttpServer())
         .post('/api/pin')
@@ -160,29 +160,32 @@ describe('PIN HTTP endpoints and guard', () => {
     },
   );
 
-  it.each(forbiddenRoles)('blocks %s from all PIN endpoints', async (role) => {
-    await request(app.getHttpServer())
-      .post('/api/pin')
-      .auth(role, { type: 'bearer' })
-      .send(setup)
-      .expect(403);
-    await request(app.getHttpServer())
-      .get('/api/pin')
-      .auth(role, { type: 'bearer' })
-      .expect(403);
-    await request(app.getHttpServer())
-      .patch('/api/pin')
-      .auth(role, { type: 'bearer' })
-      .send(reset)
-      .expect(403);
-    expect(repository.create).not.toHaveBeenCalled();
-    expect(repository.findOneSafe).not.toHaveBeenCalled();
-    expect(repository.update).not.toHaveBeenCalled();
-    expect(users.findCredentialsByUserId).not.toHaveBeenCalled();
-  });
+  it.each(forbiddenRoles)(
+    'IT-PIN-009: blocks %s from all PIN endpoints',
+    async (role) => {
+      await request(app.getHttpServer())
+        .post('/api/pin')
+        .auth(role, { type: 'bearer' })
+        .send(setup)
+        .expect(403);
+      await request(app.getHttpServer())
+        .get('/api/pin')
+        .auth(role, { type: 'bearer' })
+        .expect(403);
+      await request(app.getHttpServer())
+        .patch('/api/pin')
+        .auth(role, { type: 'bearer' })
+        .send(reset)
+        .expect(403);
+      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.findOneSafe).not.toHaveBeenCalled();
+      expect(repository.update).not.toHaveBeenCalled();
+      expect(users.findCredentialsByUserId).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([undefined, 'expired'])(
-    'rejects PIN requests without a valid session (%s)',
+    'IT-PIN-010: rejects PIN requests without a valid session (%s)',
     async (token) => {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       await request(app.getHttpServer())
@@ -206,7 +209,7 @@ describe('PIN HTTP endpoints and guard', () => {
   );
 
   it.each([null, 1234, '', '123', '12345', 'abcd', ' 0123'])(
-    'rejects invalid setup and reset PINs (%s)',
+    'IT-PIN-011: rejects invalid setup and reset PINs (%s)',
     async (pin) => {
       await request(app.getHttpServer())
         .post('/api/pin')
@@ -223,7 +226,7 @@ describe('PIN HTTP endpoints and guard', () => {
     },
   );
 
-  it('rejects a second setup without replacing the existing PIN', async () => {
+  it('IT-PIN-012: rejects a second setup without replacing the existing PIN', async () => {
     repository.findByUserId.mockResolvedValue({
       ...credential,
       pin_hash: 'existing',
@@ -237,7 +240,7 @@ describe('PIN HTTP endpoints and guard', () => {
     expect(repository.create).not.toHaveBeenCalled();
   });
 
-  it('rejects a reset with the wrong account password', async () => {
+  it('IT-PIN-013: rejects a reset with the wrong account password', async () => {
     const response = await request(app.getHttpServer())
       .patch('/api/pin')
       .auth('MANAGER', { type: 'bearer' })
@@ -248,7 +251,7 @@ describe('PIN HTTP endpoints and guard', () => {
   });
 
   it.each([undefined, null, '', 1234])(
-    'requires the account password for a reset (%s)',
+    'IT-PIN-014: requires the account password for a reset (%s)',
     async (password) => {
       await request(app.getHttpServer())
         .patch('/api/pin')
@@ -259,7 +262,7 @@ describe('PIN HTTP endpoints and guard', () => {
     },
   );
 
-  it('allows repeated password-authorized resets without an action PIN', async () => {
+  it('IT-PIN-015: allows repeated password-authorized resets without an action PIN', async () => {
     await request(app.getHttpServer())
       .patch('/api/pin')
       .auth('MANAGER', { type: 'bearer' })
@@ -274,7 +277,7 @@ describe('PIN HTTP endpoints and guard', () => {
     expect(repository.verifyPin).not.toHaveBeenCalled();
   });
 
-  it('rejects a body-supplied user ID', async () => {
+  it('IT-PIN-016: rejects a body-supplied user ID', async () => {
     await request(app.getHttpServer())
       .post('/api/pin')
       .auth('MANAGER', { type: 'bearer' })
@@ -290,7 +293,7 @@ describe('PIN HTTP endpoints and guard', () => {
   });
 
   it.each(allowedRoles)(
-    'permits a protected action for %s with a valid PIN',
+    'IT-PIN-017: permits a protected action for %s with a valid PIN',
     async (role) => {
       await request(app.getHttpServer())
         .post('/api/pin-protected')
@@ -303,7 +306,7 @@ describe('PIN HTTP endpoints and guard', () => {
   );
 
   it.each(forbiddenRoles)(
-    'rejects protected PIN actions for %s even with a correct PIN',
+    'IT-PIN-018: rejects protected PIN actions for %s even with a correct PIN',
     async (role) => {
       await request(app.getHttpServer())
         .post('/api/pin-protected')
@@ -315,7 +318,7 @@ describe('PIN HTTP endpoints and guard', () => {
     },
   );
 
-  it('rejects a protected action without authentication', async () => {
+  it('IT-PIN-019: rejects a protected action without authentication', async () => {
     await request(app.getHttpServer())
       .post('/api/pin-protected/without-auth')
       .set('X-Action-Pin', '0123')
@@ -325,7 +328,7 @@ describe('PIN HTTP endpoints and guard', () => {
   });
 
   it.each([undefined, '', '123', '12345', 'abcd', '01 23', '0123, 0456'])(
-    'rejects a missing or malformed PIN header (%s)',
+    'IT-PIN-020: rejects a missing or malformed PIN header (%s)',
     async (pin) => {
       const call = request(app.getHttpServer())
         .post('/api/pin-protected')
@@ -338,7 +341,7 @@ describe('PIN HTTP endpoints and guard', () => {
   );
 
   it.each(['invalid', 'not-configured'])(
-    'blocks the handler when PIN verification is %s',
+    'IT-PIN-021: blocks the handler when PIN verification is %s',
     async (status) => {
       repository.verifyPin.mockResolvedValue({ status });
       await request(app.getHttpServer())
@@ -350,7 +353,7 @@ describe('PIN HTTP endpoints and guard', () => {
     },
   );
 
-  it('blocks the handler when PIN verification fails unexpectedly', async () => {
+  it('IT-PIN-022: blocks the handler when PIN verification fails unexpectedly', async () => {
     repository.verifyPin.mockRejectedValue(new Error('Database unavailable'));
     await request(app.getHttpServer())
       .post('/api/pin-protected')
@@ -360,7 +363,7 @@ describe('PIN HTTP endpoints and guard', () => {
     expect(protectedAction).not.toHaveBeenCalled();
   });
 
-  it('returns a rounded-up Retry-After during cooldown and blocks the handler', async () => {
+  it('IT-PIN-023: returns a rounded-up Retry-After during cooldown and blocks the handler', async () => {
     const now = Date.parse('2030-01-01T00:00:00Z');
     jest.spyOn(Date, 'now').mockReturnValue(now);
     repository.verifyPin.mockResolvedValue({

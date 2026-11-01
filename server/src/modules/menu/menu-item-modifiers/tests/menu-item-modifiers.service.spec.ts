@@ -12,7 +12,7 @@ import { MenuItemModifiersRepository } from '../menu-item-modifiers.repository';
 import { MenuItemModifiersService } from '../menu-item-modifiers.service';
 
 describe('MenuItemModifiersService module wiring', () => {
-  it('resolves the service, repository, and controller', async () => {
+  it('UT-MIM-001: resolves the service, repository, and controller', async () => {
     const module = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -100,14 +100,14 @@ describe('MenuItemModifiersService operations', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
-  it('creates an assignment after checking the active menu item and modifier', async () => {
+  it('UT-MIM-002: creates an assignment after checking the active menu item and modifier', async () => {
     await expect(service.create(create)).resolves.toEqual(assignment);
     expect(menuItems.findOneMenuItemByUID).toHaveBeenCalledWith('menu-id');
     expect(modifiers.findOneModifierByUID).toHaveBeenCalledWith('modifier-id');
     expect(repository.create).toHaveBeenCalledWith(create);
   });
 
-  it('rejects creation when the menu item is missing or inactive', async () => {
+  it('UT-MIM-003: rejects creation when the menu item is missing or inactive', async () => {
     menuItems.findOneMenuItemByUID.mockResolvedValue(null);
     await expect(service.create(create)).rejects.toMatchObject({
       status: 404,
@@ -117,7 +117,7 @@ describe('MenuItemModifiersService operations', () => {
     expect(modifiers.findOneModifierByUID).not.toHaveBeenCalled();
   });
 
-  it('rejects creation when the modifier is missing or inactive', async () => {
+  it('UT-MIM-004: rejects creation when the modifier is missing or inactive', async () => {
     modifiers.findOneModifierByUID.mockResolvedValue(null);
     await expect(service.create(create)).rejects.toMatchObject({
       status: 404,
@@ -126,7 +126,7 @@ describe('MenuItemModifiersService operations', () => {
     expect(repository.create).not.toHaveBeenCalled();
   });
 
-  it('preserves duplicate-pair errors for the application exception filter', async () => {
+  it('UT-MIM-005: preserves duplicate-pair errors for the application exception filter', async () => {
     const error = new Prisma.PrismaClientKnownRequestError(
       'Duplicate assignment',
       { code: 'P2002', clientVersion: '7.10.1' },
@@ -136,7 +136,7 @@ describe('MenuItemModifiersService operations', () => {
   });
 
   it.each([undefined, false])(
-    'finds an assignment with activeOnly=%s',
+    'UT-MIM-006: finds an assignment with activeOnly=%s',
     async (activeOnly) => {
       await expect(
         service.findOne('assignment-id', activeOnly),
@@ -155,7 +155,7 @@ describe('MenuItemModifiersService operations', () => {
     },
   );
 
-  it('rejects a missing assignment', async () => {
+  it('UT-MIM-007: rejects a missing assignment', async () => {
     repository.findOne.mockResolvedValue(null);
     await expect(service.findOne('missing-id')).rejects.toMatchObject({
       status: 404,
@@ -164,7 +164,7 @@ describe('MenuItemModifiersService operations', () => {
   });
 
   it.each([true, false])(
-    'paginates assignments with activeOnly=%s',
+    'UT-MIM-008: paginates assignments with activeOnly=%s',
     async (activeOnly) => {
       await expect(
         service.findAll({ page: 2, limit: 10, activeOnly }),
@@ -176,7 +176,7 @@ describe('MenuItemModifiersService operations', () => {
     },
   );
 
-  it('returns empty results with default pagination', async () => {
+  it('UT-MIM-009: returns empty results with default pagination', async () => {
     repository.findAll.mockResolvedValue({ menuItemModifiers: [], total: 0 });
     await expect(
       service.findAll(new FindAllMenuItemModifiersDTO()),
@@ -187,7 +187,7 @@ describe('MenuItemModifiersService operations', () => {
     expect(repository.findAll).toHaveBeenCalledWith(0, 10, true);
   });
 
-  it('rejects pagination overflow before querying', async () => {
+  it('UT-MIM-010: rejects pagination overflow before querying', async () => {
     await expect(
       service.findAll({ page: 2147483647, limit: 2, activeOnly: true }),
     ).rejects.toMatchObject({
@@ -198,7 +198,7 @@ describe('MenuItemModifiersService operations', () => {
   });
 
   it.each([undefined, false])(
-    'lists assignments for an active menu item with activeOnly=%s',
+    'UT-MIM-011: lists assignments for an active menu item with activeOnly=%s',
     async (activeOnly) => {
       await expect(
         service.findManyForMenuItem('menu-id', activeOnly),
@@ -211,7 +211,7 @@ describe('MenuItemModifiersService operations', () => {
     },
   );
 
-  it('rejects listing for a missing or inactive menu item', async () => {
+  it('UT-MIM-012: rejects listing for a missing or inactive menu item', async () => {
     menuItems.findOneMenuItemByUID.mockResolvedValue(null);
     await expect(service.findManyForMenuItem('menu-id')).rejects.toMatchObject({
       status: 404,
@@ -220,12 +220,12 @@ describe('MenuItemModifiersService operations', () => {
     expect(repository.findManyForMenuItem).not.toHaveBeenCalled();
   });
 
-  it('returns an empty list for a menu item without assignments', async () => {
+  it('UT-MIM-013: returns an empty list for a menu item without assignments', async () => {
     repository.findManyForMenuItem.mockResolvedValue([]);
     await expect(service.findManyForMenuItem('menu-id')).resolves.toEqual([]);
   });
 
-  it('updates price after validating the current menu item and modifier', async () => {
+  it('UT-MIM-014: updates price after validating the current menu item and modifier', async () => {
     await expect(
       service.update('assignment-id', { additional_price: 25 }),
     ).resolves.toEqual({ ...assignment, additional_price: 25 });
@@ -237,7 +237,7 @@ describe('MenuItemModifiersService operations', () => {
     });
   });
 
-  it('validates a replacement modifier instead of the previous modifier', async () => {
+  it('UT-MIM-015: validates a replacement modifier instead of the previous modifier', async () => {
     const dto = { modifier_id: 'replacement-id', additional_price: 0 };
     await service.update('assignment-id', dto);
     expect(modifiers.findOneModifierByUID).toHaveBeenCalledWith(
@@ -247,7 +247,7 @@ describe('MenuItemModifiersService operations', () => {
     expect(repository.update).toHaveBeenCalledWith('assignment-id', dto);
   });
 
-  it('reactivates an unavailable assignment after checking its active references', async () => {
+  it('UT-MIM-016: reactivates an unavailable assignment after checking its active references', async () => {
     repository.findOne.mockResolvedValue({
       ...assignment,
       is_available: false,
@@ -261,7 +261,7 @@ describe('MenuItemModifiersService operations', () => {
     expect(repository.reactivate).toHaveBeenCalledWith('assignment-id');
   });
 
-  it('rejects reactivation of an already-available assignment before checking references', async () => {
+  it('UT-MIM-017: rejects reactivation of an already-available assignment before checking references', async () => {
     await expect(service.reactivate('assignment-id')).rejects.toMatchObject({
       status: 409,
       response: { code: 'MENU_ITEM_MODIFIER_ALREADY_ACTIVE' },
@@ -271,7 +271,7 @@ describe('MenuItemModifiersService operations', () => {
     expect(modifiers.findOneModifierByUID).not.toHaveBeenCalled();
   });
 
-  it('soft deletes an assignment even when its parent references are inactive', async () => {
+  it('UT-MIM-018: soft deletes an assignment even when its parent references are inactive', async () => {
     menuItems.findOneMenuItemByUID.mockResolvedValue(null);
     modifiers.findOneModifierByUID.mockResolvedValue(null);
     await expect(service.delete('assignment-id')).resolves.toEqual({
@@ -302,7 +302,7 @@ describe('MenuItemModifiersService operations', () => {
   ] as const;
 
   it.each(mutations)(
-    '$name rejects missing assignments without writing',
+    'UT-MIM-019: $name rejects missing assignments without writing',
     async ({ run }) => {
       repository.findOne.mockResolvedValue(null);
       await expect(run()).rejects.toMatchObject({
@@ -318,7 +318,7 @@ describe('MenuItemModifiersService operations', () => {
   );
 
   it.each(mutations)(
-    '$name preserves repository failures',
+    'UT-MIM-020: $name preserves repository failures',
     async ({ name, record, run }) => {
       repository.findOne.mockResolvedValue(record);
       const error = new Error('Database write failed');
@@ -342,7 +342,7 @@ describe('MenuItemModifiersService operations', () => {
   ] as const;
 
   it.each(checkedMutations)(
-    '$name rejects a missing or inactive menu item before writing',
+    'UT-MIM-021: $name rejects a missing or inactive menu item before writing',
     async ({ record, run }) => {
       repository.findOne.mockResolvedValue(record);
       menuItems.findOneMenuItemByUID.mockResolvedValue(null);
@@ -357,7 +357,7 @@ describe('MenuItemModifiersService operations', () => {
   );
 
   it.each(checkedMutations)(
-    '$name rejects a missing or inactive modifier before writing',
+    'UT-MIM-022: $name rejects a missing or inactive modifier before writing',
     async ({ record, run }) => {
       repository.findOne.mockResolvedValue(record);
       modifiers.findOneModifierByUID.mockResolvedValue(null);
@@ -405,7 +405,7 @@ describe('Menu item modifiers persistence', () => {
     );
   });
 
-  it('creates an assignment and leaves timestamps and availability to database defaults', async () => {
+  it('UT-MIM-023: creates an assignment and leaves timestamps and availability to database defaults', async () => {
     const dto = {
       menu_item_id: 'menu-id',
       modifier_id: 'modifier-id',
@@ -416,7 +416,7 @@ describe('Menu item modifiers persistence', () => {
   });
 
   it.each([undefined, true, false])(
-    'applies activeOnly=%s to all lookups and the total count',
+    'UT-MIM-024: applies activeOnly=%s to all lookups and the total count',
     async (activeOnly) => {
       const is_available = activeOnly === false ? undefined : true;
       await expect(
@@ -460,12 +460,12 @@ describe('Menu item modifiers persistence', () => {
     },
   );
 
-  it('returns null for a missing assignment', async () => {
+  it('UT-MIM-025: returns null for a missing assignment', async () => {
     prisma.menuItemModifier.findUnique.mockResolvedValue(null);
     await expect(repository.findOne('missing-id')).resolves.toBeNull();
   });
 
-  it('uses the supplied transaction even when it exposes $transaction', async () => {
+  it('UT-MIM-026: uses the supplied transaction even when it exposes $transaction', async () => {
     const tx = {
       menuItemModifier: prisma.menuItemModifier,
       $transaction: prisma.$transaction,
@@ -487,7 +487,7 @@ describe('Menu item modifiers persistence', () => {
     });
   });
 
-  it('updates only additional_price and modifier_id, and advances modified_at', async () => {
+  it('UT-MIM-027: updates only additional_price and modifier_id, and advances modified_at', async () => {
     const dto = {
       additional_price: 25,
       modifier_id: 'replacement-id',
@@ -508,7 +508,7 @@ describe('Menu item modifiers persistence', () => {
   });
 
   it.each([{ additional_price: 0 }, { modifier_id: 'replacement-id' }])(
-    'accepts a partial update %j',
+    'UT-MIM-028: accepts a partial update %j',
     async (dto) => {
       await repository.update('assignment-id', dto);
       expect(prisma.menuItemModifier.update).toHaveBeenCalledWith({
@@ -523,7 +523,7 @@ describe('Menu item modifiers persistence', () => {
     },
   );
 
-  it('reactivates an unavailable assignment without changing its references', async () => {
+  it('UT-MIM-029: reactivates an unavailable assignment without changing its references', async () => {
     await expect(repository.reactivate('assignment-id')).resolves.toEqual(
       assignment,
     );
@@ -533,7 +533,7 @@ describe('Menu item modifiers persistence', () => {
     });
   });
 
-  it('soft deletes an available assignment without deleting its record', async () => {
+  it('UT-MIM-030: soft deletes an available assignment without deleting its record', async () => {
     await expect(repository.delete('assignment-id')).resolves.toEqual(
       assignment,
     );
@@ -543,7 +543,7 @@ describe('Menu item modifiers persistence', () => {
     });
   });
 
-  it('uses the supplied transaction client for all non-paginated operations', async () => {
+  it('UT-MIM-031: uses the supplied transaction client for all non-paginated operations', async () => {
     const tx = {
       menuItemModifier: {
         create: jest.fn().mockResolvedValue(assignment),
@@ -576,7 +576,7 @@ describe('Menu item modifiers persistence', () => {
     expect(prisma.menuItemModifier.update).not.toHaveBeenCalled();
   });
 
-  it('preserves database constraint errors for the application filters', async () => {
+  it('UT-MIM-032: preserves database constraint errors for the application filters', async () => {
     const error = new Prisma.PrismaClientKnownRequestError(
       'Duplicate menu item modifier',
       { code: 'P2002', clientVersion: '7.10.1' },

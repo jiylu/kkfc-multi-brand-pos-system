@@ -15,10 +15,17 @@
       "jest-html-reporters",
       {
         "publicPath": "./reports/unit",
-        "filename": "report.html",
+        "filename": "jest.html",
         "pageTitle": "KKFC POS - Unit Tests (UT) Report",
         "expand": false,
         "inlineSource": true
+      }
+    ],
+    [
+      "<rootDir>/../reporters/gherkin-reporter.cjs",
+      {
+        "outputDirectory": "reports/unit",
+        "title": "KKFC POS - Unit Tests: Gherkin Report"
       }
     ]
   ]

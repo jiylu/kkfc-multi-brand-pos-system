@@ -11,7 +11,7 @@ describe('AuditService defensive boundaries', () => {
     repository.findAll.mockReset().mockResolvedValue({ logs: [], total: 0 });
   });
 
-  it('applies bounded defaults for internal callers', async () => {
+  it('UT-AUDIT-001: applies bounded defaults for internal callers', async () => {
     expect(await service.findAll()).toEqual({
       data: [],
       meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
@@ -45,7 +45,7 @@ describe('AuditService defensive boundaries', () => {
     { outcome: ['SUCCESS'] },
     { orderBy: 'asc' },
   ])(
-    'rejects invalid internal input before database access: %j',
+    'UT-AUDIT-002: rejects invalid internal input before database access: %j',
     async (query) => {
       await expect(
         service.findAll(query as unknown as FindAuditLogsDTO),
@@ -54,7 +54,7 @@ describe('AuditService defensive boundaries', () => {
     },
   );
 
-  it('does not mutate caller-owned query objects', async () => {
+  it('UT-AUDIT-003: does not mutate caller-owned query objects', async () => {
     const query = Object.freeze({ action: 'FUTURE_ACTION' });
     await service.findAll(query);
     expect(query).toEqual({ action: 'FUTURE_ACTION' });
@@ -65,7 +65,7 @@ describe('AuditService defensive boundaries', () => {
     );
   });
 
-  it('propagates storage failure instead of reporting an empty successful history', async () => {
+  it('UT-AUDIT-004: propagates storage failure instead of reporting an empty successful history', async () => {
     const error = new Error('Database unavailable');
     repository.findAll.mockRejectedValue(error);
     await expect(service.findAll()).rejects.toBe(error);

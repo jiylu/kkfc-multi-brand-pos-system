@@ -36,7 +36,7 @@ describe('StorageService (UT-SHRD)', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
-  it('returns a stable encoded CloudFront URL without signing credentials when expiry is disabled', async () => {
+  it('UT-SHRD-015: returns a stable encoded CloudFront URL without signing credentials when expiry is disabled', async () => {
     const service = new StorageService(
       createConfig({
         S3_PUBLIC_BASE_URL: 'https://files.example.com/',
@@ -53,7 +53,7 @@ describe('StorageService (UT-SHRD)', () => {
     expect(mockedGetSignedUrl).not.toHaveBeenCalled();
   });
 
-  it('requires a CloudFront base URL when expiry is disabled', async () => {
+  it('UT-SHRD-016: requires a CloudFront base URL when expiry is disabled', async () => {
     const service = new StorageService(
       createConfig({
         S3_BUCKET: 'private-bucket',
@@ -66,7 +66,7 @@ describe('StorageService (UT-SHRD)', () => {
   });
 
   it.each(['http://files.example.com', 'https://files.example.com/uploads'])(
-    'validates the origin in non-expiring mode: %s',
+    'UT-SHRD-017: validates the origin in non-expiring mode: %s',
     async (baseUrl) => {
       const service = new StorageService(
         createConfig({
@@ -80,7 +80,7 @@ describe('StorageService (UT-SHRD)', () => {
   );
 
   it.each(['uploads/*', '../private.png', 'uploads/../private.png'])(
-    'rejects invalid public object keys: %s',
+    'UT-SHRD-018: rejects invalid public object keys: %s',
     async (key) => {
       const service = new StorageService(
         createConfig({
@@ -93,7 +93,7 @@ describe('StorageService (UT-SHRD)', () => {
     },
   );
 
-  it('keeps upload URLs signed for five minutes when download expiry is disabled', async () => {
+  it('UT-SHRD-019: keeps upload URLs signed for five minutes when download expiry is disabled', async () => {
     const service = new StorageService(
       createConfig({
         S3_BUCKET: 'private-bucket',
@@ -164,7 +164,7 @@ describe('StorageService (UT-SHRD)', () => {
   });
 
   it.each([0, 750])(
-    'signs a five-minute CloudFront download with the configured key and encoded object path (offset: %i ms)',
+    'UT-SHRD-020: signs a five-minute CloudFront download with the configured key and encoded object path (offset: %i ms)',
     async (offset) => {
       const now = 1_700_000_000_000 + offset;
       jest.spyOn(Date, 'now').mockReturnValue(now);
@@ -217,7 +217,7 @@ describe('StorageService (UT-SHRD)', () => {
       CLOUDFRONT_PRIVATE_KEY: 'invalid PEM',
     },
   ])(
-    'does not fall back to S3 on invalid CloudFront configuration: %j',
+    'UT-SHRD-021: does not fall back to S3 on invalid CloudFront configuration: %j',
     async (values) => {
       const service = new StorageService(
         createConfig({
@@ -234,7 +234,7 @@ describe('StorageService (UT-SHRD)', () => {
   );
 
   it.each(['uploads/*', '../private.png', 'uploads/../private.png'])(
-    'rejects wildcard and traversal keys: %s',
+    'UT-SHRD-022: rejects wildcard and traversal keys: %s',
     async (key) => {
       const service = new StorageService(
         createConfig({
@@ -250,7 +250,7 @@ describe('StorageService (UT-SHRD)', () => {
     },
   );
 
-  it('continues uploading directly to S3 when CloudFront is configured', async () => {
+  it('UT-SHRD-023: continues uploading directly to S3 when CloudFront is configured', async () => {
     const service = new StorageService(
       createConfig({
         S3_BUCKET: 'private-bucket',

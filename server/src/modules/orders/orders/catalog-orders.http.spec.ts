@@ -241,7 +241,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     ).toMatchObject({ preparer_id: winner.preparer_id });
   });
   it.each(['verify', 'confirm', 'cancel'])(
-    'rejects a wrong-brand order URL for %s',
+    'IT-ORD-018: rejects a wrong-brand order URL for %s',
     async (operation) => {
       const body = await draft();
       const response = await request(
@@ -262,7 +262,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
       ).toBe('DRAFT');
     },
   );
-  it('persists failed PIN attempts across different protected endpoints and enforces cooldown', async () => {
+  it('IT-ORD-019: persists failed PIN attempts across different protected endpoints and enforces cooldown', async () => {
     const userId = fixture.users[0].user_id;
     for (let attempt = 0; attempt < 5; attempt++) {
       const response =
@@ -318,7 +318,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     ).toMatchObject({ failed_attempts: 0, locked_until: null });
   });
 
-  it('keeps reads and availability changes usable without an action PIN', async () => {
+  it('IT-ORD-020: keeps reads and availability changes usable without an action PIN', async () => {
     expect(
       (
         await request(
@@ -1217,7 +1217,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     ).toBe(1);
   });
 
-  it('assigns consecutive daily codes across channels and keeps cancelled draft numbers', async () => {
+  it('IT-ORD-021: assigns consecutive daily codes across channels and keeps cancelled draft numbers', async () => {
     const first = await draft();
     const saved = await savedOrder(first.order_id);
     expect(saved.order_code).toBe(`${fixture.brand.code.trim()}-00001`);
@@ -1249,7 +1249,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     });
   });
 
-  it('starts a separate sequence for another brand', async () => {
+  it('IT-ORD-022: starts a separate sequence for another brand', async () => {
     await draft();
     const recipe = await prisma.recipe.create({
       data: {
@@ -1285,7 +1285,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     });
   });
 
-  it('assigns different codes to simultaneous creates and preserves them on replay', async () => {
+  it('IT-ORD-023: assigns different codes to simultaneous creates and preserves them on replay', async () => {
     const bodies = Array.from({ length: 4 }, () => orderBody());
     const responses = await Promise.all(
       bodies.map((body) => request(ordersPath(), 'POST', body, 1)),
@@ -1306,7 +1306,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     expect(await json(next)).toMatchObject({ order_number: 5 });
   });
 
-  it('allocates one number for simultaneous creates with the same UUID', async () => {
+  it('IT-ORD-024: allocates one number for simultaneous creates with the same UUID', async () => {
     const body = orderBody();
     const responses = await Promise.all([
       request(ordersPath(), 'POST', body, 1),
@@ -1319,7 +1319,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     expect(await json(next)).toMatchObject({ order_number: 2 });
   });
 
-  it('rolls back the allocated number if order insertion fails', async () => {
+  it('IT-ORD-025: rolls back the allocated number if order insertion fails', async () => {
     const body = orderBody();
     const failingClient = prisma.$extends({
       query: {
@@ -1347,7 +1347,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
     expect(await json(response)).toMatchObject({ order_number: 1 });
   });
 
-  it('continues a seeded daily counter and snapshots subsequent brand code changes', async () => {
+  it('IT-ORD-026: continues a seeded daily counter and snapshots subsequent brand code changes', async () => {
     const [{ order_date }] = await prisma.$queryRaw<
       { order_date: Date }[]
     >`SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date AS order_date`;
@@ -1432,7 +1432,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
 });
 
 describe('Daily order code migration', () => {
-  it('backfills Manila dates deterministically and seeds each brand/date counter', async () => {
+  it('IT-ORD-027: backfills Manila dates deterministically and seeds each brand/date counter', async () => {
     requireTestDatabase();
     const client = new Client({
       connectionString: process.env.TEST_DATABASE_URL,
@@ -1541,7 +1541,7 @@ describe('Daily order code migration', () => {
 });
 
 describe('User brand removal migration', () => {
-  it('drops assignments while preserving users, brands, and sessions', async () => {
+  it('IT-ORD-028: drops assignments while preserving users, brands, and sessions', async () => {
     requireTestDatabase();
     const client = new Client({
       connectionString: process.env.TEST_DATABASE_URL,

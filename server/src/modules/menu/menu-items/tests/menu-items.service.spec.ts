@@ -86,7 +86,7 @@ describe('MenuItemsService mutations', () => {
   }
 
   it.each(methods)(
-    '%s looks up the item and returns the repository result',
+    'UT-MI-001: %s looks up the item and returns the repository result',
     async (method) => {
       const result = await run(method);
       expect(menu.findOneMenuItemByUID.mock.calls[0]).toEqual(
@@ -110,7 +110,7 @@ describe('MenuItemsService mutations', () => {
   );
 
   it.each(methods)(
-    '%s rejects a missing item without writing',
+    'UT-MI-002: %s rejects a missing item without writing',
     async (method) => {
       menu.findOneMenuItemByUID.mockResolvedValue(null);
       await expect(run(method)).rejects.toMatchObject({
@@ -121,16 +121,19 @@ describe('MenuItemsService mutations', () => {
     },
   );
 
-  it.each(methods)('%s preserves repository failures', async (method) => {
-    const error = new Prisma.PrismaClientKnownRequestError(
-      'Item state changed',
-      { code: 'P2025', clientVersion: '7.8.0' },
-    );
-    menu[method].mockRejectedValue(error);
-    await expect(run(method)).rejects.toBe(error);
-  });
+  it.each(methods)(
+    'UT-MI-003: %s preserves repository failures',
+    async (method) => {
+      const error = new Prisma.PrismaClientKnownRequestError(
+        'Item state changed',
+        { code: 'P2025', clientVersion: '7.8.0' },
+      );
+      menu[method].mockRejectedValue(error);
+      await expect(run(method)).rejects.toBe(error);
+    },
+  );
 
-  it('rejects reactivating an already-active item without writing', async () => {
+  it('UT-MI-004: rejects reactivating an already-active item without writing', async () => {
     menu.findOneMenuItemByUID.mockResolvedValue(item);
     await expect(
       service.reactivateMenuItem(item.menu_item_id),
@@ -142,7 +145,7 @@ describe('MenuItemsService mutations', () => {
   });
   describe('availability', () => {
     it.each([true, false])(
-      'sets availability to %s and returns the updated item',
+      'UT-MI-005: sets availability to %s and returns the updated item',
       async (availability) => {
         // UUID-shaped IDs select the UID lookup rather than the code lookup.
         const id = '00000000-0000-4000-8000-000000000003';
@@ -167,7 +170,7 @@ describe('MenuItemsService mutations', () => {
     );
 
     it.each([true, false])(
-      'rejects unchanged availability %s without writing',
+      'UT-MI-006: rejects unchanged availability %s without writing',
       async (availability) => {
         const id = '00000000-0000-4000-8000-000000000003';
         menu.findOneMenuItemByUID.mockResolvedValue({
@@ -187,7 +190,7 @@ describe('MenuItemsService mutations', () => {
       },
     );
 
-    it('rejects missing or inactive items without writing', async () => {
+    it('UT-MI-007: rejects missing or inactive items without writing', async () => {
       menu.findOneMenuItemByUID.mockResolvedValue(null);
       await expect(
         service.updateAvailability(
@@ -202,7 +205,7 @@ describe('MenuItemsService mutations', () => {
       expect(menu.updateAvailability).not.toHaveBeenCalled();
     });
 
-    it('rejects a missing or inactive brand without writing', async () => {
+    it('UT-MI-008: rejects a missing or inactive brand without writing', async () => {
       brands.findOneBrand.mockResolvedValue(null);
       await expect(
         service.updateAvailability(
@@ -216,7 +219,7 @@ describe('MenuItemsService mutations', () => {
       expect(menu.updateAvailability).not.toHaveBeenCalled();
     });
 
-    it('preserves persistence failures', async () => {
+    it('UT-MI-009: preserves persistence failures', async () => {
       const error = new Prisma.PrismaClientKnownRequestError(
         'Item became inactive',
         { code: 'P2025', clientVersion: '7.8.0' },

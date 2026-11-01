@@ -61,7 +61,7 @@ describe('Menu channels HTTP endpoints', () => {
 
   afterAll(async () => app?.close());
 
-  it('documents every channel route, query filters, and payload contract', () => {
+  it('IT-MCH-008: documents every channel route, query filters, and payload contract', () => {
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder().addBearerAuth().build(),
@@ -260,7 +260,7 @@ describe('Menu channels HTTP endpoints', () => {
       args: [channelId],
     },
   ] as const)(
-    '$method $path forwards validated arguments with guards bypassed',
+    'IT-MCH-009: $method $path forwards validated arguments with guards bypassed',
     async (route) => {
       const response = await fetch(`${url}${route.path}`, {
         method: route.method,
@@ -298,7 +298,7 @@ describe('Menu channels HTTP endpoints', () => {
     },
     { method: 'PATCH', path: `/${channelId}`, body: { is_available: false } },
   ] as const)(
-    '$method $path rejects invalid input before calling the service',
+    'IT-MCH-010: $method $path rejects invalid input before calling the service',
     async (route) => {
       const response = await fetch(`${url}${route.path}`, {
         method: route.method,

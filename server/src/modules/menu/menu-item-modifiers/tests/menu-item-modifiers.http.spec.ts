@@ -159,13 +159,13 @@ describe('Menu item modifiers HTTP endpoints', () => {
 
   afterAll(async () => app?.close());
 
-  it('attaches authentication before the role guard at controller level', () => {
+  it('IT-MIM-001: attaches authentication before the role guard at controller level', () => {
     expect(
       Reflect.getMetadata(GUARDS_METADATA, MenuItemModifiersController),
     ).toEqual([Authenticated, RolesGuard]);
   });
 
-  it('documents every guarded route and preserves the create/update contracts', () => {
+  it('IT-MIM-002: documents every guarded route and preserves the create/update contracts', () => {
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder().addBearerAuth().build(),
@@ -235,7 +235,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
     expect(update).not.toHaveProperty('required');
   });
 
-  it('returns assignment and modifier details while excluding confidential nested fields', async () => {
+  it('IT-MIM-003: returns assignment and modifier details while excluding confidential nested fields', async () => {
     const timestamp = '2026-10-31T08:00:00.000Z';
     const payload = {
       menuItemModifier: {
@@ -279,7 +279,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   });
 
   it.each(assignmentRoutes)(
-    '$method $path allows managers in the assignment menu item brand',
+    'IT-MIM-004: $method $path allows managers in the assignment menu item brand',
     async (route) => {
       role = UserRole.MANAGER;
       callerBrand = brandId;
@@ -294,7 +294,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it.each(assignmentRoutes)(
-    '$method $path allows managers across brands',
+    'IT-MIM-005: $method $path allows managers across brands',
     async (route) => {
       role = UserRole.MANAGER;
       callerBrand = otherBrandId;
@@ -309,7 +309,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it.each(assignmentRoutes)(
-    '$method $path allows managers across brands',
+    'IT-MIM-006: $method $path allows managers across brands',
     async (route) => {
       role = UserRole.MANAGER;
       const response = await fetch(url + route.path, {
@@ -323,7 +323,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it.each(assignmentRoutes)(
-    '$method $path allows superadmins assigned to another brand',
+    'IT-MIM-007: $method $path allows superadmins assigned to another brand',
     async (route) => {
       callerBrand = otherBrandId;
       const response = await fetch(url + route.path, {
@@ -337,7 +337,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it.each(assignmentRoutes)(
-    '$method $path returns 404 for a missing assignment from the service',
+    'IT-MIM-008: $method $path returns 404 for a missing assignment from the service',
     async (route) => {
       service[route.handler].mockRejectedValueOnce(
         new NotFoundException({ code: 'MENU_ITEM_MODIFIER_NOT_FOUND' }),
@@ -356,7 +356,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it.each(assignmentRoutes)(
-    '$method $path rejects invalid assignment UUIDs before querying',
+    'IT-MIM-009: $method $path rejects invalid assignment UUIDs before querying',
     async (route) => {
       const path = route.path.replace(assignmentId, 'invalid');
       const response = await fetch(url + path, {
@@ -371,7 +371,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it.each(assignmentRoutes)(
-    '$method $path preserves assignment lookup failures',
+    'IT-MIM-010: $method $path preserves assignment lookup failures',
     async (route) => {
       service[route.handler].mockRejectedValueOnce(
         new Error('Database unavailable'),
@@ -386,7 +386,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
     },
   );
 
-  it('resolves unavailable assignments so their owner can reactivate them', async () => {
+  it('IT-MIM-011: resolves unavailable assignments so their owner can reactivate them', async () => {
     role = UserRole.MANAGER;
     callerBrand = brandId;
     prisma.menuItemModifier.findUnique.mockResolvedValue({
@@ -401,7 +401,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
     expect(service.reactivate).toHaveBeenCalledWith(assignmentId);
   });
 
-  it('rejects a spoofed body brand that conflicts with the stored assignment brand', async () => {
+  it('IT-MIM-012: rejects a spoofed body brand that conflicts with the stored assignment brand', async () => {
     role = UserRole.MANAGER;
     callerBrand = otherBrandId;
     const response = await fetch(`${url}/${assignmentId}`, {
@@ -414,7 +414,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
     expect(service.update).not.toHaveBeenCalled();
   });
 
-  it('rejects changing the parent menu item in the update body', async () => {
+  it('IT-MIM-013: rejects changing the parent menu item in the update body', async () => {
     role = UserRole.MANAGER;
     callerBrand = otherBrandId;
     const response = await fetch(`${url}/${assignmentId}`, {
@@ -427,7 +427,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   });
 
   it.each(routes)(
-    '$method $path delegates to $handler for an authenticated session',
+    'IT-MIM-014: $method $path delegates to $handler for an authenticated session',
     async (route) => {
       const response = await fetch(url + route.path, {
         method: route.method,
@@ -443,7 +443,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it.each(routes)(
-    '$method $path rejects a missing token before calling the service',
+    'IT-MIM-015: $method $path rejects a missing token before calling the service',
     async (route) => {
       const response = await fetch(url + route.path, {
         method: route.method,
@@ -458,7 +458,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
   );
 
   it.each(routes)(
-    '$method $path rejects an invalid session before calling the service',
+    'IT-MIM-016: $method $path rejects an invalid session before calling the service',
     async (route) => {
       auth.validateSession.mockRejectedValueOnce(
         new NotFoundException('Invalid session'),
@@ -491,7 +491,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
       args: [menuItemId, false],
     },
   ] as const)(
-    'parses query filters for $handler',
+    'IT-MIM-017: parses query filters for $handler',
     async ({ path, handler, args }) => {
       const response = await fetch(url + path, { headers });
       expect(response.status).toBe(200);
@@ -537,7 +537,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
     { method: 'GET', path: `/${assignmentId}?activeOnly=invalid` },
     { method: 'GET', path: `/menu-item/${menuItemId}?activeOnly=invalid` },
   ] as const)(
-    '$method $path rejects invalid input before calling the service',
+    'IT-MIM-018: $method $path rejects invalid input before calling the service',
     async (route) => {
       const body = 'body' in route ? route.body : undefined;
       const response = await fetch(url + route.path, {
@@ -551,7 +551,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
     },
   );
 
-  it('preserves missing-assignment errors', async () => {
+  it('IT-MIM-019: preserves missing-assignment errors', async () => {
     service.findOne.mockRejectedValueOnce(
       new NotFoundException({
         code: 'MENU_ITEM_MODIFIER_NOT_FOUND',
@@ -565,7 +565,7 @@ describe('Menu item modifiers HTTP endpoints', () => {
     });
   });
 
-  it('preserves reactivation conflicts', async () => {
+  it('IT-MIM-020: preserves reactivation conflicts', async () => {
     service.reactivate.mockRejectedValueOnce(
       new ConflictException({
         code: 'MENU_ITEM_MODIFIER_ALREADY_ACTIVE',

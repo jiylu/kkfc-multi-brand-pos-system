@@ -156,7 +156,7 @@ describe('Menu items HTTP endpoints', () => {
   afterAll(async () => app?.close());
 
   it.each(Object.values(UserRole))(
-    'returns only safe MENU fields for %s even when a service includes nested recipe data',
+    'IT-MI-001: returns only safe MENU fields for %s even when a service includes nested recipe data',
     async (callerRole) => {
       role = callerRole;
       const confidential = {
@@ -182,7 +182,7 @@ describe('Menu items HTTP endpoints', () => {
     },
   );
 
-  it('documents every menu route and preserves the create/update field contracts', () => {
+  it('IT-MI-002: documents every menu route and preserves the create/update field contracts', () => {
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder().addBearerAuth().build(),
@@ -309,7 +309,7 @@ describe('Menu items HTTP endpoints', () => {
   });
 
   it.each(mutations)(
-    'delegates $verb $path for an assigned manager',
+    'IT-MI-003: delegates $verb $path for an assigned manager',
     async ({ verb, path, handler, body, status }) => {
       const response = await fetch(url + path, {
         method: verb,
@@ -327,7 +327,7 @@ describe('Menu items HTTP endpoints', () => {
   );
 
   it.each(mutations)(
-    'allows superadmin $verb $path without an assigned brand',
+    'IT-MI-004: allows superadmin $verb $path without an assigned brand',
     async ({ verb, path, handler, body, status }) => {
       role = UserRole.SUPERADMIN;
       callerBrand = null;
@@ -345,7 +345,7 @@ describe('Menu items HTTP endpoints', () => {
   );
 
   it.each([...mutations, ...reads])(
-    'requires authentication for $verb $path',
+    'IT-MI-005: requires authentication for $verb $path',
     async ({ verb, path, handler, body }) => {
       expect(
         (
@@ -361,7 +361,7 @@ describe('Menu items HTTP endpoints', () => {
   );
 
   it.each([...mutations, ...reads])(
-    'allows shared-access managers for $verb $path',
+    'IT-MI-006: allows shared-access managers for $verb $path',
     async ({ verb, path, handler, body }) => {
       for (const brand of [otherBrandId, null]) {
         callerBrand = brand;
@@ -383,7 +383,7 @@ describe('Menu items HTTP endpoints', () => {
     Object.values(UserRole).filter(
       (value) => value !== UserRole.SUPERADMIN && value !== UserRole.MANAGER,
     ),
-  )('denies mutations to %s', async (callerRole) => {
+  )('IT-MI-007: denies mutations to %s', async (callerRole) => {
     role = callerRole;
     for (const { verb, path, handler, body } of mutations) {
       expect(
@@ -399,7 +399,7 @@ describe('Menu items HTTP endpoints', () => {
     }
   });
 
-  it('accepts menu-specific update fields and nullable descriptions', async () => {
+  it('IT-MI-008: accepts menu-specific update fields and nullable descriptions', async () => {
     const dto = {
       code: 'GC-UPDATED-RICE',
       recipe_id: recipeId,
@@ -421,7 +421,7 @@ describe('Menu items HTTP endpoints', () => {
     expect(assets.upload).not.toHaveBeenCalled();
   });
 
-  it('updates multipart fields without uploading or changing the image', async () => {
+  it('IT-MI-009: updates multipart fields without uploading or changing the image', async () => {
     const body = new FormData();
     body.set('name', 'Updated');
 
@@ -438,7 +438,7 @@ describe('Menu items HTTP endpoints', () => {
     expect(assets.upload).not.toHaveBeenCalled();
   });
 
-  it('uploads an optional image and updates the item with its asset key', async () => {
+  it('IT-MI-010: uploads an optional image and updates the item with its asset key', async () => {
     const key = `uploads/${userId}/image.png`;
     assets.upload.mockResolvedValue({ key });
     const body = new FormData();
@@ -467,7 +467,7 @@ describe('Menu items HTTP endpoints', () => {
     });
   });
 
-  it('does not upload an image when the item is inactive', async () => {
+  it('IT-MI-011: does not upload an image when the item is inactive', async () => {
     service.findOneMenuItem.mockRejectedValue(new NotFoundException());
     const body = new FormData();
     body.set('file', new Blob(['image'], { type: 'image/png' }), 'image.png');
@@ -483,7 +483,7 @@ describe('Menu items HTTP endpoints', () => {
     expect(service.updateMenuItem).not.toHaveBeenCalled();
   });
 
-  it('accepts the schema maximum menu code length', async () => {
+  it('IT-MI-012: accepts the schema maximum menu code length', async () => {
     const dto = { code: 'A'.repeat(64) };
     expect(
       (
@@ -510,18 +510,21 @@ describe('Menu items HTTP endpoints', () => {
     { name: null },
     { img_url: 'invalid' },
     { recipe_id: 'invalid' },
-  ])('rejects invalid or forbidden menu updates: %j', async (dto) => {
-    expect(
-      (
-        await fetch(`${url}/${menuId}`, {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify(dto),
-        })
-      ).status,
-    ).toBe(400);
-    expect(service.updateMenuItem).not.toHaveBeenCalled();
-  });
+  ])(
+    'IT-MI-013: rejects invalid or forbidden menu updates: %j',
+    async (dto) => {
+      expect(
+        (
+          await fetch(`${url}/${menuId}`, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify(dto),
+          })
+        ).status,
+      ).toBe(400);
+      expect(service.updateMenuItem).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     { verb: 'PATCH', path: `/${code}`, handler: 'updateMenuItem' },
@@ -532,7 +535,7 @@ describe('Menu items HTTP endpoints', () => {
     },
     { verb: 'DELETE', path: `/${code}`, handler: 'deleteMenuItem' },
   ] as const)(
-    'rejects existing menu codes on UUID-only $verb $path',
+    'IT-MI-014: rejects existing menu codes on UUID-only $verb $path',
     async ({ verb, path, handler }) => {
       expect(
         (
@@ -551,7 +554,7 @@ describe('Menu items HTTP endpoints', () => {
   );
 
   it.each([menuId, code])(
-    'accepts %s on GET and forwards activeOnly',
+    'IT-MI-015: accepts %s on GET and forwards activeOnly',
     async (identifier) => {
       role = UserRole.CASHIER_STAFF;
       expect((await fetch(`${url}/${identifier}`, { headers })).status).toBe(
@@ -572,7 +575,7 @@ describe('Menu items HTTP endpoints', () => {
     },
   );
 
-  it('rejects a non-UUID mutation identifier', async () => {
+  it('IT-MI-016: rejects a non-UUID mutation identifier', async () => {
     expect(
       (
         await fetch(`${url}/unknown-menu`, {
@@ -592,7 +595,7 @@ describe('Menu items HTTP endpoints', () => {
       { page: 2, limit: 5, activeOnly: false },
     ],
   ] as const)(
-    'forwards validated pagination to both listing endpoints: %s',
+    'IT-MI-017: forwards validated pagination to both listing endpoints: %s',
     async (query, expected) => {
       expect(
         (await fetch(`${url}/brand/${brandId}${query}`, { headers })).status,
@@ -605,14 +608,14 @@ describe('Menu items HTTP endpoints', () => {
     },
   );
 
-  it('reserves the all-brands listing for superadmins', async () => {
+  it('IT-MI-018: reserves the all-brands listing for superadmins', async () => {
     expect((await fetch(url, { headers })).status).toBe(403);
     expect(service.findAll).not.toHaveBeenCalled();
     expect((await fetch(url)).status).toBe(401);
   });
 
   it.each(['?page=0', '?limit=101', '?activeOnly=invalid'])(
-    'rejects invalid listing filters: %s',
+    'IT-MI-019: rejects invalid listing filters: %s',
     async (query) => {
       role = UserRole.SUPERADMIN;
       for (const path of ['', `/brand/${brandId}`])
@@ -635,7 +638,7 @@ describe('Menu items HTTP endpoints', () => {
         body: JSON.stringify(payload),
       });
 
-    it('documents a required boolean body and the success/error responses', () => {
+    it('IT-MI-020: documents a required boolean body and the success/error responses', () => {
       const document = SwaggerModule.createDocument(
         app,
         new DocumentBuilder().addBearerAuth().build(),
@@ -663,7 +666,7 @@ describe('Menu items HTTP endpoints', () => {
     });
 
     it.each([true, false])(
-      'forwards boolean %s and returns the updated item',
+      'IT-MI-021: forwards boolean %s and returns the updated item',
       async (availability) => {
         const updated = {
           menu_item_id: menuId,
@@ -685,7 +688,7 @@ describe('Menu items HTTP endpoints', () => {
       Object.values(UserRole).filter(
         (value) => value !== UserRole.CASHIER_STAFF,
       ),
-    )('allows %s', async (allowedRole) => {
+    )('IT-MI-022: allows %s', async (allowedRole) => {
       role = allowedRole;
       if (role === UserRole.SUPERADMIN || role === UserRole.RECIPE_MANAGER)
         callerBrand = otherBrandId;
@@ -693,12 +696,12 @@ describe('Menu items HTTP endpoints', () => {
       expect(service.updateAvailability).toHaveBeenCalledWith(menuId, false);
     });
 
-    it('requires authentication', async () => {
+    it('IT-MI-023: requires authentication', async () => {
       expect((await request(body, false)).status).toBe(401);
       expect(service.updateAvailability).not.toHaveBeenCalled();
     });
 
-    it('denies cashiers', async () => {
+    it('IT-MI-024: denies cashiers', async () => {
       role = UserRole.CASHIER_STAFF;
       expect((await request()).status).toBe(403);
       expect(service.updateAvailability).not.toHaveBeenCalled();
@@ -710,7 +713,7 @@ describe('Menu items HTTP endpoints', () => {
       UserRole.KITCHEN_HEAD,
       UserRole.KITCHEN_STAFF,
       UserRole.INVENTORY_STAFF,
-    ])('allows shared-access %s', async (deniedRole) => {
+    ])('IT-MI-025: allows shared-access %s', async (deniedRole) => {
       role = deniedRole;
       for (const brand of [otherBrandId, null]) {
         callerBrand = brand;
@@ -731,23 +734,23 @@ describe('Menu items HTTP endpoints', () => {
       { availability: {} },
       { is_available: false },
       { availability: false, is_active: false },
-    ])('rejects invalid payload %j', async (payload) => {
+    ])('IT-MI-026: rejects invalid payload %j', async (payload) => {
       expect((await request(payload)).status).toBe(400);
       expect(service.updateAvailability).not.toHaveBeenCalled();
     });
 
-    it('rejects a code on the UUID-only route', async () => {
+    it('IT-MI-027: rejects a code on the UUID-only route', async () => {
       expect((await request(body, true, code)).status).toBe(400);
       expect(service.updateAvailability).not.toHaveBeenCalled();
     });
 
-    it('rejects a missing item before invoking the service', async () => {
+    it('IT-MI-028: rejects a missing item before invoking the service', async () => {
       service.updateAvailability.mockRejectedValueOnce(new NotFoundException());
       expect((await request(body, true, recipeId)).status).toBe(404);
       expect(service.updateAvailability).toHaveBeenCalled();
     });
 
-    it('returns the availability conflict code', async () => {
+    it('IT-MI-029: returns the availability conflict code', async () => {
       service.updateAvailability.mockRejectedValue(
         new ConflictException({
           code: 'AVAILABILITY_CONFLICT',
@@ -761,7 +764,7 @@ describe('Menu items HTTP endpoints', () => {
       });
     });
 
-    it('preserves service not-found errors for inactive items or brands', async () => {
+    it('IT-MI-030: preserves service not-found errors for inactive items or brands', async () => {
       service.updateAvailability.mockRejectedValue(
         new NotFoundException({ code: 'MENU_ITEM_NOT_FOUND' }),
       );

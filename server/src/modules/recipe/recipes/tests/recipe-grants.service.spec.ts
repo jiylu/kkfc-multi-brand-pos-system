@@ -14,7 +14,7 @@ describe('Recipe delegation configuration', () => {
   const build = (raw: string) =>
     new RecipeGrantsService(new ConfigService({ RECIPE_ACCESS_GRANTS: raw }));
 
-  it('defaults to no delegation and matches only exact user and recipe', () => {
+  it('UT-RCP-001: defaults to no delegation and matches only exact user and recipe', () => {
     expect(
       new RecipeGrantsService(new ConfigService()).find(
         grant.user_id,
@@ -42,9 +42,12 @@ describe('Recipe delegation configuration', () => {
     JSON.stringify([{ ...grant, is_active: undefined }]),
     JSON.stringify([{ ...grant, department: 'OWNER' }]),
     JSON.stringify([grant, grant]),
-  ])('fails closed without echoing invalid configuration %s', (raw) => {
-    expect(() => build(raw)).toThrow(
-      'Invalid RECIPE_ACCESS_GRANTS configuration.',
-    );
-  });
+  ])(
+    'UT-RCP-002: fails closed without echoing invalid configuration %s',
+    (raw) => {
+      expect(() => build(raw)).toThrow(
+        'Invalid RECIPE_ACCESS_GRANTS configuration.',
+      );
+    },
+  );
 });

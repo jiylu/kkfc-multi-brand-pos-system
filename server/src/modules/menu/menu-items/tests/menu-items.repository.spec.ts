@@ -3,7 +3,7 @@ import { PrismaService } from '../../../../shared/prisma/prisma.service';
 
 describe('MenuItemsRepository availability', () => {
   it.each([true, false])(
-    'sets availability to %s only for an active item and preserves other fields',
+    'UT-MI-010: sets availability to %s only for an active item and preserves other fields',
     async (availability) => {
       const item = {
         menu_item_id: 'menu-id',

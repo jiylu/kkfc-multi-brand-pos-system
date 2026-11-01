@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { safeMenuProjection } from './safe-menu.interceptor';
 
 describe('Safe MENU projection', () => {
-  it('drops entire confidential relations and unknown fields at every nesting level', () => {
+  it('UT-SAFE-001: drops entire confidential relations and unknown fields at every nesting level', () => {
     const recipe = {
       instructions: 'secret',
       notes: 'private',
@@ -45,7 +45,7 @@ describe('Safe MENU projection', () => {
     });
   });
 
-  it('preserves prices, timestamps, nulls and availability', () => {
+  it('UT-SAFE-002: preserves prices, timestamps, nulls and availability', () => {
     const value = {
       base_price: new Prisma.Decimal('10.50'),
       created_at: new Date(),

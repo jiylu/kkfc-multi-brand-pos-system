@@ -131,7 +131,7 @@ describe('PIN protection on business endpoints', () => {
   afterAll(async () => app?.close());
 
   it.each(routes)(
-    'blocks $method $path without a PIN before the handler runs',
+    'IT-PIN-001: blocks $method $path without a PIN before the handler runs',
     async ({ method, path }) => {
       await request(app.getHttpServer())
         [method](`/api${path}`)
@@ -145,7 +145,7 @@ describe('PIN protection on business endpoints', () => {
   );
 
   it.each(routes)(
-    'allows $method $path with a valid PIN',
+    'IT-PIN-002: allows $method $path with a valid PIN',
     async ({ method, path }) => {
       await request(app.getHttpServer())
         [method](`/api${path}`)
@@ -159,7 +159,7 @@ describe('PIN protection on business endpoints', () => {
   );
 
   it.each(routes)(
-    'keeps unauthorized roles blocked on $method $path with a correct PIN',
+    'IT-PIN-003: keeps unauthorized roles blocked on $method $path with a correct PIN',
     async ({ method, path }) => {
       role = UserRole.CASHIER_STAFF;
       await request(app.getHttpServer())
@@ -174,7 +174,7 @@ describe('PIN protection on business endpoints', () => {
   );
 
   it.each(['invalid', 'not-configured', 'locked'])(
-    'blocks a real write when verification is %s',
+    'IT-PIN-004: blocks a real write when verification is %s',
     async (status) => {
       pin.verifyPin.mockResolvedValue({
         status,
@@ -191,7 +191,7 @@ describe('PIN protection on business endpoints', () => {
     },
   );
 
-  it('checks the PIN for actions across brands', async () => {
+  it('IT-PIN-005: checks the PIN for actions across brands', async () => {
     role = UserRole.MANAGER;
     callerBrandId = '00000000-0000-4000-8000-000000000099';
     await request(app.getHttpServer())
@@ -203,7 +203,7 @@ describe('PIN protection on business endpoints', () => {
     expect(action).toHaveBeenCalled();
   });
 
-  it('rejects multipart writes before uploading a file', async () => {
+  it('IT-PIN-006: rejects multipart writes before uploading a file', async () => {
     await request(app.getHttpServer())
       .post('/api/brands')
       .auth('session', { type: 'bearer' })
@@ -214,7 +214,7 @@ describe('PIN protection on business endpoints', () => {
     expect(action).not.toHaveBeenCalled();
   });
 
-  it('documents all protected writes and leaves reads and availability without a required PIN', () => {
+  it('IT-PIN-007: documents all protected writes and leaves reads and availability without a required PIN', () => {
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder().addBearerAuth().build(),

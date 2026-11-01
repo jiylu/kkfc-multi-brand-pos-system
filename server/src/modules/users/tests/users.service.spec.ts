@@ -56,21 +56,21 @@ describe('UsersService', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it.each(Object.values(UserRole))(
-    'creates %s without an assignment',
+    'UT-USER-017: creates %s without an assignment',
     async (role) => {
       const dto = { ...createDTO, role };
       await service.createUser(dto, true);
       expect(repository.create).toHaveBeenCalledWith(dto);
     },
   );
-  it('blocks managers from creating superadmins', async () => {
+  it('UT-USER-018: blocks managers from creating superadmins', async () => {
     await expect(
       service.createUser({ ...createDTO, role: UserRole.SUPERADMIN }),
     ).rejects.toMatchObject({ status: 403 });
     expect(repository.create).not.toHaveBeenCalled();
   });
   it.each([false, true])(
-    'protects superadmin updates and deletion, caller superadmin=%s',
+    'UT-USER-019: protects superadmin updates and deletion, caller superadmin=%s',
     async (isSuperAdmin) => {
       repository.findOne.mockResolvedValue({
         ...user,
@@ -92,11 +92,11 @@ describe('UsersService', () => {
       }
     },
   );
-  it('allows managers to create staff without assignments', async () => {
+  it('UT-USER-020: allows managers to create staff without assignments', async () => {
     await service.createUser(createDTO);
     expect(repository.create).toHaveBeenCalledWith(createDTO);
   });
-  it('looks up a username and forwards activeOnly', async () => {
+  it('UT-USER-021: looks up a username and forwards activeOnly', async () => {
     repository.safeFindByUsername.mockResolvedValue(user);
     await expect(service.findOneUser(user.username, false)).resolves.toEqual(
       user,
@@ -239,7 +239,7 @@ describe('UsersService', () => {
   });
 
   describe('username updates', () => {
-    it('updates to an available username and checks inactive accounts too', async () => {
+    it('UT-USER-022: updates to an available username and checks inactive accounts too', async () => {
       const dto = { username: 'renamed_owner' };
       repository.update.mockResolvedValue({ ...user, ...dto });
 
@@ -254,7 +254,7 @@ describe('UsersService', () => {
     });
 
     it.each([true, false])(
-      'rejects a username belonging to another account with is_active=%s',
+      'UT-USER-023: rejects a username belonging to another account with is_active=%s',
       async (is_active) => {
         repository.safeFindByUsername.mockResolvedValue({
           ...user,
@@ -284,7 +284,7 @@ describe('UsersService', () => {
     );
 
     it.each([undefined, user.username])(
-      'skips the availability check for an omitted or unchanged username: %s',
+      'UT-USER-024: skips the availability check for an omitted or unchanged username: %s',
       async (username) => {
         const dto = { username, first_name: 'Updated' };
 
@@ -295,7 +295,7 @@ describe('UsersService', () => {
       },
     );
 
-    it('does not write if the availability lookup fails', async () => {
+    it('UT-USER-025: does not write if the availability lookup fails', async () => {
       const error = new Error('Database unavailable');
       repository.safeFindByUsername.mockRejectedValue(error);
 
@@ -305,7 +305,7 @@ describe('UsersService', () => {
       expect(repository.update).not.toHaveBeenCalled();
     });
 
-    it('propagates a concurrent username conflict to the global filter', async () => {
+    it('UT-USER-026: propagates a concurrent username conflict to the global filter', async () => {
       const error = new Prisma.PrismaClientKnownRequestError(
         'Username is already taken',
         { code: 'P2002', clientVersion: '7.8.0' },
