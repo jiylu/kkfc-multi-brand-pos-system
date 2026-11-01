@@ -161,7 +161,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
     const body = 'body' in route ? route.body : undefined;
 
     it.each(route.roles)(
-      'allows %s and forwards validated arguments',
+      'IT-KT-001: Given role %s is permitted, When the endpoint is requested, Then forward validated arguments and return 200',
       async (role) => {
         const response = await request(
           route.path,
@@ -182,22 +182,25 @@ describe('Kitchen ticket HTTP endpoints', () => {
       Object.values(UserRole).filter(
         (role) => !(route.roles as readonly UserRole[]).includes(role),
       ),
-    )('denies %s before accessing persistence', async (role) => {
-      const response = await request(
-        route.path,
-        route.method,
-        body,
-        `Bearer ${role}`,
-      );
+    )(
+      'IT-KT-002: Given role %s is denied, When the endpoint is requested, Then return ACCESS_DENIED before persistence',
+      async (role) => {
+        const response = await request(
+          route.path,
+          route.method,
+          body,
+          `Bearer ${role}`,
+        );
 
-      expect(response.status).toBe(403);
-      expect(await response.json()).toMatchObject({ code: 'ACCESS_DENIED' });
-      for (const handler of Object.values(repository)) {
-        expect(handler).not.toHaveBeenCalled();
-      }
-    });
+        expect(response.status).toBe(403);
+        expect(await response.json()).toMatchObject({ code: 'ACCESS_DENIED' });
+        for (const handler of Object.values(repository)) {
+          expect(handler).not.toHaveBeenCalled();
+        }
+      },
+    );
 
-    it('requires a bearer session', async () => {
+    it('IT-KT-003: Given no bearer session, When the endpoint is requested, Then return SESSION_TOKEN_REQUIRED before persistence', async () => {
       const response = await request(route.path, route.method, body, null);
 
       expect(response.status).toBe(401);
@@ -208,7 +211,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
       expect(repository[route.handler]).not.toHaveBeenCalled();
     });
 
-    it('rejects an invalid or expired session', async () => {
+    it('IT-KT-004: Given an invalid or expired session, When the endpoint is requested, Then return INVALID_SESSION before persistence', async () => {
       auth.validateSession.mockRejectedValue(new NotFoundException());
 
       const response = await request(route.path, route.method, body);
@@ -219,7 +222,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
     });
   });
 
-  it('converts pagination into an offset and limit', async () => {
+  it('IT-KT-005: Given page 3 and limit 5, When tickets are listed, Then query offset 10 and limit 5', async () => {
     const response = await request('?page=3&limit=5');
 
     expect(response.status).toBe(200);
@@ -241,10 +244,13 @@ describe('Kitchen ticket HTTP endpoints', () => {
     '?limit=invalid',
     '?page=2147483647&limit=100',
     '?unknown=true',
-  ])('rejects invalid pagination %s', async (query) => {
-    expect((await request(query)).status).toBe(400);
-    expect(repository.findAll).not.toHaveBeenCalled();
-  });
+  ])(
+    'IT-KT-006: Given invalid pagination %s, When tickets are listed, Then return 400 before persistence',
+    async (query) => {
+      expect((await request(query)).status).toBe(400);
+      expect(repository.findAll).not.toHaveBeenCalled();
+    },
+  );
 
   describe.each([
     ['preparer', 'findManyByPreparer'],
@@ -256,7 +262,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
       ['excludeHandedOver=false&onlyToday=false', false, false],
       ['excludeHandedOver=true&onlyToday=true', true, true],
     ] as const)(
-      'transforms %s into booleans',
+      'IT-KT-007: Given boolean query %s, When assignee tickets are listed, Then forward boolean filter values',
       async (query, excludeHandedOver, onlyToday) => {
         const response = await request(`/${path}/${assigneeId}?${query}`);
 
@@ -276,12 +282,15 @@ describe('Kitchen ticket HTTP endpoints', () => {
       'onlyToday=invalid',
       'onlyToday=',
       'unknown=true',
-    ])('rejects invalid filters %s', async (query) => {
-      expect((await request(`/${path}/${assigneeId}?${query}`)).status).toBe(
-        400,
-      );
-      expect(repository[handler]).not.toHaveBeenCalled();
-    });
+    ])(
+      'IT-KT-008: Given invalid assignee filter %s, When tickets are listed, Then return 400 before persistence',
+      async (query) => {
+        expect((await request(`/${path}/${assigneeId}?${query}`)).status).toBe(
+          400,
+        );
+        expect(repository[handler]).not.toHaveBeenCalled();
+      },
+    );
   });
 
   it.each([
@@ -289,7 +298,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
     [`/preparer/${assigneeId}`, 'findManyByPreparer'],
     [`/checker/${assigneeId}`, 'findManyByChecker'],
   ] as const)(
-    'returns an empty array for %s with no matching tickets',
+    'IT-KT-009: Given no matching tickets, When %s is requested, Then return an empty array',
     async (path, handler) => {
       repository[handler].mockResolvedValue([]);
 
@@ -306,19 +315,22 @@ describe('Kitchen ticket HTTP endpoints', () => {
     ['GET', '/checker/invalid', undefined],
     ['PATCH', '/invalid/preparer', { preparer_id: assigneeId }],
     ['PATCH', '/invalid/checker', { checker_id: assigneeId }],
-  ] as const)('%s %s rejects malformed UUIDs', async (method, path, body) => {
-    expect((await request(path, method, body)).status).toBe(400);
-    for (const handler of Object.values(repository)) {
-      expect(handler).not.toHaveBeenCalled();
-    }
-  });
+  ] as const)(
+    'IT-KT-010: Given method %s and path %s with a malformed UUID, When the endpoint is requested, Then return 400 before persistence',
+    async (method, path, body) => {
+      expect((await request(path, method, body)).status).toBe(400);
+      for (const handler of Object.values(repository)) {
+        expect(handler).not.toHaveBeenCalled();
+      }
+    },
+  );
 
   it.each([
     ['GET', `/${ticketId}`, undefined],
     ['PATCH', `/${ticketId}/preparer`, { preparer_id: assigneeId }],
     ['PATCH', `/${ticketId}/checker`, { checker_id: assigneeId }],
   ] as const)(
-    '%s %s returns 404 for a missing ticket',
+    'IT-KT-011: Given method %s and path %s for a missing ticket, When the endpoint is requested, Then return KITCHEN_TICKET_NOT_FOUND without writing',
     async (method, path, body) => {
       repository.findOne.mockResolvedValue(null);
 
@@ -338,7 +350,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
     ['checker', 'checker_id', 'assignChecker', 'CHECKER'],
   ] as const)('%s assignment', (path, field, handler, role) => {
     it.each([undefined, null, '', 'invalid', 123, []])(
-      'rejects an invalid assignee %p',
+      'IT-KT-012: Given invalid assignee %p, When assignment is requested, Then return 400 before persistence',
       async (value) => {
         const response = await request(`/${ticketId}/${path}`, 'PATCH', {
           [field]: value,
@@ -351,7 +363,7 @@ describe('Kitchen ticket HTTP endpoints', () => {
     );
 
     it.each([assigneeId, actorId])(
-      'rejects an existing assignment to %s',
+      'IT-KT-013: Given an existing assignment to %s, When assignment is requested, Then return conflict without overwriting it',
       async (assignedId) => {
         repository.findOne.mockResolvedValue({
           ...ticket,

@@ -33,3 +33,9 @@ The response JSON key "${key}" should be equal to "${expected_value}"
     ${body}=    Set Variable    ${LAST_RESPONSE.json()}
     ${val}=     Get From Dictionary    ${body}    ${key}
     Should Be Equal As Strings    ${val}    ${expected_value}
+
+The response JSON should not contain brand assignments
+    ${body}=    Set Variable    ${LAST_RESPONSE.json()}
+    Dictionary Should Not Contain Key    ${body}    brand_id
+    Dictionary Should Not Contain Key    ${body}    brand_ids
+    Dictionary Should Not Contain Key    ${body}    password_hash

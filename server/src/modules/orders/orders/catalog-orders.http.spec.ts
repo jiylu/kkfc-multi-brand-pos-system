@@ -101,7 +101,7 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
             : JSON.stringify(body),
     });
   }
-  it('deactivates a brand without deactivating employees or their sessions', async () => {
+  it('IT-BRND-030: Given active employees, When a brand is deactivated, Then employees and their sessions remain active', async () => {
     expect(
       (
         await request(
@@ -121,6 +121,124 @@ describe('Catalog and orders PostgreSQL integration (IT-MCH / IT-ORD / IT-ASSET)
       }),
     ).toBe(fixture.users.length);
     expect((await request('/auth/me', 'GET', undefined, 0)).status).toBe(200);
+  });
+  it('IT-KT-014: Given a confirmed order, When kitchen staff claim its ticket, Then reads and assignee filters return the saved assignment', async () => {
+    const order = await draft();
+    const confirmed = await request(
+      `/brands/${fixture.brand.brand_id}/orders/${order.order_id}/confirm`,
+      'POST',
+      { payment_method: 'CASH', payment_status: 'UNPAID' },
+      1,
+    );
+    expect(confirmed.status).toBe(200);
+    const body = (await confirmed.json()) as {
+      kitchen_tickets_order: { kitchen_ticket_id: string };
+    };
+    const ticketId = body.kitchen_tickets_order.kitchen_ticket_id;
+    const preparerId = fixture.users[5].user_id;
+    const checkerId = fixture.users[4].user_id;
+    const assignment = await request(
+      `/kitchen-ticket/${ticketId}/preparer`,
+      'PATCH',
+      { preparer_id: preparerId },
+      5,
+    );
+    expect(assignment.status).toBe(200);
+    expect(await assignment.json()).toMatchObject({ preparer_id: preparerId });
+    expect(
+      (
+        await request(
+          `/kitchen-ticket/${ticketId}/checker`,
+          'PATCH',
+          { checker_id: checkerId },
+          4,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      await (
+        await request(`/kitchen-ticket/${ticketId}`, 'GET', undefined, 5)
+      ).json(),
+    ).toMatchObject({
+      preparer_id: preparerId,
+      checker_id: checkerId,
+      status: 'QUEUED',
+    });
+    for (const path of [
+      '/kitchen-ticket/today',
+      `/kitchen-ticket/preparer/${preparerId}`,
+      `/kitchen-ticket/checker/${checkerId}`,
+    ]) {
+      const response = await request(path, 'GET', undefined, 5);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ kitchen_ticket_id: ticketId }),
+        ]),
+      );
+    }
+    const denied = await request(
+      `/kitchen-ticket/${ticketId}/checker`,
+      'PATCH',
+      { checker_id: preparerId },
+      5,
+    );
+    expect(denied.status).toBe(403);
+    const duplicate = await request(
+      `/kitchen-ticket/${ticketId}/preparer`,
+      'PATCH',
+      { preparer_id: checkerId },
+      4,
+    );
+    expect(duplicate.status).toBe(409);
+    expect(await duplicate.json()).toMatchObject({
+      code: 'KITCHEN_TICKET_PREPARER_ALREADY_ASSIGNED',
+    });
+    expect(
+      await prisma.kitchenTicket.findUniqueOrThrow({
+        where: { kitchen_ticket_id: ticketId },
+      }),
+    ).toMatchObject({ preparer_id: preparerId, checker_id: checkerId });
+  });
+
+  it('IT-KT-015: Given a queued ticket, When two preparers race to claim it, Then exactly one assignment persists', async () => {
+    const order = await draft();
+    const confirmed = await request(
+      `/brands/${fixture.brand.brand_id}/orders/${order.order_id}/confirm`,
+      'POST',
+      { payment_method: 'CASH', payment_status: 'UNPAID' },
+      1,
+    );
+    expect(confirmed.status).toBe(200);
+    const body = (await confirmed.json()) as {
+      kitchen_tickets_order: { kitchen_ticket_id: string };
+    };
+    const ticket = body.kitchen_tickets_order;
+    const responses = await Promise.all(
+      [4, 5].map((user) =>
+        request(
+          `/kitchen-ticket/${ticket.kitchen_ticket_id}/preparer`,
+          'PATCH',
+          { preparer_id: fixture.users[user].user_id },
+          user,
+        ),
+      ),
+    );
+    expect(
+      responses.filter((response) => response.status === 200),
+    ).toHaveLength(1);
+    // A loser can fail the service precheck (409) or the guarded Prisma write (404).
+    expect([404, 409]).toContain(
+      responses.find((response) => response.status !== 200)?.status,
+    );
+    const winner = (await responses
+      .find((response) => response.status === 200)!
+      .json()) as { preparer_id: string };
+    expect(
+      await prisma.kitchenTicket.findUniqueOrThrow({
+        where: { kitchen_ticket_id: ticket.kitchen_ticket_id },
+      }),
+    ).toMatchObject({ preparer_id: winner.preparer_id });
   });
   it.each(['verify', 'confirm', 'cancel'])(
     'rejects a wrong-brand order URL for %s',

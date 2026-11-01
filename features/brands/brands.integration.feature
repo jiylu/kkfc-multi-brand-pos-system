@@ -1,79 +1,164 @@
-Feature: Brands HTTP Integration Endpoints
-  Feature ID: FEAT-BRND-INT
-  Requirement ID: FR-001
+@backend @integration @brands
+Feature: Global brand HTTP contracts and logo uploads
 
-  As an API client,
-  I want to interact with /api/brands endpoints,
-  So that brand records and user-brand assignments can be created, inspected, and updated.
+  @IT-BRND-001
+  Scenario: Updates the brand image with multipart form data
+    Given a superadmin and valid multipart fields
+    When a replacement logo is uploaded
+    Then save its object key with the supplied brand fields
 
-  Scenario: Delegate brand route handlers for authenticated OWNER
-    Test Case ID: IT-BRND-001
-    Given an authenticated OWNER session
-    When the client requests various /api/brands routes
-    Then the controller should delegate to BrandsService and return HTTP 200
+  @IT-BRND-002
+  Scenario: Updates only the image without requiring name or code
+    Given a superadmin and an image-only payload
+    When the brand is updated
+    Then save the logo without requiring name or code
 
-  Scenario: Assign user to brand via POST /api/brands/assign
-    Test Case ID: IT-BRND-002
-    Given an authenticated OWNER session and valid AssignUserToBrandDTO
-    When the client sends POST to "/api/brands/assign"
-    Then the status code should be 201
+  @IT-BRND-003
+  Scenario: Keeps multipart updates without an image working
+    Given a superadmin and multipart fields without a file
+    When the brand is updated
+    Then forward fields without uploading an image
 
-  Scenario: Reject invalid assignment bodies
-    Test Case ID: IT-BRND-003
-    Given an authenticated OWNER session and malformed assignment body
-    When the client sends POST to "/api/brands/assign"
-    Then the status code should be 400
+  @IT-BRND-004
+  Scenario: Rejects malformed update fields before uploading the image
+    Given an oversized brand code and image
+    When the brand is updated
+    Then return 400 before uploading or saving
 
-  Scenario: Do not expose old assignment POST route
-    Test Case ID: IT-BRND-004
-    Given any request to the deprecated assignment POST path
-    When the client sends POST
-    Then the status code should be 404
+  @IT-BRND-005
+  Scenario: Checks the target brand before uploading its replacement image
+    Given a missing brand
+    When a replacement logo is uploaded
+    Then return 404 without storing the image
 
-  Scenario: Validate and forward brand updates via PATCH /api/brands/:id
-    Test Case ID: IT-BRND-005
-    Given an authenticated OWNER session and valid UpdateBrandDTO
-    When the client sends PATCH to "/api/brands/:id"
-    Then the status code should be 200
+  @IT-BRND-006
+  Scenario: Rejects invalid image bytes without changing the brand
+    Given invalid PNG bytes
+    When a replacement logo is uploaded
+    Then return 415 without updating the brand
 
-  Scenario: Reject invalid list queries on brands
-    Test Case ID: IT-BRND-006
-    Given an authenticated OWNER session and invalid query parameters
-    When the client sends GET to "/api/brands"
-    Then the status code should be 400
+  @IT-BRND-007
+  Scenario: Rejects oversized update images
+    Given an oversized image
+    When a replacement logo is uploaded
+    Then return 413 without updating the brand
 
-  Scenario: Reject invalid assigned-user list queries
-    Test Case ID: IT-BRND-007
-    Given an authenticated OWNER session and invalid query parameters
-    When the client sends GET to "/api/brands/:id/users"
-    Then the status code should be 400
+  @IT-BRND-008
+  Scenario: Rejects multiple update images
+    Given multiple image files
+    When a replacement logo is uploaded
+    Then return 400 without updating the brand
 
-  Scenario: Reject assigned-user listing for non-OWNER roles
-    Test Case ID: IT-BRND-008
-    Given an authenticated non-OWNER user session
-    When the client requests "/api/brands/:id/users"
-    Then the status code should be 403
+  @IT-BRND-009
+  Scenario: Keeps the brand unchanged when image storage fails
+    Given unavailable storage
+    When a replacement logo is uploaded
+    Then return 503 without updating the brand
 
-  Scenario: Reject invalid assignment boolean filters
-    Test Case ID: IT-BRND-009
-    Given an authenticated OWNER session and non-boolean query value
-    When the client requests assignment details
-    Then the status code should be 400
+  @IT-BRND-010
+  Scenario: Blocks managers before uploading replacement images
+    Given a manager session
+    When a replacement logo is uploaded
+    Then return 403 before storage or update
 
-  Scenario: Reject invalid brand update fields
-    Test Case ID: IT-BRND-010
-    Given an authenticated OWNER session and empty name in UpdateBrandDTO
-    When the client sends PATCH to "/api/brands/:id"
-    Then the status code should be 400
+  @IT-BRND-011
+  Scenario: Lists brands with pagination: the supplied value
+    Given pagination query the supplied value
+    When brands are listed
+    Then forward the global pagination filters
 
-  Scenario: Reject malformed UUID path parameters across brand routes
-    Test Case ID: IT-BRND-011
-    Given an authenticated OWNER session and non-UUID string in path
-    When the client sends the request
-    Then the status code should be 400
+  @IT-BRND-012
+  Scenario: Delegates the supplied value for the superadmin
+    Given a superadmin session
+    When the supplied value targets a brand
+    Then delegate to the service
 
-  Scenario: Create a brand with an automatically generated code
-    Test Case ID: IT-BRND-012
-    Given an authenticated OWNER session and a valid brand name without a code
-    When the client sends POST to "/api/brands"
-    Then the status code should be 201 and the brand should have a unique four-letter code
+  @IT-BRND-013
+  Scenario: Validates and forwards brand updates
+    Given a valid JSON update
+    When a superadmin updates a brand
+    Then forward all supplied fields without an upload
+
+  @IT-BRND-014
+  Scenario: Documents optional multipart images while retaining JSON updates
+    Given the generated OpenAPI document
+    When the brand update operation is inspected
+    Then document JSON multipart and upload error responses
+
+  @IT-BRND-015
+  Scenario: Allows the supplied value to read any brand
+    Given employee role the supplied value without brand assignments
+    When another fixture brand is read
+    Then return 200 and query that brand
+
+  @IT-BRND-016
+  Scenario: Allows superadmins to access another brand: the supplied value
+    Given a superadmin session
+    When the supplied value targets another brand
+    Then return 200
+
+  @IT-BRND-017
+  Scenario: Keeps the write method superadmin-only for the staff role
+    Given staff role the staff role
+    When the write method modifies a brand
+    Then return 403 without calling the service
+
+  @IT-BRND-018
+  Scenario: Creates a brand for the authenticated superadmin: the supplied value
+    Given a superadmin and payload the supplied value
+    When a brand is created with an image
+    Then save the supplied code and uploaded logo key
+
+  @IT-BRND-019
+  Scenario: Rejects invalid creation bodies: the supplied value
+    Given invalid creation payload the supplied value
+    When brand creation is requested
+    Then return 400 without creating a brand
+
+  @IT-BRND-020
+  Scenario: Creates a brand without requiring a user assignment
+    Given a superadmin without brand assignments
+    When a valid brand is created
+    Then return 201 without assigning employees
+
+  @IT-BRND-021
+  Scenario: Allows the supplied value to list all brands
+    Given employee role the supplied value
+    When the global brand listing is requested
+    Then return 200
+
+  @IT-BRND-022
+  Scenario: Rejects brand creation for the supplied value
+    Given staff role the supplied value
+    When brand creation is requested
+    Then return 403 without creating a brand
+
+  @IT-BRND-023
+  Scenario: Rejects invalid update bodies: the supplied value
+    Given invalid update payload the supplied value
+    When a brand update is requested
+    Then return 400 without saving
+
+  @IT-BRND-024
+  Scenario: Rejects malformed brand IDs: the supplied value
+    Given a malformed brand UUID
+    When the supplied value targets that path
+    Then return 400 without calling the service
+
+  @IT-BRND-025
+  Scenario: Rejects invalid list filters: the supplied value
+    Given invalid list query the supplied value
+    When brands are listed
+    Then return 400 before querying
+
+  @IT-BRND-026
+  Scenario: Removes assignment routes: the supplied value the supplied value
+    Given the removed assignment API
+    When the supplied value requests path the supplied value
+    Then return 404 without calling the brand service
+
+  @IT-BRND-030
+  Scenario: Brand deactivation preserves employees and sessions
+    Given active employees with real database sessions
+    When a superadmin deactivates a fixture brand
+    Then employees remain active and their sessions remain valid

@@ -208,6 +208,36 @@ $ npm run test:integration
 $ npm run test:cov
 ```
 
+Backend scenarios in `../features/` use `@UT-*`, `@IT-*`, and `@E2E-*`
+Test IDs with Given/When/Then steps. Matching IDs appear in the kitchen and
+brand Jest test names and Robot test tags. Kitchen lifecycle transitions are
+service operations; the public kitchen API exposes reads and assignments.
+The database integration cases exercise saved assignments and concurrent claims.
+
+Run database integration tests with the test environment loaded explicitly:
+
+```bash
+node --env-file=.env.test node_modules/jest/bin/jest.js --config jest-integration.json --runInBand
+```
+
+For Robot E2E tests, install `../robot/requirements.txt`, start the API against
+the same migrated test database, and prepare fresh isolated fixtures. Existing
+manifests must be cleaned up and prepared again to include kitchen head and
+kitchen staff accounts. In PowerShell, use `npm.cmd` if script policy blocks
+`npm.ps1`.
+
+```bash
+node --env-file=.env.test node_modules/ts-node/dist/bin.js -P prisma/tsconfig.seed.json prisma/e2e-fixtures.ts prepare
+python -m robot --dryrun --exclude storage --outputdir ../robot/results/dryrun ../robot/tests/
+npm run test:e2e
+node --env-file=.env.test node_modules/ts-node/dist/bin.js -P prisma/tsconfig.seed.json prisma/e2e-fixtures.ts cleanup
+```
+
+Set `API_BASE_URL` when the running test API is not at `http://localhost:3000`.
+Cleanup removes fixture brands, orders, tickets, sessions, and tracked accounts
+created by the Robot workflows. Storage E2E scenarios use the separate
+`test:e2e:storage` command and require configured test storage.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

@@ -13,32 +13,39 @@ The client creates a unique staff account
     ${suffix}=    Evaluate    uuid.uuid4().hex[:10]    modules=uuid
     The client submits a new user payload with username "e2e_${suffix}" and role "CASHIER_STAFF"
 
-A staff account exists in the manager's brand
+A staff account exists
     The client creates a unique staff account
     The HTTP response status should be 201
 
 The client submits a new user payload with username "${username}" and role "${role}"
     ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}    Content-Type=application/json    X-Action-Pin=${CATALOG_PIN}
-    ${payload}=    Create Dictionary    username=${username}    first_name=Robot    last_name=Created    password=Password123!    role=${role}    brand_id=${SESSION_BRAND_ID}
+    ${payload}=    Create Dictionary    username=${username}    first_name=Robot    last_name=Created    password=Password123!    role=${role}
     ${response}=   POST On Session      api    /api/users    headers=${headers}    json=${payload}    expected_status=any
     Set Test Variable    ${LAST_RESPONSE}    ${response}
     IF    ${response.status_code} == 201
         ${body}=    Set Variable    ${response.json()}
         Set Test Variable    ${CREATED_USER_ID}    ${body}[user_id]
         Set Test Variable    ${CREATED_USERNAME}   ${username}
+        ${text}=    Get File    ${E2E_FIXTURE_FILE}
+        ${manifest}=    Evaluate    json.loads($text)    modules=json
+        ${ids}=    Evaluate    $manifest.setdefault('extra_user_ids', [])
+        Append To List    ${ids}    ${body}[user_id]
+        ${updated}=    Evaluate    json.dumps($manifest, indent=2)    modules=json
+        Create File    ${E2E_FIXTURE_FILE}    ${updated}
     END
 
 The client lists users with limit "${limit}"
     ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}
-    ${response}=   GET On Session       api    url=/api/users/brand/${SESSION_BRAND_ID}?page=1&limit=${limit}    headers=${headers}    expected_status=any
+    ${response}=   GET On Session       api    url=/api/users?page=1&limit=${limit}    headers=${headers}    expected_status=any
     Set Test Variable    ${LAST_RESPONSE}    ${response}
 
-Every listed user belongs to the session brand
+Every listed user has a safe global profile
     ${body}=    Set Variable    ${LAST_RESPONSE.json()}
     ${users}=    Set Variable    ${body}[data]
     Should Not Be Empty    ${users}
     FOR    ${user}    IN    @{users}
-        Should Be Equal    ${user}[brand_id]    ${SESSION_BRAND_ID}
+        Dictionary Should Not Contain Key    ${user}    brand_id
+        Dictionary Should Not Contain Key    ${user}    brand_ids
         Dictionary Should Not Contain Key    ${user}    password_hash
     END
 

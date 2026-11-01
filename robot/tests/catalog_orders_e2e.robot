@@ -37,11 +37,11 @@ E2E-ORD-003: Duplicate platform references cannot create a second order
     When the cashier submits another ID with the same normalized platform references
     Then the HTTP response status should be 409
 
-E2E-MCH-002: Another brand manager cannot inspect or mutate a channel
+E2E-MCH-002: Managers can inspect and update channels across brands
     [Tags]    E2E    CATALOG    E2E-MCH-002
     Given the manager creates a GrabFood override
-    When another brand manager attempts to read and change the channel
-    Then the original channel remains unchanged
+    When another manager reads and changes the channel
+    Then the channel change is visible to the original manager
 
 E2E-ASSET-001: Menu image association survives a read and downloads from storage
     [Documentation]    Requires a configured test S3 bucket and working download signing configuration.
