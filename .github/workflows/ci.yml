@@ -36,6 +36,9 @@ jobs:
       - name: Check formatting (Prettier)
         run: npm run format:check
 
+      - name: Test Gherkin reporting tools
+        run: npm run test:reporter
+
       - name: Run Jest Unit Tests
         run: npm run test:unit
 
