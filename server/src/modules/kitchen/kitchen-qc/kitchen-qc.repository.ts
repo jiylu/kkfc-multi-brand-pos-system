@@ -72,6 +72,39 @@ export class KitchenQcRepository {
     });
   }
 
+  async findManyByChecker(
+    checkerId: string,
+    activeOnly = true,
+    skip = 0,
+    take = 10,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const where: Prisma.KitchenTicketQcAttemptWhereInput = {
+      checker_id: checkerId,
+      status: activeOnly ? KitchenTicketQcStatus.IN_PROGRESS : undefined,
+    };
+    const attemptsQuery = tx.kitchenTicketQcAttempt.findMany({
+      where,
+      ...(activeOnly ? {} : { skip, take }),
+      orderBy: [{ started_at: 'desc' }, { qc_attempt_id: 'asc' }],
+    });
+
+    if (activeOnly) {
+      const qcAttempts = await attemptsQuery;
+      return { qcAttempts, total: qcAttempts.length };
+    }
+
+    const totalQuery = tx.kitchenTicketQcAttempt.count({ where });
+    const [qcAttempts, total] =
+      '$transaction' in tx
+        ? await tx.$transaction([attemptsQuery, totalQuery], {
+            isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+          })
+        : await Promise.all([attemptsQuery, totalQuery]);
+
+    return { qcAttempts, total };
+  }
+
   async updateStatus(
     attemptId: string,
     newStatus: KitchenTicketQcStatus,
