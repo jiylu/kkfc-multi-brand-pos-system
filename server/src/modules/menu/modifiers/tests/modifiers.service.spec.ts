@@ -11,7 +11,7 @@ import { ModifiersService } from '../modifiers.service';
 import { FindAllModifiersDTO } from '../dto/find-all-modifiers.dto';
 
 describe('ModifiersService', () => {
-  it('resolves the service, repository, and controller through the application module', async () => {
+  it('UT-MOD-001: resolves the service, repository, and controller through the application module', async () => {
     const module = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -79,7 +79,7 @@ describe('ModifiersService operations', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
-  it('creates a modifier after validating its inventory item', async () => {
+  it('UT-MOD-002: creates a modifier after validating its inventory item', async () => {
     const dto = {
       code: 'EXTRA',
       name: 'Extra',
@@ -92,7 +92,7 @@ describe('ModifiersService operations', () => {
   });
 
   it.each([undefined, null])(
-    'creates a modifier without an inventory item (%s)',
+    'UT-MOD-003: creates a modifier without an inventory item (%s)',
     async (inventory_item_id) => {
       const dto = { code: 'EXTRA', name: 'Extra', inventory_item_id };
       await expect(service.create(dto)).resolves.toEqual(modifier);
@@ -101,7 +101,7 @@ describe('ModifiersService operations', () => {
     },
   );
 
-  it('rejects creating a modifier with a missing or inactive inventory item', async () => {
+  it('UT-MOD-004: rejects creating a modifier with a missing or inactive inventory item', async () => {
     inventory.findOne.mockResolvedValue(null);
     await expect(
       service.create({
@@ -148,7 +148,7 @@ describe('ModifiersService operations', () => {
       activeOnly: false,
     },
   ] as const)(
-    'finds $value using $method with activeOnly=$activeOnly',
+    'UT-MOD-005: finds $value using $method with activeOnly=$activeOnly',
     async ({ identifier, method, value, activeOnly }) => {
       await expect(service.findOne(identifier, activeOnly)).resolves.toEqual(
         modifier,
@@ -162,7 +162,7 @@ describe('ModifiersService operations', () => {
   );
 
   it.each([modifierId, 'MISSING'])(
-    'rejects a missing modifier identified by %s',
+    'UT-MOD-006: rejects a missing modifier identified by %s',
     async (identifier) => {
       repository.findOneModifierByUID.mockResolvedValue(null);
       repository.findOneModifierByCode.mockResolvedValue(null);
@@ -174,7 +174,7 @@ describe('ModifiersService operations', () => {
   );
 
   it.each([undefined, false])(
-    'lists modifiers for an existing inventory item with activeOnly=%s',
+    'UT-MOD-007: lists modifiers for an existing inventory item with activeOnly=%s',
     async (activeOnly) => {
       await expect(
         service.findManyByInventoryItem(inventoryItemId, activeOnly),
@@ -187,7 +187,7 @@ describe('ModifiersService operations', () => {
     },
   );
 
-  it('rejects listing modifiers for a missing inventory item', async () => {
+  it('UT-MOD-008: rejects listing modifiers for a missing inventory item', async () => {
     inventory.findOne.mockResolvedValue(null);
     await expect(
       service.findManyByInventoryItem(inventoryItemId),
@@ -199,7 +199,7 @@ describe('ModifiersService operations', () => {
   });
 
   it.each([true, false])(
-    'paginates modifiers with activeOnly=%s',
+    'UT-MOD-009: paginates modifiers with activeOnly=%s',
     async (activeOnly) => {
       await expect(
         service.findAll({ page: 2, limit: 10, activeOnly }),
@@ -211,7 +211,7 @@ describe('ModifiersService operations', () => {
     },
   );
 
-  it('returns empty pagination results using the default query', async () => {
+  it('UT-MOD-010: returns empty pagination results using the default query', async () => {
     repository.findAll.mockResolvedValue({ modifiers: [], total: 0 });
     await expect(service.findAll(new FindAllModifiersDTO())).resolves.toEqual({
       data: [],
@@ -220,7 +220,7 @@ describe('ModifiersService operations', () => {
     expect(repository.findAll).toHaveBeenCalledWith(0, 10, true);
   });
 
-  it('rejects pagination overflow before querying', async () => {
+  it('UT-MOD-011: rejects pagination overflow before querying', async () => {
     await expect(
       service.findAll({ page: 2_147_483_647, limit: 2, activeOnly: true }),
     ).rejects.toMatchObject({
@@ -230,7 +230,7 @@ describe('ModifiersService operations', () => {
     expect(repository.findAll).not.toHaveBeenCalled();
   });
 
-  it('validates the replacement inventory item before updating', async () => {
+  it('UT-MOD-012: validates the replacement inventory item before updating', async () => {
     const dto = {
       name: 'Updated',
       inventory_item_id: inventoryItemId,
@@ -246,7 +246,7 @@ describe('ModifiersService operations', () => {
   });
 
   it.each([undefined, null])(
-    'updates without looking up an inventory item (%s)',
+    'UT-MOD-013: updates without looking up an inventory item (%s)',
     async (inventory_item_id) => {
       const dto = { name: 'Updated', inventory_item_id, quantity: null };
       await service.update(modifierId, dto);
@@ -255,7 +255,7 @@ describe('ModifiersService operations', () => {
     },
   );
 
-  it('rejects updating with a missing or inactive inventory item', async () => {
+  it('UT-MOD-014: rejects updating with a missing or inactive inventory item', async () => {
     inventory.findOne.mockResolvedValue(null);
     await expect(
       service.update(modifierId, { inventory_item_id: inventoryItemId }),
@@ -266,7 +266,7 @@ describe('ModifiersService operations', () => {
     expect(repository.updateModifier).not.toHaveBeenCalled();
   });
 
-  it('reactivates an inactive modifier', async () => {
+  it('UT-MOD-015: reactivates an inactive modifier', async () => {
     repository.findOneModifierByUID.mockResolvedValue({
       ...modifier,
       is_active: false,
@@ -279,7 +279,7 @@ describe('ModifiersService operations', () => {
     expect(repository.reactivateModifier).toHaveBeenCalledWith(modifierId);
   });
 
-  it('rejects reactivating an already-active modifier', async () => {
+  it('UT-MOD-016: rejects reactivating an already-active modifier', async () => {
     await expect(service.reactivate(modifierId)).rejects.toMatchObject({
       status: 409,
       response: { code: 'MODIFIER_ALREADY_ACTIVE' },
@@ -287,7 +287,7 @@ describe('ModifiersService operations', () => {
     expect(repository.reactivateModifier).not.toHaveBeenCalled();
   });
 
-  it('soft-deletes an active modifier', async () => {
+  it('UT-MOD-017: soft-deletes an active modifier', async () => {
     await expect(service.delete(modifierId)).resolves.toEqual({
       ...modifier,
       is_active: false,
@@ -306,7 +306,7 @@ describe('ModifiersService operations', () => {
   ] as const;
 
   it.each(mutations)(
-    '$name rejects missing modifiers without writing',
+    'UT-MOD-018: $name rejects missing modifiers without writing',
     async ({ run }) => {
       repository.findOneModifierByUID.mockResolvedValue(null);
       await expect(run()).rejects.toMatchObject({
@@ -321,7 +321,7 @@ describe('ModifiersService operations', () => {
   );
 
   it.each(mutations)(
-    '$name preserves repository failures',
+    'UT-MOD-019: $name preserves repository failures',
     async ({ name, run }) => {
       repository.findOneModifierByUID.mockResolvedValue({
         ...modifier,
@@ -362,7 +362,7 @@ describe('Modifiers persistence', () => {
     repository = new ModifiersRepository(prisma as unknown as PrismaService);
   });
 
-  it('creates a modifier with an inventory item and quantity', async () => {
+  it('UT-MOD-020: creates a modifier with an inventory item and quantity', async () => {
     const dto = {
       code: 'EXTRA',
       name: 'Extra',
@@ -375,7 +375,7 @@ describe('Modifiers persistence', () => {
   });
 
   it.each([undefined, true, false])(
-    'applies activeOnly=%s to every find and the total count',
+    'UT-MOD-021: applies activeOnly=%s to every find and the total count',
     async (activeOnly) => {
       const is_active = activeOnly === false ? undefined : true;
 
@@ -413,7 +413,7 @@ describe('Modifiers persistence', () => {
     },
   );
 
-  it('lists modifiers using a supplied transaction client', async () => {
+  it('UT-MOD-022: lists modifiers using a supplied transaction client', async () => {
     const tx = { modifier: prisma.modifier };
 
     await expect(
@@ -428,7 +428,7 @@ describe('Modifiers persistence', () => {
   });
 
   it.each(['replacement-inventory-id', null])(
-    'updates a modifier and sets its inventory item to %s',
+    'UT-MOD-023: updates a modifier and sets its inventory item to %s',
     async (inventory_item_id) => {
       const dto = { name: 'Updated', inventory_item_id, quantity: null };
 
@@ -440,7 +440,7 @@ describe('Modifiers persistence', () => {
     },
   );
 
-  it('reactivates an inactive modifier and updates its modification timestamp', async () => {
+  it('UT-MOD-024: reactivates an inactive modifier and updates its modification timestamp', async () => {
     await expect(repository.reactivateModifier('modifier-id')).resolves.toEqual(
       modifier,
     );
@@ -451,7 +451,7 @@ describe('Modifiers persistence', () => {
     });
   });
 
-  it('soft deletes an active modifier without removing its references', async () => {
+  it('UT-MOD-025: soft deletes an active modifier without removing its references', async () => {
     await repository.deleteModifier('modifier-id');
 
     expect(prisma.modifier.update).toHaveBeenCalledWith({
@@ -460,7 +460,7 @@ describe('Modifiers persistence', () => {
     });
   });
 
-  it('preserves database errors for the application exception filters', async () => {
+  it('UT-MOD-026: preserves database errors for the application exception filters', async () => {
     const error = new Error('Invalid inventory item reference');
     prisma.modifier.update.mockRejectedValueOnce(error);
 

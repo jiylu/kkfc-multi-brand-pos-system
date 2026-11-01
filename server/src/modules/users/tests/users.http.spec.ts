@@ -96,7 +96,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   });
 
   it.each([UserRole.MANAGER, UserRole.SUPERADMIN])(
-    'lists all users for %s',
+    'IT-USER-011: lists all users for %s',
     async (role) => {
       currentRole = role;
       expect((await fetch(`${url}?page=2&limit=5`)).status).toBe(200);
@@ -107,10 +107,10 @@ describe('Users HTTP endpoints (IT-USER)', () => {
       });
     },
   );
-  it('removes the brand-specific user listing', async () => {
+  it('IT-USER-012: removes the brand-specific user listing', async () => {
     expect((await fetch(`${url}/brand/${brandId}`)).status).toBe(404);
   });
-  it('rejects brand assignments on user creation', async () => {
+  it('IT-USER-013: rejects brand assignments on user creation', async () => {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -129,39 +129,42 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   it.each([
     { role: UserRole.MANAGER, status: 403 },
     { role: UserRole.SUPERADMIN, status: 200 },
-  ])('protects superadmins over HTTP for $role', async ({ role, status }) => {
-    currentRole = role;
-    const repository = {
-      findOne: jest
-        .fn()
-        .mockResolvedValue({ user_id: userId, role: UserRole.SUPERADMIN }),
-      update: jest.fn().mockResolvedValue({ user_id: userId }),
-      delete: jest
-        .fn()
-        .mockResolvedValue({ user_id: userId, is_active: false }),
-    };
-    const users = new UsersService(repository as unknown as UsersRepository);
-    service.updateUser.mockImplementation(
-      (...args: Parameters<UsersService['updateUser']>) =>
-        users.updateUser(...args),
-    );
-    service.deleteUser.mockImplementation(
-      (...args: Parameters<UsersService['deleteUser']>) =>
-        users.deleteUser(...args),
-    );
-    const update = await fetch(`${url}/${userId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: 'Password123!' }),
-    });
-    expect(update.status).toBe(status);
-    expect((await fetch(`${url}/${userId}`, { method: 'DELETE' })).status).toBe(
-      status,
-    );
-    expect(repository.update).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
-    expect(repository.delete).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
-  });
-  it('reports current role names when a legacy role is supplied', async () => {
+  ])(
+    'IT-USER-014: protects superadmins over HTTP for $role',
+    async ({ role, status }) => {
+      currentRole = role;
+      const repository = {
+        findOne: jest
+          .fn()
+          .mockResolvedValue({ user_id: userId, role: UserRole.SUPERADMIN }),
+        update: jest.fn().mockResolvedValue({ user_id: userId }),
+        delete: jest
+          .fn()
+          .mockResolvedValue({ user_id: userId, is_active: false }),
+      };
+      const users = new UsersService(repository as unknown as UsersRepository);
+      service.updateUser.mockImplementation(
+        (...args: Parameters<UsersService['updateUser']>) =>
+          users.updateUser(...args),
+      );
+      service.deleteUser.mockImplementation(
+        (...args: Parameters<UsersService['deleteUser']>) =>
+          users.deleteUser(...args),
+      );
+      const update = await fetch(`${url}/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: 'Password123!' }),
+      });
+      expect(update.status).toBe(status);
+      expect(
+        (await fetch(`${url}/${userId}`, { method: 'DELETE' })).status,
+      ).toBe(status);
+      expect(repository.update).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
+      expect(repository.delete).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
+    },
+  );
+  it('IT-USER-015: reports current role names when a legacy role is supplied', async () => {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -181,7 +184,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     expect(service.createUser).not.toHaveBeenCalled();
   });
 
-  it('allows managers to update and deactivate users across brands', async () => {
+  it('IT-USER-016: allows managers to update and deactivate users across brands', async () => {
     currentRole = UserRole.MANAGER;
     const dto = { first_name: 'Updated' };
     expect(
@@ -319,7 +322,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
   });
 
   it.each(['renamed_user', 'a'.repeat(16)])(
-    'updates a username without requiring other profile fields: %s',
+    'IT-USER-017: updates a username without requiring other profile fields: %s',
     async (username) => {
       const response = await fetch(`${url}/${userId}`, {
         method: 'PATCH',
@@ -336,7 +339,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     },
   );
 
-  it('preserves the username availability conflict response', async () => {
+  it('IT-USER-018: preserves the username availability conflict response', async () => {
     const body = {
       code: 'USERNAME_ALREADY_EXISTS',
       message: 'Username already exists.',
@@ -353,7 +356,7 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     expect(await response.json()).toEqual(body);
   });
 
-  it('returns a conflict when a username update violates uniqueness', async () => {
+  it('IT-USER-019: returns a conflict when a username update violates uniqueness', async () => {
     service.updateUser.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('Username is already taken', {
         code: 'P2002',
@@ -440,13 +443,13 @@ describe('Users HTTP endpoints (IT-USER)', () => {
     },
   );
 
-  it('allows username lookups through the GET route', async () => {
+  it('IT-USER-020: allows username lookups through the GET route', async () => {
     const response = await fetch(`${url}/owner`);
     expect(response.status).toBe(200);
     expect(service.findOneUser).toHaveBeenCalledWith('owner', true);
   });
 
-  it('delegates superadmin requests to the current service contracts', async () => {
+  it('IT-USER-021: delegates superadmin requests to the current service contracts', async () => {
     currentRole = UserRole.SUPERADMIN;
     const payload = {
       username: 'new_manager',

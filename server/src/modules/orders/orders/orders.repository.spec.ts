@@ -40,7 +40,7 @@ describe('Order transaction conflict recovery', () => {
   }
 
   it.each(conflicts)(
-    'retries the whole transaction after $name at commit',
+    'UT-ORD-007: retries the whole transaction after $name at commit',
     async ({ error }) => {
       const { tx, prisma, repository } = setup();
       const work = jest.fn().mockResolvedValue('saved result');
@@ -55,7 +55,7 @@ describe('Order transaction conflict recovery', () => {
   );
 
   it.each(conflicts)(
-    'bounds $name retries and returns a stable recovery code',
+    'UT-ORD-008: bounds $name retries and returns a stable recovery code',
     async ({ error }) => {
       const { prisma, repository } = setup();
       prisma.$transaction.mockRejectedValue(error);
@@ -83,7 +83,7 @@ describe('Order transaction conflict recovery', () => {
       clientVersion: '7',
     }),
   ])(
-    'propagates non-retryable errors without replaying work (%s)',
+    'UT-ORD-009: propagates non-retryable errors without replaying work (%s)',
     async (error) => {
       const { prisma, repository } = setup();
       prisma.$transaction.mockRejectedValue(error);

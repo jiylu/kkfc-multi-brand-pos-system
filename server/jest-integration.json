@@ -14,10 +14,17 @@
       "jest-html-reporters",
       {
         "publicPath": "./reports/integration",
-        "filename": "report.html",
+        "filename": "jest.html",
         "pageTitle": "KKFC POS - Integration Tests (IT) Report",
         "expand": false,
         "inlineSource": true
+      }
+    ],
+    [
+      "<rootDir>/../reporters/gherkin-reporter.cjs",
+      {
+        "outputDirectory": "reports/integration",
+        "title": "KKFC POS - Integration Tests: Gherkin Report"
       }
     ]
   ]

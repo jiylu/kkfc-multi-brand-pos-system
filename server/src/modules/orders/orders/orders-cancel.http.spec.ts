@@ -75,7 +75,7 @@ describe('Cancel order HTTP API', () => {
   }
 
   it.each([UserRole.CASHIER_STAFF, UserRole.MANAGER, UserRole.SUPERADMIN])(
-    'allows %s and takes the actor from the session',
+    'IT-ORD-029: allows %s and takes the actor from the session',
     async (role) => {
       auth.validateSession.mockResolvedValue({
         user: {
@@ -104,17 +104,17 @@ describe('Cancel order HTTP API', () => {
     { cancellation_reason: 123 },
     { cancellation_reason: 'x'.repeat(1001) },
     { cancellation_reason: 'Customer request', cancelled_by_id: actorId },
-  ])('rejects invalid or extra body fields: %p', async (body) => {
+  ])('IT-ORD-030: rejects invalid or extra body fields: %p', async (body) => {
     expect((await cancel(body)).status).toBe(400);
     expect(service.cancel).not.toHaveBeenCalled();
   });
 
-  it('requires authentication', async () => {
+  it('IT-ORD-031: requires authentication', async () => {
     expect((await cancel(undefined, false)).status).toBe(401);
     expect(service.cancel).not.toHaveBeenCalled();
   });
 
-  it('rejects other roles', async () => {
+  it('IT-ORD-032: rejects other roles', async () => {
     auth.validateSession.mockResolvedValue({
       user: {
         user_id: actorId,
@@ -126,13 +126,13 @@ describe('Cancel order HTTP API', () => {
     expect(service.cancel).not.toHaveBeenCalled();
   });
 
-  it('returns 404 for a missing order', async () => {
+  it('IT-ORD-033: returns 404 for a missing order', async () => {
     service.cancel.mockRejectedValueOnce(new NotFoundException());
     expect((await cancel()).status).toBe(404);
     expect(service.cancel).toHaveBeenCalled();
   });
 
-  it('rejects malformed order IDs', async () => {
+  it('IT-ORD-034: rejects malformed order IDs', async () => {
     expect((await cancel(undefined, true, brandId, 'invalid')).status).toBe(
       400,
     );

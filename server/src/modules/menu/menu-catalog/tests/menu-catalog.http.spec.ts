@@ -94,7 +94,7 @@ describe('Menu catalog HTTP endpoints', () => {
 
   afterAll(async () => app?.close());
 
-  it('creates a catalog entry for a manager assigned to its nested brand', async () => {
+  it('IT-MCAT-001: creates a catalog entry for a manager assigned to its nested brand', async () => {
     const response = await fetch(url, {
       method: 'POST',
       headers,
@@ -111,7 +111,7 @@ describe('Menu catalog HTTP endpoints', () => {
     { query: '', pagination: { page: 1, limit: 10 } },
     { query: '?page=2&limit=5', pagination: { page: 2, limit: 5 } },
   ])(
-    'lists a brand catalog with query "$query"',
+    'IT-MCAT-002: lists a brand catalog with query "$query"',
     async ({ query, pagination }) => {
       const response = await fetch(`${url}/brand/${brandId}${query}`, {
         headers: { authorization: headers.authorization },
@@ -124,7 +124,7 @@ describe('Menu catalog HTTP endpoints', () => {
     },
   );
 
-  it('requires authentication to create and list entries', async () => {
+  it('IT-MCAT-003: requires authentication to create and list entries', async () => {
     const createResponse = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -138,7 +138,7 @@ describe('Menu catalog HTTP endpoints', () => {
     expect(service.findAll).not.toHaveBeenCalled();
   });
 
-  it('rejects creation by roles that cannot create menu items', async () => {
+  it('IT-MCAT-004: rejects creation by roles that cannot create menu items', async () => {
     auth.validateSession.mockResolvedValue({
       user: { ...user, role: UserRole.CASHIER_STAFF },
     });
@@ -152,7 +152,7 @@ describe('Menu catalog HTTP endpoints', () => {
     expect(service.create).not.toHaveBeenCalled();
   });
 
-  it('creates entries across brands', async () => {
+  it('IT-MCAT-005: creates entries across brands', async () => {
     brandLookup.mockResolvedValue({ brand_id: otherBrandId });
     const response = await fetch(url, {
       method: 'POST',
@@ -168,13 +168,13 @@ describe('Menu catalog HTTP endpoints', () => {
     expect(pin.verifyPin).toHaveBeenCalled();
   });
 
-  it('lists any brand', async () => {
+  it('IT-MCAT-006: lists any brand', async () => {
     const response = await fetch(`${url}/brand/${otherBrandId}`, { headers });
     expect(response.status).toBe(200);
     expect(service.findAll).toHaveBeenCalled();
   });
 
-  it('requires an action PIN for creation', async () => {
+  it('IT-MCAT-007: requires an action PIN for creation', async () => {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -189,7 +189,7 @@ describe('Menu catalog HTTP endpoints', () => {
   });
 
   it.each([undefined, null, {}])(
-    'rejects a missing nested brand in menu_item=%j',
+    'IT-MCAT-008: rejects a missing nested brand in menu_item=%j',
     async (menu_item) => {
       const response = await fetch(url, {
         method: 'POST',
@@ -202,7 +202,7 @@ describe('Menu catalog HTTP endpoints', () => {
     },
   );
 
-  it('validates nested modifier IDs', async () => {
+  it('IT-MCAT-009: validates nested modifier IDs', async () => {
     const response = await fetch(url, {
       method: 'POST',
       headers,
@@ -217,7 +217,7 @@ describe('Menu catalog HTTP endpoints', () => {
   });
 
   it.each(['?page=0', '?limit=101'])(
-    'rejects invalid pagination %s',
+    'IT-MCAT-010: rejects invalid pagination %s',
     async (query) => {
       const response = await fetch(`${url}/brand/${brandId}${query}`, {
         headers,
@@ -227,7 +227,7 @@ describe('Menu catalog HTTP endpoints', () => {
     },
   );
 
-  it('rejects malformed brand IDs', async () => {
+  it('IT-MCAT-011: rejects malformed brand IDs', async () => {
     const response = await fetch(`${url}/brand/invalid`, { headers });
     expect(response.status).toBe(400);
     expect(service.findAll).not.toHaveBeenCalled();

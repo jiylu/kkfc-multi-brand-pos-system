@@ -17,6 +17,12 @@ const transitions = [
   ['ready', 'CHECKING', 'READY', 'ready_at'],
   ['handOver', 'READY', 'HANDED_OVER', 'handed_over_at'],
   ['cancel', 'QUEUED', 'CANCELLED', 'cancelled_at'],
+  ['cancel', 'ACKNOWLEDGED', 'CANCELLED', 'cancelled_at'],
+  ['cancel', 'PREPARING', 'CANCELLED', 'cancelled_at'],
+  ['cancel', 'FOR_CHECKING', 'CANCELLED', 'cancelled_at'],
+  ['cancel', 'CHECKING', 'CANCELLED', 'cancelled_at'],
+  ['cancel', 'REWORKING', 'CANCELLED', 'cancelled_at'],
+  ['cancel', 'READY', 'CANCELLED', 'cancelled_at'],
 ] as const;
 
 function runAction(
@@ -109,7 +115,7 @@ describe('KitchenTicketService', () => {
     created_by_id: 'actor',
   };
 
-  it('validates the order before creating a kitchen ticket', async () => {
+  it('UT-KT-001: Given an existing order, When a ticket is created, Then validate the order before persisting the ticket', async () => {
     const { service, client, ticket } = setup();
 
     expect(await service.create(createDto)).toEqual(ticket);
@@ -126,7 +132,7 @@ describe('KitchenTicketService', () => {
     expect(successLog).toHaveBeenCalledWith('Created kitchen ticket ticket');
   });
 
-  it('logs ORDER_NOT_FOUND and does not create a ticket for a missing order', async () => {
+  it('UT-KT-002: Given a missing order, When a ticket is created, Then return ORDER_NOT_FOUND without writing', async () => {
     const { service, client } = setup();
     client.order.findUnique.mockResolvedValueOnce(null);
 
@@ -142,7 +148,7 @@ describe('KitchenTicketService', () => {
   });
 
   it.each(transitions)(
-    '%s transitions from %s to %s',
+    'UT-KT-003: Given action %s and status %s, When the assigned caller transitions the ticket, Then save %s and its timestamp',
     async (action, from, to, timestamp) => {
       const { service, client, ticket } = setup(from);
       ticket.preparer_id = 'user';
@@ -169,7 +175,7 @@ describe('KitchenTicketService', () => {
   );
 
   it.each(transitions)(
-    '%s rejects a handed-over ticket (transition from %s to %s)',
+    'UT-KT-004: Given a handed-over ticket, When %s attempts transition %s to %s, Then reject without writing',
     async (action) => {
       const { service, client, ticket } = setup(
         KitchenTicketStatus.HANDED_OVER,
@@ -192,7 +198,7 @@ describe('KitchenTicketService', () => {
     ['rework', 'CHECKING', 'CHECKER'],
     ['ready', 'CHECKING', 'CHECKER'],
   ] as const)(
-    '%s rejects an unassigned caller',
+    'UT-KT-005: Given an unassigned caller, When %s is requested, Then reject without writing',
     async (action, status, role) => {
       const { service, client } = setup(status);
 
@@ -204,7 +210,7 @@ describe('KitchenTicketService', () => {
     },
   );
 
-  it('returns an already-cancelled ticket without updating it', async () => {
+  it('UT-KT-006: Given a cancelled ticket, When cancellation is retried, Then return the ticket without updating it', async () => {
     const { service, client, ticket } = setup(KitchenTicketStatus.CANCELLED);
 
     expect(await service.cancel('ticket')).toEqual(ticket);
@@ -212,7 +218,7 @@ describe('KitchenTicketService', () => {
   });
 
   it.each(transitions)(
-    '%s forwards the transaction when transitioning from %s to %s',
+    'UT-KT-007: Given an explicit transaction, When %s transitions %s to %s, Then use only the transaction client',
     async (action, from) => {
       const primary = setup();
       const transaction = setup(from);
@@ -231,30 +237,61 @@ describe('KitchenTicketService', () => {
     },
   );
 
+  it.each(
+    [...new Set(transitions.map(([action]) => action))].flatMap((action) =>
+      Object.values(KitchenTicketStatus)
+        .filter(
+          (status) =>
+            !transitions.some(
+              ([candidate, from]) => candidate === action && from === status,
+            ) &&
+            !(action === 'cancel' && status === KitchenTicketStatus.CANCELLED),
+        )
+        .map((status) => ({ action, status })),
+    ),
+  )(
+    'UT-KT-011: Given status $status, When $action has no legal transition, Then reject without changing the ticket',
+    async ({ action, status }) => {
+      const { service, client, ticket } = setup(status);
+      ticket.preparer_id = 'user';
+      ticket.checker_id = 'user';
+      const before = { ...ticket };
+      await expect(runAction(service, action)).rejects.toMatchObject({
+        status: 409,
+        response: { code: 'KITCHEN_TICKET_INVALID_STATUS' },
+      });
+      expect(client.kitchenTicket.update).not.toHaveBeenCalled();
+      expect(ticket).toEqual(before);
+    },
+  );
+
   it.each([
     ['assignPreparer', 'preparer_id'],
     ['assignChecker', 'checker_id'],
-  ] as const)('%s updates only %s', async (action, field) => {
-    const { service, client, ticket } = setup();
-    const before = { ...ticket };
+  ] as const)(
+    'UT-KT-008: Given an unassigned ticket, When %s is requested, Then update only %s',
+    async (action, field) => {
+      const { service, client, ticket } = setup();
+      const before = { ...ticket };
 
-    expect(await service[action]('ticket', 'user')).toEqual({
-      ...before,
-      [field]: 'user',
-    });
-    expect(client.kitchenTicket.update).toHaveBeenCalledWith({
-      where: { kitchen_ticket_id: 'ticket', [field]: null },
-      data: { [field]: 'user' },
-    });
-    expect(debugLog).toHaveBeenCalled();
-    expect(successLog).toHaveBeenCalled();
-  });
+      expect(await service[action]('ticket', 'user')).toEqual({
+        ...before,
+        [field]: 'user',
+      });
+      expect(client.kitchenTicket.update).toHaveBeenCalledWith({
+        where: { kitchen_ticket_id: 'ticket', [field]: null },
+        data: { [field]: 'user' },
+      });
+      expect(debugLog).toHaveBeenCalled();
+      expect(successLog).toHaveBeenCalled();
+    },
+  );
 
   it.each([
     ['assignPreparer', 'preparer_id', 'PREPARER'],
     ['assignChecker', 'checker_id', 'CHECKER'],
   ] as const)(
-    '%s rejects replacing an assigned %s',
+    'UT-KT-009: Given an existing assignment, When %s attempts replacing %s, Then return conflict and preserve the assignee',
     async (action, field, role) => {
       const { service, client, ticket } = setup();
       ticket[field] = 'existing-user';
@@ -269,7 +306,7 @@ describe('KitchenTicketService', () => {
   );
 
   it.each(['findOne', 'assignPreparer', 'assignChecker'] as const)(
-    '%s logs missing tickets and returns the standard not-found code',
+    'UT-KT-010: Given a missing ticket, When %s is requested, Then return KITCHEN_TICKET_NOT_FOUND without writing',
     async (action) => {
       const { service, client } = setup();
       client.kitchenTicket.findUnique.mockResolvedValueOnce(null);

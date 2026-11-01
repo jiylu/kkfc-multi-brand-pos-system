@@ -33,11 +33,11 @@ Feature: Catalog and order workflows through a running API
     Then the response status is 409
 
   @E2E-MCH-002
-  Scenario: Prevent another brand manager from altering a channel
+  Scenario: Managers can inspect and update channels across brands
     Given a manager created a GrabFood override at 120 pesos
-    When another brand manager reads updates and deletes it
-    Then each attempt returns 403
-    And the original manager still reads an available channel at 120 pesos
+    When another manager reads and updates it to 999 pesos
+    Then both requests return 200
+    And the original manager reads an available channel at 999 pesos
 
   @E2E-ASSET-001 @storage
   Scenario: Persist and download an associated image

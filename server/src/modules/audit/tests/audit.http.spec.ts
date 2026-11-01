@@ -60,7 +60,7 @@ describe('Audit list HTTP API', () => {
 
   const headers = { Authorization: 'Bearer test-session' };
 
-  it('returns an empty paginated list with stable newest-first ordering', async () => {
+  it('IT-AUDIT-001: returns an empty paginated list with stable newest-first ordering', async () => {
     const response = await fetch(url, { headers });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
@@ -97,39 +97,44 @@ describe('Audit list HTTP API', () => {
       'action=ORDER_CONFIRMED&outcome=SUCCESS',
       { action: 'ORDER_CONFIRMED', outcome: 'SUCCESS' },
     ],
-  ])('filters both records and count: %s', async (query, where) => {
-    const logs = [{ audit_log_id: 'log-1', action: 'ORDER_CONFIRMED' }];
-    prisma.auditLog.findMany.mockResolvedValue(logs);
-    prisma.auditLog.count.mockResolvedValue(7);
-    const response = await fetch(`${url}?page=2&limit=5&${query}`, { headers });
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({
-      data: logs,
-      meta: { page: 2, limit: 5, total: 7, totalPages: 2 },
-    });
-    expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where, skip: 5, take: 5 }),
-    );
-    expect(prisma.auditLog.count).toHaveBeenCalledWith({ where });
-    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Array), {
-      isolationLevel: 'RepeatableRead',
-    });
-  });
+  ])(
+    'IT-AUDIT-002: filters both records and count: %s',
+    async (query, where) => {
+      const logs = [{ audit_log_id: 'log-1', action: 'ORDER_CONFIRMED' }];
+      prisma.auditLog.findMany.mockResolvedValue(logs);
+      prisma.auditLog.count.mockResolvedValue(7);
+      const response = await fetch(`${url}?page=2&limit=5&${query}`, {
+        headers,
+      });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        data: logs,
+        meta: { page: 2, limit: 5, total: 7, totalPages: 2 },
+      });
+      expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where, skip: 5, take: 5 }),
+      );
+      expect(prisma.auditLog.count).toHaveBeenCalledWith({ where });
+      expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Array), {
+        isolationLevel: 'RepeatableRead',
+      });
+    },
+  );
 
   it.each(
     Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
-  )('denies %s before querying audit records', async (role) => {
+  )('IT-AUDIT-003: denies %s before querying audit records', async (role) => {
     auth.validateSession.mockResolvedValue({ user: { role } });
     expect((await fetch(url, { headers })).status).toBe(403);
     expect(prisma.auditLog.findMany).not.toHaveBeenCalled();
   });
 
-  it('requires authentication', async () => {
+  it('IT-AUDIT-004: requires authentication', async () => {
     expect((await fetch(url)).status).toBe(401);
     expect(prisma.auditLog.findMany).not.toHaveBeenCalled();
   });
 
-  it('rejects expired or invalid sessions', async () => {
+  it('IT-AUDIT-005: rejects expired or invalid sessions', async () => {
     auth.validateSession.mockRejectedValue(new NotFoundException());
     expect((await fetch(url, { headers })).status).toBe(401);
     expect(prisma.auditLog.findMany).not.toHaveBeenCalled();
@@ -153,13 +158,13 @@ describe('Audit list HTTP API', () => {
     'limit=0',
     'page=2147483647&limit=100',
     'unknown=true',
-  ])('rejects invalid queries: %s', async (query) => {
+  ])('IT-AUDIT-006: rejects invalid queries: %s', async (query) => {
     expect((await fetch(`${url}?${query}`, { headers })).status).toBe(400);
     expect(prisma.auditLog.findMany).not.toHaveBeenCalled();
   });
 
   it.each(['POST', 'PUT', 'PATCH', 'DELETE'])(
-    'exposes no %s endpoint for audit records',
+    'IT-AUDIT-007: exposes no %s endpoint for audit records',
     async (method) => {
       for (const path of ['', '/00000000-0000-4000-8000-000000000001']) {
         expect((await fetch(`${url}${path}`, { method, headers })).status).toBe(

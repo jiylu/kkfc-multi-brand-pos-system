@@ -65,7 +65,7 @@ describe('Assets HTTP', () => {
   beforeEach(() => jest.clearAllMocks());
   afterAll(async () => app.close());
 
-  it('forwards the function toggle and reports no expiry for public URLs', async () => {
+  it('IT-ASSET-002: forwards the function toggle and reports no expiry for public URLs', async () => {
     const uploaded = await assets.upload(
       owner,
       { originalname: 'image.png', mimetype: 'image/png', buffer: png },
@@ -80,7 +80,7 @@ describe('Assets HTTP', () => {
   });
 
   it.each(['png', 'jpg'])(
-    'accepts a real %s and stores normalized bytes under the owner prefix',
+    'IT-ASSET-003: accepts a real %s and stores normalized bytes under the owner prefix',
     async (format) => {
       const response = await request(app.getHttpServer())
         .post('/api/assets')
@@ -114,7 +114,7 @@ describe('Assets HTTP', () => {
   );
 
   it.each([undefined, 'expired'])(
-    'requires a valid session (%s)',
+    'IT-ASSET-004: requires a valid session (%s)',
     async (token) => {
       const call = request(app.getHttpServer()).post('/api/assets');
       if (token) call.auth(token, { type: 'bearer' });
@@ -123,7 +123,7 @@ describe('Assets HTTP', () => {
     },
   );
 
-  it('requires a file', async () => {
+  it('IT-ASSET-005: requires a file', async () => {
     await request(app.getHttpServer())
       .post('/api/assets')
       .auth('valid', { type: 'bearer' })
@@ -137,7 +137,7 @@ describe('Assets HTTP', () => {
     ['image.png', 'text/plain', 'png'],
     ['empty.png', 'image/png', Buffer.alloc(0)],
   ])(
-    'rejects disallowed or disguised files: %s / %s',
+    'IT-ASSET-006: rejects disallowed or disguised files: %s / %s',
     async (filename, contentType, bytes) => {
       const response = await request(app.getHttpServer())
         .post('/api/assets')
@@ -151,7 +151,7 @@ describe('Assets HTTP', () => {
     },
   );
 
-  it('rejects an oversized upload before storage', async () => {
+  it('IT-ASSET-007: rejects an oversized upload before storage', async () => {
     await request(app.getHttpServer())
       .post('/api/assets')
       .auth('valid', { type: 'bearer' })
@@ -163,7 +163,7 @@ describe('Assets HTTP', () => {
     expect(storage.putObject).not.toHaveBeenCalled();
   });
 
-  it('rejects multiple files', async () => {
+  it('IT-ASSET-008: rejects multiple files', async () => {
     await request(app.getHttpServer())
       .post('/api/assets')
       .auth('valid', { type: 'bearer' })
@@ -173,7 +173,7 @@ describe('Assets HTTP', () => {
     expect(storage.putObject).not.toHaveBeenCalled();
   });
 
-  it('rejects a truncated JPG even when its extension and MIME type are correct', async () => {
+  it('IT-ASSET-009: rejects a truncated JPG even when its extension and MIME type are correct', async () => {
     await request(app.getHttpServer())
       .post('/api/assets')
       .auth('valid', { type: 'bearer' })
@@ -185,7 +185,7 @@ describe('Assets HTTP', () => {
     expect(storage.putObject).not.toHaveBeenCalled();
   });
 
-  it('rejects images above the pixel limit even if compressed bytes are small', async () => {
+  it('IT-ASSET-010: rejects images above the pixel limit even if compressed bytes are small', async () => {
     const large = await sharp({
       create: { width: 5000, height: 4001, channels: 3, background: 'red' },
     })
@@ -203,7 +203,7 @@ describe('Assets HTTP', () => {
     expect(storage.putObject).not.toHaveBeenCalled();
   });
 
-  it('returns a sanitized error when S3 rejects an upload', async () => {
+  it('IT-ASSET-011: returns a sanitized error when S3 rejects an upload', async () => {
     storage.putObject.mockRejectedValueOnce(
       new Error('sensitive upstream details'),
     );
@@ -217,7 +217,7 @@ describe('Assets HTTP', () => {
     );
   });
 
-  it('refreshes a download URL for the owner', async () => {
+  it('IT-ASSET-012: refreshes a download URL for the owner', async () => {
     await request(app.getHttpServer())
       .get('/api/assets/download-url')
       .query({ key })
@@ -228,7 +228,7 @@ describe('Assets HTTP', () => {
   });
 
   it.each(['uploads/another-user/test.png', `uploads/${owner}/../test.png`])(
-    'rejects access to %s',
+    'IT-ASSET-013: rejects access to %s',
     async (otherKey) => {
       await request(app.getHttpServer())
         .get('/api/assets/download-url')
@@ -240,14 +240,14 @@ describe('Assets HTTP', () => {
     },
   );
 
-  it('requires a download key', async () => {
+  it('IT-ASSET-014: requires a download key', async () => {
     await request(app.getHttpServer())
       .get('/api/assets/download-url')
       .auth('valid', { type: 'bearer' })
       .expect(400);
   });
 
-  it('returns 404 for missing objects', async () => {
+  it('IT-ASSET-015: returns 404 for missing objects', async () => {
     storage.objectExists.mockResolvedValueOnce(false);
     await request(app.getHttpServer())
       .get('/api/assets/download-url')
@@ -256,7 +256,7 @@ describe('Assets HTTP', () => {
       .expect(404);
   });
 
-  it('does not write an object when signing fails', async () => {
+  it('IT-ASSET-016: does not write an object when signing fails', async () => {
     storage.createDownloadUrl.mockRejectedValueOnce(
       new Error('private details'),
     );

@@ -5,7 +5,7 @@ Resource          auth_keywords.resource
 *** Keywords ***
 The client lists all brands
     ${headers}=    Create Dictionary    Authorization=Bearer ${SESSION_TOKEN}
-    ${response}=   GET On Session       api    /api/brands    headers=${headers}    expected_status=any
+    ${response}=   GET On Session       api    url=/api/brands?limit=100    headers=${headers}    expected_status=any
     Set Test Variable    ${LAST_RESPONSE}    ${response}
 
 The client retrieves its own brand
@@ -56,3 +56,9 @@ The current brand name is recorded
     The HTTP response status should be 200
     ${body}=    Set Variable    ${LAST_RESPONSE.json()}
     Set Test Variable    ${ORIGINAL_BRAND_NAME}    ${body}[name]
+
+The brand listing includes both fixture brands
+    ${body}=    Set Variable    ${LAST_RESPONSE.json()}
+    ${ids}=    Evaluate    [brand["brand_id"] for brand in $body["data"]]
+    List Should Contain Value    ${ids}    ${CATALOG}[brand][brand_id]
+    List Should Contain Value    ${ids}    ${CATALOG}[otherBrand][brand_id]

@@ -20,7 +20,6 @@ describe('Brands HTTP endpoints', () => {
   let app: INestApplication;
   let url: string;
   let currentRole: UserRole;
-  let currentBrandId: string | null;
   let image: Buffer;
   const brandId = '00000000-0000-4000-8000-000000000001';
   const callerId = '00000000-0000-4000-8000-000000000004';
@@ -58,7 +57,6 @@ describe('Brands HTTP endpoints', () => {
               user: {
                 user_id: string;
                 role: UserRole;
-                brand_id: string | null;
               };
             };
           }>();
@@ -66,7 +64,6 @@ describe('Brands HTTP endpoints', () => {
             user: {
               user_id: callerId,
               role: currentRole,
-              brand_id: currentBrandId,
             },
           };
           return true;
@@ -91,7 +88,6 @@ describe('Brands HTTP endpoints', () => {
 
   beforeEach(() => {
     currentRole = UserRole.SUPERADMIN;
-    currentBrandId = brandId;
     storage.putObject.mockReset().mockResolvedValue(undefined);
     storage.createDownloadUrl
       .mockReset()
@@ -111,7 +107,7 @@ describe('Brands HTTP endpoints', () => {
     return form;
   }
 
-  it('updates the brand image with multipart form data', async () => {
+  it('IT-BRND-001: Given a superadmin and valid multipart fields, When a replacement logo is uploaded, Then save its object key with the supplied brand fields', async () => {
     const form = imageForm();
     form.set('name', 'Updated');
     form.set('code', 'EDIT');
@@ -131,7 +127,7 @@ describe('Brands HTTP endpoints', () => {
     });
   });
 
-  it('updates only the image without requiring name or code', async () => {
+  it('IT-BRND-002: Given a superadmin and an image-only payload, When the brand is updated, Then save the logo without requiring name or code', async () => {
     const response = await fetch(`${url}/${brandId}`, {
       method: 'PATCH',
       body: imageForm(),
@@ -141,7 +137,7 @@ describe('Brands HTTP endpoints', () => {
     expect(service.update).toHaveBeenCalledWith(brandId, { logo_url: key });
   });
 
-  it('keeps multipart updates without an image working', async () => {
+  it('IT-BRND-003: Given a superadmin and multipart fields without a file, When the brand is updated, Then forward fields without uploading an image', async () => {
     const form = new FormData();
     form.set('name', 'Updated');
     const response = await fetch(`${url}/${brandId}`, {
@@ -153,7 +149,7 @@ describe('Brands HTTP endpoints', () => {
     expect(storage.putObject).not.toHaveBeenCalled();
   });
 
-  it('rejects malformed update fields before uploading the image', async () => {
+  it('IT-BRND-004: Given an oversized brand code and image, When the brand is updated, Then return 400 before uploading or saving', async () => {
     const form = imageForm();
     form.set('code', 'TOOLONG');
     expect(
@@ -164,7 +160,7 @@ describe('Brands HTTP endpoints', () => {
     expect(service.update).not.toHaveBeenCalled();
   });
 
-  it('checks the target brand before uploading its replacement image', async () => {
+  it('IT-BRND-005: Given a missing brand, When a replacement logo is uploaded, Then return 404 without storing the image', async () => {
     service.findOne.mockRejectedValue(new NotFoundException());
     expect(
       (await fetch(`${url}/${brandId}`, { method: 'PATCH', body: imageForm() }))
@@ -174,7 +170,7 @@ describe('Brands HTTP endpoints', () => {
     expect(service.update).not.toHaveBeenCalled();
   });
 
-  it('rejects invalid image bytes without changing the brand', async () => {
+  it('IT-BRND-006: Given invalid PNG bytes, When a replacement logo is uploaded, Then return 415 without updating the brand', async () => {
     const form = new FormData();
     form.set(
       'file',
@@ -189,7 +185,7 @@ describe('Brands HTTP endpoints', () => {
     expect(service.update).not.toHaveBeenCalled();
   });
 
-  it('rejects oversized update images', async () => {
+  it('IT-BRND-007: Given an oversized image, When a replacement logo is uploaded, Then return 413 without updating the brand', async () => {
     const form = new FormData();
     form.set(
       'file',
@@ -204,7 +200,7 @@ describe('Brands HTTP endpoints', () => {
     expect(service.update).not.toHaveBeenCalled();
   });
 
-  it('rejects multiple update images', async () => {
+  it('IT-BRND-008: Given multiple image files, When a replacement logo is uploaded, Then return 400 without updating the brand', async () => {
     const form = imageForm();
     form.append(
       'file',
@@ -219,7 +215,7 @@ describe('Brands HTTP endpoints', () => {
     expect(service.update).not.toHaveBeenCalled();
   });
 
-  it('keeps the brand unchanged when image storage fails', async () => {
+  it('IT-BRND-009: Given unavailable storage, When a replacement logo is uploaded, Then return 503 without updating the brand', async () => {
     storage.putObject.mockRejectedValue(new Error('storage unavailable'));
     expect(
       (await fetch(`${url}/${brandId}`, { method: 'PATCH', body: imageForm() }))
@@ -228,7 +224,7 @@ describe('Brands HTTP endpoints', () => {
     expect(service.update).not.toHaveBeenCalled();
   });
 
-  it('blocks managers before uploading replacement images', async () => {
+  it('IT-BRND-010: Given a manager session, When a replacement logo is uploaded, Then return 403 before storage or update', async () => {
     currentRole = UserRole.MANAGER;
     expect(
       (await fetch(`${url}/${brandId}`, { method: 'PATCH', body: imageForm() }))
@@ -244,15 +240,17 @@ describe('Brands HTTP endpoints', () => {
       '?page=2&limit=5&activeOnly=false',
       { page: 2, limit: 5, activeOnly: false },
     ],
-  ] as const)('lists brands with pagination: %s', async (query, expected) => {
-    currentRole = UserRole.SUPERADMIN;
-    currentBrandId = null;
-    expect((await fetch(url + query)).status).toBe(200);
-    expect(service.findAll).toHaveBeenCalledWith(expected);
-  });
+  ] as const)(
+    'IT-BRND-011: Given pagination query %s, When brands are listed, Then forward the global pagination filters',
+    async (query, expected) => {
+      currentRole = UserRole.SUPERADMIN;
+      expect((await fetch(url + query)).status).toBe(200);
+      expect(service.findAll).toHaveBeenCalledWith(expected);
+    },
+  );
 
   it.each(['GET', 'DELETE'])(
-    'delegates %s for the superadmin',
+    'IT-BRND-012: Given a superadmin session, When %s targets a brand, Then delegate to the service',
     async (method) => {
       expect((await fetch(url + '/' + brandId, { method })).status).toBe(200);
       expect(
@@ -261,7 +259,7 @@ describe('Brands HTTP endpoints', () => {
     },
   );
 
-  it('validates and forwards brand updates', async () => {
+  it('IT-BRND-013: Given a valid JSON update, When a superadmin updates a brand, Then forward all supplied fields without an upload', async () => {
     const dto = { name: 'Updated', code: 'EDIT', logo_url: null };
     const response = await fetch(url + '/' + brandId, {
       method: 'PATCH',
@@ -273,7 +271,7 @@ describe('Brands HTTP endpoints', () => {
     expect(storage.putObject).not.toHaveBeenCalled();
   });
 
-  it('documents optional multipart images while retaining JSON updates', () => {
+  it('IT-BRND-014: Given the generated OpenAPI document, When the brand update operation is inspected, Then document JSON multipart and upload error responses', () => {
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder().addBearerAuth().build(),
@@ -290,17 +288,19 @@ describe('Brands HTTP endpoints', () => {
 
   it.each(
     Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
-  )('allows %s to read their brand', async (role) => {
-    currentRole = role;
-    expect((await fetch(url + '/' + brandId)).status).toBe(200);
-    expect(service.findOne).toHaveBeenCalledWith(brandId);
-  });
+  )(
+    'IT-BRND-015: Given employee role %s without brand assignments, When another fixture brand is read, Then return 200 and query that brand',
+    async (role) => {
+      currentRole = role;
+      expect((await fetch(url + '/' + otherBrandId)).status).toBe(200);
+      expect(service.findOne).toHaveBeenCalledWith(otherBrandId);
+    },
+  );
 
   it.each(['GET', 'PATCH', 'DELETE'])(
-    'allows superadmins to access another brand: %s',
+    'IT-BRND-016: Given a superadmin session, When %s targets another brand, Then return 200',
     async (method) => {
       currentRole = UserRole.SUPERADMIN;
-      currentBrandId = null;
       expect((await fetch(url + '/' + otherBrandId, { method })).status).toBe(
         200,
       );
@@ -309,14 +309,12 @@ describe('Brands HTTP endpoints', () => {
 
   it.each(
     Object.values(UserRole)
-      .filter(
-        (role) => role !== UserRole.MANAGER && role !== UserRole.SUPERADMIN,
-      )
+      .filter((role) => role !== UserRole.SUPERADMIN)
       .flatMap((role) =>
         ['PATCH', 'DELETE'].map((method) => ({ role, method })),
       ),
   )(
-    'keeps $method manager-or-superadmin only for assigned $role',
+    'IT-BRND-017: Given staff role $role, When $method modifies a brand, Then return 403 without calling the service',
     async ({ role, method }) => {
       currentRole = role;
       expect((await fetch(url + '/' + brandId, { method })).status).toBe(403);
@@ -328,19 +326,25 @@ describe('Brands HTTP endpoints', () => {
   it.each([
     { name: 'King Kungs Kafé', code: 'KKFC', logo_url: null },
     { name: 'King Kungs Kafé', code: 'KK' },
-  ])('creates a brand for the authenticated superadmin: %j', async (dto) => {
-    currentBrandId = null;
-    const form = imageForm();
-    form.set('name', dto.name);
-    form.set('code', dto.code);
-    const response = await fetch(url, {
-      method: 'POST',
-      body: form,
-    });
-    expect(response.status).toBe(201);
-    const [[key]] = storage.putObject.mock.calls as [string, Buffer, string][];
-    expect(service.create).toHaveBeenCalledWith({ ...dto, logo_url: key });
-  });
+  ])(
+    'IT-BRND-018: Given a superadmin and payload %j, When a brand is created with an image, Then save the supplied code and uploaded logo key',
+    async (dto) => {
+      const form = imageForm();
+      form.set('name', dto.name);
+      form.set('code', dto.code);
+      const response = await fetch(url, {
+        method: 'POST',
+        body: form,
+      });
+      expect(response.status).toBe(201);
+      const [[key]] = storage.putObject.mock.calls as [
+        string,
+        Buffer,
+        string,
+      ][];
+      expect(service.create).toHaveBeenCalledWith({ ...dto, logo_url: key });
+    },
+  );
 
   it.each([
     {},
@@ -357,19 +361,21 @@ describe('Brands HTTP endpoints', () => {
     { name: 'Brand', code: 'BRND', owner_id: 'another-owner' },
     { name: 'Brand', code: 'BRND', owner_id: null },
     { name: 'Brand', code: 'BRND', is_active: false },
-  ])('rejects invalid creation bodies: %j', async (body) => {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    expect(response.status).toBe(400);
-    expect(service.create).not.toHaveBeenCalled();
-  });
+  ])(
+    'IT-BRND-019: Given invalid creation payload %j, When brand creation is requested, Then return 400 without creating a brand',
+    async (body) => {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      expect(response.status).toBe(400);
+      expect(service.create).not.toHaveBeenCalled();
+    },
+  );
 
-  it('creates a brand without requiring a user assignment', async () => {
+  it('IT-BRND-020: Given a superadmin without brand assignments, When a valid brand is created, Then return 201 without assigning employees', async () => {
     currentRole = UserRole.SUPERADMIN;
-    currentBrandId = null;
     const dto = { name: 'Brand', code: 'BRND' };
     const form = imageForm();
     form.set('name', dto.name);
@@ -385,26 +391,32 @@ describe('Brands HTTP endpoints', () => {
 
   it.each(
     Object.values(UserRole).filter((role) => role !== UserRole.SUPERADMIN),
-  )('allows %s to list all brands', async (role) => {
-    currentRole = role;
-    expect((await fetch(url)).status).toBe(200);
-    expect(service.findAll).toHaveBeenCalled();
-  });
+  )(
+    'IT-BRND-021: Given employee role %s, When the global brand listing is requested, Then return 200',
+    async (role) => {
+      currentRole = role;
+      expect((await fetch(url)).status).toBe(200);
+      expect(service.findAll).toHaveBeenCalled();
+    },
+  );
 
   it.each(
     Object.values(UserRole).filter(
       (role) => role !== UserRole.MANAGER && role !== UserRole.SUPERADMIN,
     ),
-  )('rejects brand creation for %s', async (role) => {
-    currentRole = role;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Brand', code: 'BRND' }),
-    });
-    expect(response.status).toBe(403);
-    expect(service.create).not.toHaveBeenCalled();
-  });
+  )(
+    'IT-BRND-022: Given staff role %s, When brand creation is requested, Then return 403 without creating a brand',
+    async (role) => {
+      currentRole = role;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Brand', code: 'BRND' }),
+      });
+      expect(response.status).toBe(403);
+      expect(service.create).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     { name: '', is_active: true },
@@ -413,18 +425,21 @@ describe('Brands HTTP endpoints', () => {
     { code: 123 },
     { code: 'ABCDE' },
     { owner_id: callerId },
-  ])('rejects invalid update bodies: %j', async (body) => {
-    const response = await fetch(url + '/' + brandId, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    expect(response.status).toBe(400);
-    expect(service.update).not.toHaveBeenCalled();
-  });
+  ])(
+    'IT-BRND-023: Given invalid update payload %j, When a brand update is requested, Then return 400 without saving',
+    async (body) => {
+      const response = await fetch(url + '/' + brandId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      expect(response.status).toBe(400);
+      expect(service.update).not.toHaveBeenCalled();
+    },
+  );
 
   it.each(['GET', 'PATCH', 'DELETE'])(
-    'rejects malformed brand IDs: %s',
+    'IT-BRND-024: Given a malformed brand UUID, When %s targets that path, Then return 400 without calling the service',
     async (method) => {
       expect((await fetch(url + '/not-a-uuid', { method })).status).toBe(400);
       for (const handler of Object.values(service))
@@ -433,7 +448,7 @@ describe('Brands HTTP endpoints', () => {
   );
 
   it.each(['?page=0', '?limit=0', '?limit=101', '?activeOnly=invalid'])(
-    'rejects invalid list filters: %s',
+    'IT-BRND-025: Given invalid list query %s, When brands are listed, Then return 400 before querying',
     async (query) => {
       currentRole = UserRole.SUPERADMIN;
       expect((await fetch(url + query)).status).toBe(400);
@@ -448,9 +463,12 @@ describe('Brands HTTP endpoints', () => {
     ['GET', '/' + brandId + '/assignments/' + callerId],
     ['DELETE', '/' + brandId + '/assignments/' + callerId],
     ['PATCH', '/' + brandId + '/assignments/' + callerId + '/reactivate'],
-  ])('removes assignment routes: %s %s', async (method, path) => {
-    expect((await fetch(url + path, { method })).status).toBe(404);
-    for (const handler of Object.values(service))
-      expect(handler).not.toHaveBeenCalled();
-  });
+  ])(
+    'IT-BRND-026: Given the removed assignment API, When %s requests path %s, Then return 404 without calling the brand service',
+    async (method, path) => {
+      expect((await fetch(url + path, { method })).status).toBe(404);
+      for (const handler of Object.values(service))
+        expect(handler).not.toHaveBeenCalled();
+    },
+  );
 });

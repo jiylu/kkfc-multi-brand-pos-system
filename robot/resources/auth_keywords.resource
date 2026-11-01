@@ -3,7 +3,7 @@ Resource          common.resource
 
 *** Keywords ***
 A registered test user exists with role "${role}"
-    ${roles}=    Create Dictionary    MANAGER=${0}    CASHIER_STAFF=${1}    SUPERADMIN=${2}    OTHER_BRAND_MANAGER=${3}
+    ${roles}=    Create Dictionary    MANAGER=${0}    CASHIER_STAFF=${1}    SUPERADMIN=${2}    OTHER_BRAND_MANAGER=${3}    KITCHEN_HEAD=${4}    KITCHEN_STAFF=${5}
     Dictionary Should Contain Key    ${roles}    ${role}
     ${index}=    Get From Dictionary    ${roles}    ${role}
     Set Test Variable    ${ACTIVE_USER}    ${CATALOG}[users][${index}][username]
@@ -31,8 +31,9 @@ The response should contain an active session token
     Should Not Be Empty    ${body}[token]
     Dictionary Should Not Contain Key    ${body}[user]    password_hash
     Set Test Variable    ${SESSION_TOKEN}    ${body}[token]
-    ${brand_id}=    Evaluate    $body['user'].get('brand_id')
-    Set Test Variable    ${SESSION_BRAND_ID}    ${brand_id}
+    Dictionary Should Not Contain Key    ${body}[user]    brand_id
+    Dictionary Should Not Contain Key    ${body}[user]    brand_ids
+    Set Test Variable    ${SESSION_BRAND_ID}    ${CATALOG}[brand][brand_id]
 
 The response should not contain a session token
     ${body}=    Set Variable    ${LAST_RESPONSE.json()}

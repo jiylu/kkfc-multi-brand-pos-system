@@ -17,12 +17,14 @@ async function main() {
       const manifest = JSON.parse(await readFile(path, 'utf8')) as {
         fixture: Awaited<ReturnType<typeof createCatalogFixture>>;
         extra_brand_ids?: string[];
+        extra_user_ids?: string[];
       };
       // Cleanup is scoped to UUIDs created by this fixture, never a database reset.
       await cleanupCatalogFixture(
         prisma,
         manifest.fixture,
         manifest.extra_brand_ids,
+        manifest.extra_user_ids,
       );
       await unlink(path);
       return;
@@ -60,7 +62,11 @@ async function main() {
     await mkdir(dirname(path), { recursive: true });
     await writeFile(
       path,
-      JSON.stringify({ fixture, password, extra_brand_ids: [] }, null, 2),
+      JSON.stringify(
+        { fixture, password, extra_brand_ids: [], extra_user_ids: [] },
+        null,
+        2,
+      ),
     );
     console.log('Prepared isolated fixtures for all Robot E2E suites.');
   } finally {

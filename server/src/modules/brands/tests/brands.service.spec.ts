@@ -52,7 +52,7 @@ describe('BrandsService', () => {
   });
   afterEach(() => jest.restoreAllMocks());
 
-  describe('direct user-brand relation', () => {
+  describe('brand persistence without employee assignments', () => {
     const tx = {
       brand: {
         create: jest.fn(),
@@ -74,7 +74,7 @@ describe('BrandsService', () => {
       } as unknown as PrismaService);
     });
 
-    it('creates a brand without changing user assignments', async () => {
+    it('UT-BRND-018: Given employees exist, When a brand is created, Then leave employee records unchanged', async () => {
       tx.brand.create.mockResolvedValue(brand);
       await expect(
         repository.createBrand({ name: brand.name, code: brand.code }),
@@ -85,7 +85,7 @@ describe('BrandsService', () => {
       });
     });
 
-    it('propagates creation failures from an explicit transaction', async () => {
+    it('UT-BRND-019: Given a failing explicit transaction, When a brand is created, Then propagate the error without changing employees', async () => {
       const error = new Error('Brand creation failed');
       tx.brand.create.mockRejectedValue(error);
       await expect(
@@ -98,7 +98,7 @@ describe('BrandsService', () => {
     });
 
     it.each([true, false])(
-      'lists all brands with matching totals and activeOnly=%s',
+      'UT-BRND-020: Given activeOnly=%s, When brands are listed, Then rows and counts use the same global filter',
       async (activeOnly) => {
         tx.brand.findMany.mockResolvedValue([brand]);
         tx.brand.count.mockResolvedValue(1);
@@ -120,14 +120,14 @@ describe('BrandsService', () => {
       },
     );
 
-    it('deactivates only the brand, leaving users active', async () => {
+    it('UT-BRND-021: Given active employees, When a brand is deactivated, Then leave employees active', async () => {
       tx.brand.update.mockResolvedValue({ ...brand, is_active: false });
       await expect(
         repository.deleteBrand(brand.brand_id),
       ).resolves.toMatchObject({ is_active: false });
       expect(tx.user.updateMany).not.toHaveBeenCalled();
     });
-    it('queries only active brands by default', async () => {
+    it('UT-BRND-022: Given a default lookup, When a brand is retrieved, Then query only active brands', async () => {
       tx.brand.findUnique.mockResolvedValue(null);
       await expect(
         repository.findOneBrand(
@@ -143,7 +143,7 @@ describe('BrandsService', () => {
   });
 
   it.each(['create', 'update'] as const)(
-    'propagates a duplicate code during %s to the global conflict filter',
+    'UT-BRND-023: Given a duplicate code, When %s fails, Then propagate P2002 for the global conflict filter',
     async (operation) => {
       const error = new Prisma.PrismaClientKnownRequestError('Duplicate code', {
         code: 'P2002',
@@ -161,7 +161,7 @@ describe('BrandsService', () => {
       await expect(result).rejects.toBe(error);
     },
   );
-  it('creates a brand with the supplied code', async () => {
+  it('UT-BRND-024: Given a supplied brand code, When a brand is created, Then persist that code', async () => {
     const dto = { name: 'New Brand', code: 'USER' };
 
     await expect(service.create(dto)).resolves.toMatchObject({
@@ -171,7 +171,7 @@ describe('BrandsService', () => {
     expect(brands.createBrand).toHaveBeenCalledWith(dto);
   });
 
-  it('returns an active brand and rejects a missing or inactive brand', async () => {
+  it('UT-BRND-025: Given an active or missing brand, When it is retrieved, Then return it or BRAND_NOT_FOUND', async () => {
     await expect(service.findOne(brand.brand_id)).resolves.toEqual(brand);
     brands.findOneBrand.mockResolvedValue(null);
     await expect(service.findOne(brand.brand_id)).rejects.toMatchObject({
@@ -181,7 +181,7 @@ describe('BrandsService', () => {
   });
 
   it.each([undefined, brand.name, 'Renamed'])(
-    'preserves the code when only the name or logo changes: %s',
+    'UT-BRND-026: Given name change %s without a code, When the brand is updated, Then preserve its code',
     async (name) => {
       const dto = { name, logo_url: 'https://example.com/logo.png' };
 
@@ -192,7 +192,7 @@ describe('BrandsService', () => {
     },
   );
 
-  it('updates the code directly without requiring a name change', async () => {
+  it('UT-BRND-027: Given a code-only update, When the brand is updated, Then persist the supplied code', async () => {
     await expect(
       service.update(brand.brand_id, { code: 'EDIT' }),
     ).resolves.toMatchObject({ name: brand.name, code: 'EDIT' });
@@ -202,7 +202,7 @@ describe('BrandsService', () => {
   });
 
   describe('updateBrand and deleteBrand', () => {
-    it('UT-BRND-010: updates an existing brand using the supplied fields', async () => {
+    it('UT-BRND-010: Given an existing brand, When supplied fields are updated, Then persist and return the changes', async () => {
       const dto = { name: 'Updated', logo_url: null };
       await expect(service.update('brand-id', dto)).resolves.toEqual({
         ...brand,
@@ -212,7 +212,7 @@ describe('BrandsService', () => {
       expect(brands.updateBrand).toHaveBeenCalledWith('brand-id', dto);
     });
 
-    it('UT-BRND-011: uses the standard not-found error and propagates update/delete failures', async () => {
+    it('UT-BRND-011: Given a missing brand or failed update, When the brand is updated, Then return the standard error without logging success', async () => {
       brands.findOneBrand.mockResolvedValue(null);
       await expect(service.update('brand-id', {})).rejects.toMatchObject({
         status: 404,
@@ -229,7 +229,7 @@ describe('BrandsService', () => {
     });
 
     it.each(['update', 'delete'] as const)(
-      'UT-BRND-012: propagates P2025 to the global filter when a brand disappears before %s',
+      'UT-BRND-012: Given a concurrently removed brand, When %s loses its write, Then propagate P2025 to the global filter',
       async (operation) => {
         const error = new Prisma.PrismaClientKnownRequestError(
           'No matching brand',
@@ -253,7 +253,7 @@ describe('BrandsService', () => {
       },
     );
 
-    it('UT-BRND-013: deletes an existing brand and rejects missing brands', async () => {
+    it('UT-BRND-013: Given an existing or missing brand, When it is deleted, Then deactivate it or return BRAND_NOT_FOUND', async () => {
       await expect(service.delete('brand-id')).resolves.toEqual({
         ...brand,
         is_active: false,
@@ -273,14 +273,14 @@ describe('BrandsService', () => {
   });
 
   describe('findAllBrands', () => {
-    it('rejects pagination offsets beyond the database range', async () => {
+    it('UT-BRND-028: Given a pagination offset beyond the database range, When brands are listed, Then reject before querying', async () => {
       await expect(
         service.findAll({ page: 2_147_483_647, limit: 2, activeOnly: true }),
       ).rejects.toMatchObject({ status: 400 });
       expect(brands.findAllBrands).not.toHaveBeenCalled();
     });
 
-    it('returns zero pages for an empty listing', async () => {
+    it('UT-BRND-029: Given no matching brands, When brands are listed, Then return zero total pages', async () => {
       brands.findAllBrands.mockResolvedValue({ brands: [], total: 0 });
       await expect(
         service.findAll({ page: 1, limit: 10, activeOnly: true }),
@@ -291,7 +291,7 @@ describe('BrandsService', () => {
     });
 
     it.each([true, false])(
-      'returns pagination metadata and forwards activeOnly=%s',
+      'UT-BRND-030: Given activeOnly=%s and page 2, When brands are listed, Then return matching pagination metadata',
       async (activeOnly) => {
         await expect(
           service.findAll({

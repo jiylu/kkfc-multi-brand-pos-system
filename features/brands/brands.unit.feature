@@ -1,109 +1,104 @@
-Feature: Brands Service Unit Logic
-  Feature ID: FEAT-BRND-UNIT
-  Requirement ID: FR-001
+@backend @unit @brands
+Feature: Global brand administration without employee assignments
 
-  As the backend brand service,
-  I want to manage brands and brand-to-user assignments in isolation,
-  So that multi-brand access control is enforced consistently.
+  @UT-BRND-018
+  Scenario: Creates a brand without changing user assignments
+    Given employees exist
+    When a brand is created
+    Then leave employee records unchanged
 
-  Scenario: Create brand assignment for user and brand
-    Test Case ID: UT-BRND-001
-    Given an existing user and brand
-    When BrandsService assigns user to brand
-    Then it should persist and return the new assignment
+  @UT-BRND-019
+  Scenario: Propagates creation failures from an explicit transaction
+    Given a failing explicit transaction
+    When a brand is created
+    Then propagate the error without changing employees
 
-  Scenario: Reject assignment when user or brand is missing
-    Test Case ID: UT-BRND-002
-    Given a non-existent user or brand ID
-    When BrandsService attempts to assign the user
-    Then it should throw NotFoundException without writing
+  @UT-BRND-020
+  Scenario: Lists all brands with matching totals and activeOnly=the requested value
+    Given activeOnly=the requested value
+    When brands are listed
+    Then rows and counts use the same global filter
 
-  Scenario: Propagate duplicate race or foreign key errors
-    Test Case ID: UT-BRND-003
-    Given a concurrent race or DB constraint violation on assignUser
-    When BrandsRepository throws P2002 or P2003
-    Then BrandsService should rethrow the error for the global filter
+  @UT-BRND-021
+  Scenario: Deactivates only the brand, leaving users active
+    Given active employees
+    When a brand is deactivated
+    Then leave employees active
 
-  Scenario: Reject assignment when assignment already exists
-    Test Case ID: UT-BRND-004
-    Given an existing active or inactive assignment
-    When BrandsService attempts to assign the user
-    Then it should throw ConflictException with code EXISTING_ASSIGNMENT_FOUND
+  @UT-BRND-022
+  Scenario: Queries only active brands by default
+    Given a default lookup
+    When a brand is retrieved
+    Then query only active brands
 
-  Scenario: Propagate lookup failures on assignment
-    Test Case ID: UT-BRND-005
-    Given a database failure during assignment lookup
-    When BrandsService attempts to assign user
-    Then it should rethrow the database error without writing
+  @UT-BRND-023
+  Scenario: Propagates a duplicate code during the requested value to the global conflict filter
+    Given a duplicate code
+    When the requested value fails
+    Then propagate P2002 for the global conflict filter
 
-  Scenario: Reject reactivation when related user or brand is missing
-    Test Case ID: UT-BRND-006
-    Given a deactivated assignment where the related user or brand is missing
-    When BrandsService attempts to reactivate the assignment
-    Then it should throw NotFoundException
+  @UT-BRND-024
+  Scenario: Creates a brand with the supplied code
+    Given a supplied brand code
+    When a brand is created
+    Then persist that code
 
-  Scenario: Reactivate inactive assignment
-    Test Case ID: UT-BRND-007
-    Given an inactive assignment with active user and brand
-    When BrandsService reactivates the assignment
-    Then it should update is_active to true and log the reactivation
+  @UT-BRND-025
+  Scenario: Returns an active brand and rejects a missing or inactive brand
+    Given an active or missing brand
+    When it is retrieved
+    Then return it or BRAND_NOT_FOUND
 
-  Scenario: Reject reactivation of missing or already active assignment
-    Test Case ID: UT-BRND-008
-    Given a non-existent assignment or an already active assignment
-    When BrandsService attempts reactivation
-    Then it should throw NotFoundException or ConflictException
+  @UT-BRND-026
+  Scenario: Preserves the code when only the name or logo changes: the requested value
+    Given name change the requested value without a code
+    When the brand is updated
+    Then preserve its code
 
-  Scenario: Handle concurrency conflict and propagate errors on reactivation
-    Test Case ID: UT-BRND-009
-    Given a concurrent modification race on reactivateBrandAssignment
-    When BrandsRepository throws P2025
-    Then BrandsService should throw ConflictException with code BRAND_ASSIGNMENT_CHANGED
+  @UT-BRND-027
+  Scenario: Updates the code directly without requiring a name change
+    Given a code-only update
+    When the brand is updated
+    Then persist the supplied code
 
-  Scenario: Update existing brand
-    Test Case ID: UT-BRND-010
-    Given an existing brand ID and UpdateBrandDTO
-    When BrandsService updates the brand
-    Then it should persist the changes and return the updated entity
+  @UT-BRND-010
+  Scenario: Updates an existing brand using the supplied fields
+    Given an existing brand
+    When supplied fields are updated
+    Then persist and return the changes
 
-  Scenario: Handle not-found and propagate errors on brand update
-    Test Case ID: UT-BRND-011
-    Given a non-existent brand ID or database failure
-    When BrandsService attempts update
-    Then it should throw NotFoundException or rethrow the database error
+  @UT-BRND-011
+  Scenario: Uses the standard not-found error and propagates update/delete failures
+    Given a missing brand or failed update
+    When the brand is updated
+    Then return the standard error without logging success
 
-  Scenario: Propagate P2025 when brand is deleted concurrently
-    Test Case ID: UT-BRND-012
-    Given a brand deleted concurrently after initial existence check
-    When BrandsService updates or deletes the brand
-    Then it should propagate P2025 to the global Prisma filter
+  @UT-BRND-012
+  Scenario: Propagates P2025 to the global filter when a brand disappears before the requested value
+    Given a concurrently removed brand
+    When the requested value loses its write
+    Then propagate P2025 to the global filter
 
-  Scenario: Delete existing brand
-    Test Case ID: UT-BRND-013
-    Given an existing brand ID
-    When BrandsService deletes the brand
-    Then it should deactivate the brand and its associated assignments
+  @UT-BRND-013
+  Scenario: Deletes an existing brand and rejects missing brands
+    Given an existing or missing brand
+    When it is deleted
+    Then deactivate it or return BRAND_NOT_FOUND
 
-  Scenario: Paginate brand assignments for user
-    Test Case ID: UT-BRND-014
-    Given an existing user ID and FindBrandsDTO
-    When BrandsService lists brand assignments for user
-    Then it should return paginated assignments and meta information
+  @UT-BRND-028
+  Scenario: Rejects pagination offsets beyond the database range
+    Given a pagination offset beyond the database range
+    When brands are listed
+    Then reject before querying
 
-  Scenario: Reject missing user and invalid offset on user assignments
-    Test Case ID: UT-BRND-015
-    Given a non-existent user ID or out-of-range page number
-    When BrandsService lists assignments
-    Then it should throw NotFoundException or BadRequestException
+  @UT-BRND-029
+  Scenario: Returns zero pages for an empty listing
+    Given no matching brands
+    When brands are listed
+    Then return zero total pages
 
-  Scenario: Paginate assigned users for brand
-    Test Case ID: UT-BRND-016
-    Given an existing brand ID and FindBrandsDTO
-    When BrandsService lists assigned users for brand
-    Then it should return paginated users and meta information
-
-  Scenario: Reject missing brand and invalid offset on brand users
-    Test Case ID: UT-BRND-017
-    Given a non-existent brand ID or out-of-range page number
-    When BrandsService lists assigned users
-    Then it should throw NotFoundException or BadRequestException
+  @UT-BRND-030
+  Scenario: Returns pagination metadata and forwards activeOnly=the requested value
+    Given activeOnly=the requested value and page 2
+    When brands are listed
+    Then return matching pagination metadata

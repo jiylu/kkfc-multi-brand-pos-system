@@ -64,7 +64,7 @@ describe('PinService', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
-  it('creates a missing PIN and preserves its leading zero', async () => {
+  it('UT-PIN-001: creates a missing PIN and preserves its leading zero', async () => {
     await expect(service.create(createDTO, userId)).resolves.toEqual(
       credential,
     );
@@ -72,7 +72,7 @@ describe('PinService', () => {
     expect(repository.create).toHaveBeenCalledWith(createDTO, userId);
   });
 
-  it('rejects setup when the user already has a PIN', async () => {
+  it('UT-PIN-002: rejects setup when the user already has a PIN', async () => {
     repository.findByUserId.mockResolvedValue({
       ...credential,
       pin_hash: 'existing-pin-hash',
@@ -85,14 +85,14 @@ describe('PinService', () => {
     expect(repository.create).not.toHaveBeenCalled();
   });
 
-  it('reads safe PIN credentials for an existing active user', async () => {
+  it('UT-PIN-003: reads safe PIN credentials for an existing active user', async () => {
     await expect(service.findOne(userId)).resolves.toEqual(credential);
     expect(usersRepository.findOne).toHaveBeenCalledWith(userId);
     expect(repository.findOneSafe).toHaveBeenCalledWith(userId);
     expect(repository.findByUserId).not.toHaveBeenCalled();
   });
 
-  it('rejects a lookup when the active-user query returns no user', async () => {
+  it('UT-PIN-004: rejects a lookup when the active-user query returns no user', async () => {
     usersRepository.findOne.mockResolvedValue(null);
 
     await expect(service.findOne(userId)).rejects.toBeInstanceOf(
@@ -101,7 +101,7 @@ describe('PinService', () => {
     expect(repository.findOneSafe).not.toHaveBeenCalled();
   });
 
-  it('returns null when an existing user has no PIN configured', async () => {
+  it('UT-PIN-005: returns null when an existing user has no PIN configured', async () => {
     repository.findOneSafe.mockResolvedValue(null);
 
     await expect(service.findOne(userId)).resolves.toBeNull();
@@ -116,7 +116,7 @@ describe('PinService', () => {
   ];
 
   it.each(verificationResults)(
-    'returns the $status verification result for the guard to handle',
+    'UT-PIN-006: returns the $status verification result for the guard to handle',
     async (result) => {
       repository.verifyPin.mockResolvedValue(result);
 
@@ -125,14 +125,14 @@ describe('PinService', () => {
     },
   );
 
-  it('propagates verification errors instead of treating them as a valid PIN', async () => {
+  it('UT-PIN-007: propagates verification errors instead of treating them as a valid PIN', async () => {
     const error = new Error('Database unavailable');
     repository.verifyPin.mockRejectedValue(error);
 
     await expect(service.verifyPin(userId, '0123')).rejects.toBe(error);
   });
 
-  it('updates the PIN after verifying the current account password', async () => {
+  it('UT-PIN-008: updates the PIN after verifying the current account password', async () => {
     await expect(service.updatePin(updateDTO, userId)).resolves.toEqual(
       credential,
     );
@@ -147,7 +147,7 @@ describe('PinService', () => {
     expect(usersRepository.findOne).not.toHaveBeenCalled();
   });
 
-  it('rejects an incorrect password without changing the PIN', async () => {
+  it('UT-PIN-009: rejects an incorrect password without changing the PIN', async () => {
     verifyPassword.mockResolvedValue(false);
 
     await expect(service.updatePin(updateDTO, userId)).rejects.toMatchObject({
@@ -157,7 +157,7 @@ describe('PinService', () => {
     expect(repository.update).not.toHaveBeenCalled();
   });
 
-  it('rejects a reset when the active-user credential query returns no user', async () => {
+  it('UT-PIN-010: rejects a reset when the active-user credential query returns no user', async () => {
     usersRepository.findCredentialsByUserId.mockResolvedValue(null);
 
     await expect(service.updatePin(updateDTO, userId)).rejects.toBeInstanceOf(
@@ -167,7 +167,7 @@ describe('PinService', () => {
     expect(repository.update).not.toHaveBeenCalled();
   });
 
-  it('allows repeated resets when the account password is correct', async () => {
+  it('UT-PIN-011: allows repeated resets when the account password is correct', async () => {
     const nextDTO = { ...updateDTO, pin: '0789' };
 
     await service.updatePin(updateDTO, userId);
@@ -179,7 +179,7 @@ describe('PinService', () => {
     expect(verifyPassword).toHaveBeenCalledTimes(2);
   });
 
-  it('propagates password verification errors without changing the PIN', async () => {
+  it('UT-PIN-012: propagates password verification errors without changing the PIN', async () => {
     const error = new Error('Invalid stored password hash');
     verifyPassword.mockRejectedValue(error);
 

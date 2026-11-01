@@ -125,7 +125,7 @@ describe('Modifiers HTTP endpoints', () => {
 
   afterAll(async () => app?.close());
 
-  it('documents every guarded route, payload, and query', () => {
+  it('IT-MOD-001: documents every guarded route, payload, and query', () => {
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder().addBearerAuth().build(),
@@ -298,7 +298,7 @@ describe('Modifiers HTTP endpoints', () => {
       args: [modifierId],
     },
   ] as const)(
-    '$method $path delegates to $handler for an authenticated allowed role',
+    'IT-MOD-002: $method $path delegates to $handler for an authenticated allowed role',
     async (route) => {
       const body = 'body' in route ? route.body : undefined;
       const response = await fetch(url + route.path, {
@@ -315,7 +315,7 @@ describe('Modifiers HTTP endpoints', () => {
   );
 
   it.each(protectedRoutes)(
-    '$method $path rejects missing authentication',
+    'IT-MOD-003: $method $path rejects missing authentication',
     async (route) => {
       const response = await fetch(url + route.path, {
         method: route.method,
@@ -330,7 +330,7 @@ describe('Modifiers HTTP endpoints', () => {
   );
 
   it.each(protectedRoutes)(
-    '$method $path rejects invalid sessions',
+    'IT-MOD-004: $method $path rejects invalid sessions',
     async (route) => {
       auth.validateSession.mockRejectedValueOnce(
         new NotFoundException('Invalid session'),
@@ -347,7 +347,7 @@ describe('Modifiers HTTP endpoints', () => {
   );
 
   it.each([UserRole.SUPERADMIN, UserRole.RECIPE_MANAGER])(
-    'allows %s on all modifier endpoints',
+    'IT-MOD-005: allows %s on all modifier endpoints',
     async (callerRole) => {
       role = callerRole;
       for (const route of protectedRoutes) {
@@ -367,7 +367,7 @@ describe('Modifiers HTTP endpoints', () => {
       (value) =>
         value !== UserRole.SUPERADMIN && value !== UserRole.RECIPE_MANAGER,
     ),
-  )('denies %s on all modifier endpoints', async (callerRole) => {
+  )('IT-MOD-006: denies %s on all modifier endpoints', async (callerRole) => {
     role = callerRole;
     for (const route of protectedRoutes) {
       const response = await fetch(url + route.path, {
@@ -404,7 +404,7 @@ describe('Modifiers HTTP endpoints', () => {
       path: `/inventory-item/${inventoryItemId}?activeOnly=invalid`,
     },
   ] as const)(
-    '$method $path rejects invalid input before calling the service',
+    'IT-MOD-007: $method $path rejects invalid input before calling the service',
     async (route) => {
       const body = 'body' in route ? route.body : undefined;
       const response = await fetch(url + route.path, {
@@ -418,7 +418,7 @@ describe('Modifiers HTTP endpoints', () => {
     },
   );
 
-  it('preserves not-found errors from the service', async () => {
+  it('IT-MOD-008: preserves not-found errors from the service', async () => {
     service.findOne.mockRejectedValueOnce(
       new NotFoundException({
         code: 'MODIFIER_NOT_FOUND',
@@ -430,7 +430,7 @@ describe('Modifiers HTTP endpoints', () => {
     expect(await response.json()).toMatchObject({ code: 'MODIFIER_NOT_FOUND' });
   });
 
-  it('preserves reactivation conflicts from the service', async () => {
+  it('IT-MOD-009: preserves reactivation conflicts from the service', async () => {
     service.reactivate.mockRejectedValueOnce(
       new ConflictException({
         code: 'MODIFIER_ALREADY_ACTIVE',

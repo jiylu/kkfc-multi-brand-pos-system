@@ -208,6 +208,62 @@ $ npm run test:integration
 $ npm run test:cov
 ```
 
+Backend scenarios in `../features/` use `@UT-*`, `@IT-*`, and `@E2E-*`
+Test IDs with Given/When/Then steps. Matching IDs appear in backend Jest test
+names and Robot test tags. Kitchen lifecycle transitions are
+service operations; the public kitchen API exposes reads and assignments.
+The database integration cases exercise saved assignments and concurrent claims.
+
+`test:unit` and `test:integration` generate `reports/unit/report.html` and
+`reports/integration/report.html`. These reports display full Gherkin scenarios,
+including Background steps and Examples tables, with each Jest test result.
+Search by Test ID, scenario, step, or file, or filter by execution status.
+The original Jest report is available through the `Original Jest report` link
+and is saved as `jest.html` in the same directory.
+
+Descriptions are matched to `../features/` by Test ID, supporting both `@UT-*` /
+`@IT-*` tags and `Test Case ID:` descriptions. If no feature matches, an explicit
+Given/When/Then test name is displayed as Gherkin. Missing or ambiguous mappings
+are identified in the report; no scenario steps are invented. A scenario outline
+is displayed with all its Examples, while the Jest name identifies the executed
+variant. Status applies to the entire Jest test, not to individual Gherkin steps.
+Run `npm run test:reporter` to verify the report parser and rendering behavior.
+
+Every backend Jest declaration has a Test ID and a matching scenario. Additional
+coverage is documented in each module's `*.additional.unit.feature` and
+`*.additional.integration.feature` files. Parameterized declarations share their
+behavioral scenario; each executed Jest name retains its concrete test values.
+
+`npm run test:traceability` checks that each Jest declaration has a unique ID,
+exactly one matching feature scenario, the correct unit or integration prefix,
+and Given/When/Then steps. It runs automatically before `test:unit` and
+`test:integration`, so missing documentation prevents those commands from running.
+Reporter infrastructure checks run separately with `test:reporter`.
+
+Run database integration tests with the test environment loaded explicitly:
+
+```bash
+node --env-file=.env.test node_modules/jest/bin/jest.js --config jest-integration.json --runInBand
+```
+
+For Robot E2E tests, install `../robot/requirements.txt`, start the API against
+the same migrated test database, and prepare fresh isolated fixtures. Existing
+manifests must be cleaned up and prepared again to include kitchen head and
+kitchen staff accounts. In PowerShell, use `npm.cmd` if script policy blocks
+`npm.ps1`.
+
+```bash
+node --env-file=.env.test node_modules/ts-node/dist/bin.js -P prisma/tsconfig.seed.json prisma/e2e-fixtures.ts prepare
+python -m robot --dryrun --exclude storage --outputdir ../robot/results/dryrun ../robot/tests/
+npm run test:e2e
+node --env-file=.env.test node_modules/ts-node/dist/bin.js -P prisma/tsconfig.seed.json prisma/e2e-fixtures.ts cleanup
+```
+
+Set `API_BASE_URL` when the running test API is not at `http://localhost:3000`.
+Cleanup removes fixture brands, orders, tickets, sessions, and tracked accounts
+created by the Robot workflows. Storage E2E scenarios use the separate
+`test:e2e:storage` command and require configured test storage.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

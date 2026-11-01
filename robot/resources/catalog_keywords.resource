@@ -114,17 +114,16 @@ The cashier submits another ID with the same normalized platform references
     ${response}=    POST On Session    api    ${ORDER_PATH}    headers=${CASHIER_HEADERS}    json=${changed}    expected_status=409
     Set Test Variable    ${LAST_RESPONSE}    ${response}
 
-Another brand manager attempts to read and change the channel
+Another manager reads and changes the channel
     ${headers}=    An authenticated catalog user exists    3
-    GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${headers}    expected_status=403
+    GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${headers}    expected_status=200
     ${payload}=    Create Dictionary    price=${999}
-    PATCH On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${headers}    json=${payload}    expected_status=403
-    DELETE On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${headers}    expected_status=403
+    PATCH On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${headers}    json=${payload}    expected_status=200
 
-The original channel remains unchanged
+The channel change is visible to the original manager
     ${response}=    GET On Session    api    /api/menu-channels/${CHANNEL_ID}    headers=${MANAGER_HEADERS}    expected_status=200
     ${body}=    Set Variable    ${response.json()}
-    Should Be Equal As Numbers    ${body}[price]    120
+    Should Be Equal As Numbers    ${body}[price]    999
     Should Be Equal    ${body}[is_available]    ${True}
 
 The manager attaches a valid PNG to the menu item
