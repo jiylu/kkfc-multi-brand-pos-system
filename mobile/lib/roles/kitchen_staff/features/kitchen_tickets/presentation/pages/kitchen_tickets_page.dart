@@ -772,7 +772,7 @@ class _KitchenTicketsPageState extends State<KitchenTicketsPage>
                 SizedBox(height: KitchenSpace.md),
                 KitchenFilterBar(
                   trailing: Text(
-                    'NOTE: This is still a static work-in-progress build.',
+                    'FIGMA QA · T-014 / T-019 / T-020 interactive; other ticket actions are disabled samples.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontSize: 11,
                       color: context.kitchenTextMuted,
