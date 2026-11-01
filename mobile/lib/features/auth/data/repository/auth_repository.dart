@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mobile/core/api/api_client.dart';
 import 'package:mobile/core/auth/token_store.dart';
+import 'package:mobile/core/models/user_role.dart';
 
 /// Why a sign-in attempt failed, normalized from transport/HTTP errors so
 /// the UI never has to inspect [DioException] itself.
@@ -19,6 +20,9 @@ class AuthRepository {
 
   final Dio _dio;
   final TokenStore _store;
+  UserRole? _cachedRole;
+
+  UserRole? get cachedRole => _cachedRole;
 
   /// Signs in and persists the session token.
   ///
@@ -43,6 +47,16 @@ class AuthRepository {
       }
 
       await _store.write(token);
+
+      final userMap = res.data?['user'];
+      if (userMap is Map<String, dynamic>) {
+        final roleStr = userMap['role'] as String?;
+        _cachedRole = UserRole.fromApiValue(roleStr);
+        if (roleStr != null && roleStr.isNotEmpty) {
+          await _store.writeRole(roleStr);
+        }
+      }
+
       return token;
     } on DioException catch (e) {
       throw _mapDioException(e);
@@ -65,6 +79,29 @@ class AuthRepository {
     }
   }
 
+  /// Returns the signed-in user's role.
+  Future<UserRole?> getCurrentUserRole() async {
+    if (_cachedRole != null) return _cachedRole;
+
+    try {
+      final stored = await _store.readRole();
+      if (stored != null) {
+        _cachedRole = UserRole.fromApiValue(stored);
+        if (_cachedRole != null) return _cachedRole;
+      }
+
+      final response = await _dio.get<Map<String, dynamic>>('/auth/me');
+      final roleStr = response.data?['role'] as String?;
+      _cachedRole = UserRole.fromApiValue(roleStr);
+      if (roleStr != null && roleStr.isNotEmpty) {
+        await _store.writeRole(roleStr);
+      }
+      return _cachedRole;
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    }
+  }
+
   /// Ends the server session and clears the stored token.
   ///
   /// Contract: POST /auth/logout `Authorization: Bearer <token>` -> 204.
@@ -73,6 +110,7 @@ class AuthRepository {
   /// while this call is still in flight. Never throws: signing out locally
   /// must succeed even when the server is unreachable.
   Future<void> logout(String token) async {
+    _cachedRole = null;
     try {
       await _dio.post<void>(
         '/auth/logout',

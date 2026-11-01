@@ -1,7 +1,8 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/models/user_role.dart';
 import '../features/auth/providers/session_provider.dart';
 import '../features/auth/presentation/pages/login_screen.dart';
 import '../features/new_order/presentation/pages/channel_repricing_screen.dart';
@@ -17,27 +18,50 @@ import '../features/order_entry/presentation/pages/order_not_sent_screen.dart';
 import '../features/order_entry/presentation/pages/duplicate_platform_order_screen.dart';
 import '../features/order_entry/presentation/pages/order_entry_screen.dart';
 import '../features/order_entry/presentation/pages/platform_reference_screen.dart';
+import '../roles/kitchen_staff/features/kitchen_tickets/presentation/pages/kitchen_tickets_page.dart';
+
+import 'package:mobile/roles/kitchen_staff/features/kitchen_tickets/data/models/kitchen_tickets_view_state.dart';
+
 import '../features/orders/cancel/presentation/pages/cancel_order_screen.dart';
 import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final loggedIn = ValueNotifier<bool>(ref.read(sessionProvider));
-  ref.listen<bool>(sessionProvider, (_, next) => loggedIn.value = next);
-  ref.onDispose(loggedIn.dispose);
+  final refresh = ValueNotifier<int>(0);
+  ref.listen<bool>(sessionProvider, (_, _) => refresh.value++);
+  ref.listen<UserRole?>(userRoleProvider, (_, _) => refresh.value++);
+  ref.onDispose(refresh.dispose);
 
   final router = GoRouter(
     initialLocation: AppRoutes.login,
-    refreshListenable: loggedIn,
+    refreshListenable: refresh,
     redirect: (context, state) {
       final isLoggedIn = ref.read(sessionProvider);
+      final role = ref.read(userRoleProvider);
       final onLogin = state.matchedLocation == AppRoutes.login;
 
       if (!isLoggedIn && !onLogin) {
         return AppRoutes.login;
       }
+
+      final isKitchenRole = role?.isKitchen ?? false;
+      final onKitchenPage = state.matchedLocation == AppRoutes.kitchenTickets;
+
       if (isLoggedIn && onLogin) {
-        return AppRoutes.menu;
+        return isKitchenRole ? AppRoutes.kitchenTickets : AppRoutes.menu;
       }
+
+      if (isLoggedIn) {
+        // Kitchen staff / kitchen head can only see the kitchen tickets page.
+        if (isKitchenRole && !onKitchenPage) {
+          return AppRoutes.kitchenTickets;
+        }
+
+        // Users without kitchen role must never see the kitchen tickets page.
+        if (!isKitchenRole && onKitchenPage) {
+          return AppRoutes.menu;
+        }
+      }
+
       return null;
     },
     routes: [
@@ -121,6 +145,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.platformReference,
         builder: (context, state) => const PlatformReferenceScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.kitchenTickets,
+        builder: (context, state) =>
+            const KitchenTicketsPage(viewState: KitchenTicketsViewState.active),
       ),
     ],
   );

@@ -1,13 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/app/routes.dart';
 import 'package:mobile/core/models/brand_models.dart';
-import 'package:mobile/features/auth/data/repository/auth_repository.dart';
 import 'package:mobile/features/auth/providers/session_provider.dart';
 import 'package:mobile/shared/shared_layout.dart';
+import 'package:mobile/shared/widgets/logout_button.dart';
 import 'package:mobile/features/new_order/presentation/widgets/brands/brand_logo.dart';
 import 'package:mobile/features/new_order/presentation/widgets/channel_tabs.dart';
 import 'package:mobile/features/new_order/providers/brand_providers.dart';
@@ -30,20 +28,6 @@ class MenuHeader extends ConsumerWidget {
   final ValueChanged<PosChannel>? onChannelChanged;
   final String? staffName;
   final String? staffRole;
-
-  void _signOut(WidgetRef ref) {
-    final token = ref.read(sessionTokenProvider);
-    if (token == null) return;
-
-    unawaited(ref.read(authRepositoryProvider).logout(token));
-    ref.read(cartProvider.notifier).clear();
-    ref.read(orderReferenceProvider.notifier).clear();
-    ref.read(storeReferenceProvider.notifier).clear();
-    ref.read(menuSearchProvider.notifier).clear();
-    ref.read(menuChannelProvider.notifier).reset();
-    ref.read(sessionExpiredProvider.notifier).set(false);
-    ref.read(sessionTokenProvider.notifier).setToken(null);
-  }
 
   /// Shows the repricing notice after a channel change when prices differ.
   void _onChannelSelected(BuildContext context, WidgetRef ref) {
@@ -125,11 +109,7 @@ class MenuHeader extends ConsumerWidget {
       ],
     );
 
-    final themedLogout = IconButton(
-      tooltip: 'Logout',
-      icon: Icon(Icons.logout, color: scheme.onInverseSurface),
-      onPressed: () => _signOut(ref),
-    );
+    final themedLogout = const LogoutButton();
 
     final Widget channelWidget;
     if (onChannelChanged != null && channel != null) {
